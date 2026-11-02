@@ -6,8 +6,8 @@ directory is original work and is licensed MIT (see `LICENSE`).
 
 ## Status
 
-Phase 1 of 6 — foundation. Accounts, roles and the operational surface are
-working; the media pipeline comes next.
+Phase 2 of 6 — media core. Upload, storage and the encoding pipeline work end to
+end; the public frontend comes next.
 
 | Area | State |
 |---|---|
@@ -15,7 +15,11 @@ working; the media pipeline comes next.
 | Email-based accounts (signup, login, reset) via `django-allauth` | done |
 | Five-level role ladder with a single policy module | done |
 | Session API (`/api/v1/whoami/`) and health probe | done |
-| Media models, upload, transcoding | next |
+| Media domain models: media, category, playlist, comment, subtitle, chapter | done |
+| Resumable chunked upload (`/api/v1/uploads/`) | done |
+| ffprobe/ffmpeg pipeline: duration, dimensions, poster, HLS | done |
+| Media REST API with visibility rules | done |
+| Public frontend, player, search | next |
 
 ## Requirements
 

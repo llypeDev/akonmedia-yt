@@ -67,6 +67,8 @@ INSTALLED_APPS = [
     # local
     "apps.rbac",
     "apps.users",
+    "apps.media",
+    "apps.uploader",
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="badge">Foundation</div>
+  <h1>{{ PORTAL_NAME }} is running.</h1>
+  <p class="lede">
+    Django {{ django_version|default:"" }} project skeleton with email-based accounts,
+    five access levels and a JSON API. Media pipeline lands next.
+  </p>
+  <p>
+    Health check: <code>/health/</code> &nbsp;·&nbsp;
+    Session API: <code>/api/v1/whoami/</code>
+  </p>
+{% endblock %}

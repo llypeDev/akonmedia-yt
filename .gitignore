@@ -1,0 +1,22 @@
+# environment
+.venv/
+.env
+*.sqlite3
+db.sqlite3
+
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# collected assets
+staticfiles/
+media/
+
+# editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

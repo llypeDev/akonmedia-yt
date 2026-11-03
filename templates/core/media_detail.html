@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ media.title }} â€” {{ PORTAL_NAME }}{% endblock %}
+{% block title %}{{ media.title }} — {{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
   <div class="player-shell">
@@ -33,8 +33,8 @@
     <article class="detail-main">
       <h1>{{ media.title }}</h1>
       <p class="detail-meta">
-        {{ media.owner.get_short_name }} Â· {{ media.created_at|date:"j M Y" }}
-        {% if media.views_count %}Â· {{ media.views_count }} views{% endif %}
+        {{ media.owner.get_short_name }} · {{ media.created_at|date:"j M Y" }}
+        {% if media.views_count %}· {{ media.views_count }} views{% endif %}
         {% if media.state != "ready" %}<span class="state state-{{ media.state }}">{{ media.get_state_display }}</span>{% endif %}
       </p>
 

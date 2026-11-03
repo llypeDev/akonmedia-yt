@@ -1,0 +1,43 @@
+# AkonMedia behind Caddy, started by docker-compose.prod.yml.
+#
+# Caddy gets and renews the HTTPS certificate for AKON_DOMAIN by itself (Let's
+# Encrypt), sends http:// to https://, and passes each request on:
+#
+#   /hls/...   the lives on air, straight from the ingest server ("live")
+#   the rest   the portal ("web")
+#
+# Uploaded media still goes through the portal, which checks the file and sets
+# its safety headers, but the bytes come from here: the portal answers with
+# X-Accel-Redirect (MEDIA_ACCEL_REDIRECT=/_media/) and Caddy sends the file
+# from the media volume, mounted read-only at /srv/_media. Ranges, repeat
+# visits and slow connections are handled here, not by a worker of the portal.
+{
+	email {$ACME_EMAIL}
+}
+
+{$AKON_DOMAIN} {
+	encode zstd gzip
+
+	handle /hls/* {
+		reverse_proxy live:8080
+	}
+
+	handle {
+		reverse_proxy web:8000 {
+			# An upload chunk (5 MB) or a second of a browser stream arrives
+			# whole before the portal sees it, so a slow connection does not
+			# hold one of its workers.
+			request_buffers 8MB
+
+			@media header X-Accel-Redirect *
+			handle_response @media {
+				root * /srv
+				rewrite * {rp.header.X-Accel-Redirect}
+				copy_response_headers {
+					include Content-Type Content-Disposition Content-Security-Policy X-Content-Type-Options X-Frame-Options Cache-Control
+				}
+				file_server
+			}
+		}
+	}
+}

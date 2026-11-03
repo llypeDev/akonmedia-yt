@@ -31,3 +31,6 @@
 
 # screenshots for the README
 /docs
+/.env
+/.live
+/deploy

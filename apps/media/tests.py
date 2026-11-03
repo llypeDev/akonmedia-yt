@@ -190,3 +190,74 @@ class MediaUploadKindTests(TestCase):
             media = Media.objects.get(uid=response.json()["uid"])
             self.assertIn(media.uid, media.file.name)
             self.assertTrue(Path(media.file.path).exists())
+
+
+class TaskRoutingTests(TestCase):
+    """Encoding has its own queue so housekeeping never waits behind a class."""
+
+    def route(self, name):
+        from config.celery import app
+
+        return app.amqp.router.route({}, name, args=(), kwargs={})["queue"].name
+
+    def test_encoding_tasks_go_to_the_media_queue(self):
+        self.assertEqual(self.route("media.process"), "media")
+        self.assertEqual(self.route("live.finalize"), "media")
+
+    def test_housekeeping_stays_on_the_default_queue(self):
+        self.assertEqual(self.route("live.housekeeping"), "celery")
+        self.assertEqual(self.route("uploads.purge_stale"), "celery")
+
+    def test_a_worker_without_queues_consumes_both(self):
+        from config.celery import app
+
+        self.assertEqual({queue.name for queue in app.amqp.queues.values()}, {"celery", "media"})
+
+
+class InterruptedEncodingTests(TestCase):
+    """A restart in the middle of an encoding must not leave a spinner forever."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(email="enc@example.com", password="x" * 20)
+        self.cut = make_media(self.user, title="cut", state=Media.State.PROCESSING)
+        self.elsewhere = make_media(self.user, title="elsewhere", state=Media.State.PROCESSING)
+        self.waiting = make_media(self.user, title="waiting", state=Media.State.PENDING)
+
+    def worker(self, queues, active=None):
+        from types import SimpleNamespace
+        from unittest import mock
+
+        inspect = mock.Mock()
+        inspect.active.return_value = active or {}
+        app = SimpleNamespace(
+            amqp=SimpleNamespace(queues=SimpleNamespace(consume_from={name: None for name in queues})),
+            control=SimpleNamespace(inspect=mock.Mock(return_value=inspect)),
+        )
+        return SimpleNamespace(app=app)
+
+    def test_encoding_worker_releases_what_a_restart_cut_short(self):
+        from .tasks import INTERRUPTED, fail_interrupted
+
+        busy = {"media@other": [{"name": "media.process", "args": [str(self.elsewhere.pk)]}]}
+        self.assertEqual(fail_interrupted(sender=self.worker(["celery", "media"], busy)), 1)
+        self.cut.refresh_from_db()
+        self.elsewhere.refresh_from_db()
+        self.waiting.refresh_from_db()
+        self.assertEqual(self.cut.state, Media.State.FAILED)
+        self.assertEqual(self.cut.failure_reason, INTERRUPTED)
+        self.assertEqual(self.elsewhere.state, Media.State.PROCESSING)
+        self.assertEqual(self.waiting.state, Media.State.PENDING)
+
+    def test_a_worker_that_does_not_encode_leaves_everything_alone(self):
+        from .tasks import fail_interrupted
+
+        self.assertEqual(fail_interrupted(sender=self.worker(["celery"])), 0)
+        self.cut.refresh_from_db()
+        self.assertEqual(self.cut.state, Media.State.PROCESSING)
+
+    def test_no_answer_from_other_workers_still_releases(self):
+        from .tasks import fail_interrupted
+
+        sender = self.worker(["media"])
+        sender.app.control.inspect.side_effect = OSError("broker down")
+        self.assertEqual(fail_interrupted(sender=sender), 2)

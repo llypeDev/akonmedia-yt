@@ -5,12 +5,16 @@ Django's ``static.serve`` answers 200 with the whole file regardless of the
 Safari refuses to play video without it. This view implements the subset of
 RFC 7233 that matters: a single range, open-ended ranges and suffix ranges.
 
-Not a replacement for a real web server — for production put nginx, or object
-storage plus a CDN, in front of the media directory.
+Behind a web server that understands ``X-Accel-Redirect`` (Caddy in
+``docker-compose.prod.yml``, or nginx), set ``MEDIA_ACCEL_REDIRECT``: this view
+still finds the file and decides the headers it goes out with, and the server
+sends the bytes, answering ranges and slow connections without holding a
+worker of the application.
 """
 import mimetypes
 import os
 import re
+from urllib.parse import quote
 
 from django.conf import settings
 from django.http import FileResponse, Http404, HttpResponse
@@ -81,6 +85,20 @@ def _harden(response, content_type: str, filename: str) -> None:
         response["Content-Security-Policy"] = SANDBOX_POLICY
 
 
+def _hand_over(full_path: str, content_type: str, filename: str) -> HttpResponse:
+    """An empty answer telling the web server in front which file to send.
+
+    The server copies the headers set here and handles ``Range`` and
+    conditional requests itself, so none of that happens in this process.
+    """
+    relative = os.path.relpath(full_path, os.path.abspath(str(settings.MEDIA_ROOT)))
+    prefix = settings.MEDIA_ACCEL_REDIRECT.rstrip("/")
+    response = HttpResponse(content_type=content_type)
+    response["X-Accel-Redirect"] = f"{prefix}/{quote(relative.replace(os.sep, '/'))}"
+    _harden(response, content_type, filename)
+    return response
+
+
 class _LimitedReader:
     """Hands out at most ``length`` bytes, so a partial response stops there."""
 
@@ -110,10 +128,13 @@ def serve_media(request, path: str):
     if not os.path.isfile(full_path):
         raise Http404("media not found")
 
-    size = os.path.getsize(full_path)
     content_type = content_type_for(full_path)
     filename = os.path.basename(full_path).replace('"', "")
 
+    if settings.MEDIA_ACCEL_REDIRECT:
+        return _hand_over(full_path, content_type, filename)
+
+    size = os.path.getsize(full_path)
     header = request.headers.get("Range", "").strip()
     match = RANGE_RE.match(header) if header else None
 

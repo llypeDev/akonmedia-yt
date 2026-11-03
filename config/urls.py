@@ -2,10 +2,10 @@
 import re
 
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path
-from django.views.static import serve as serve_file
+
+from apps.media.serving import serve_media
 
 admin.site.site_header = f"{settings.PORTAL_NAME} administration"
 admin.site.site_title = settings.PORTAL_NAME
@@ -20,17 +20,13 @@ urlpatterns = [
     path("", include("apps.core.urls")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-elif getattr(settings, "SERVE_MEDIA", False):
-    # Django's static() helper refuses to work with DEBUG off, so wire the view
-    # directly. Fine behind a single container; put a real web server in front
-    # of this for production traffic.
-    prefix = settings.MEDIA_URL.lstrip("/")
-    urlpatterns += [
-        re_path(
-            rf"^{re.escape(prefix)}(?P<path>.*)$",
-            serve_file,
-            {"document_root": settings.MEDIA_ROOT},
-        )
-    ]
+# Uploaded media. Always routed here because this view answers Range requests,
+# which Django's DEBUG-only static helper does not. Behind nginx or a CDN the
+# request never reaches the application, so the cost is zero.
+urlpatterns += [
+    re_path(
+        rf"^{re.escape(settings.MEDIA_URL.lstrip('/'))}(?P<path>.*)$",
+        serve_media,
+        name="media-file",
+    )
+]

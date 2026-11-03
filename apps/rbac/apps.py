@@ -1,7 +1,8 @@
 from django.apps import AppConfig
+from django.utils.translation import gettext_lazy as _
 
 
 class RbacConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.rbac"
-    verbose_name = "Access control"
+    verbose_name = _("Access control")

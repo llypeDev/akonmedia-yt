@@ -11,25 +11,32 @@ from pathlib import Path
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class UploadSession(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="upload_sessions"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="upload_sessions",
+        verbose_name=_("owner"),
     )
-    filename = models.CharField(max_length=255)
-    content_type = models.CharField(max_length=120, blank=True)
-    total_size = models.BigIntegerField(default=0)
-    chunk_size = models.PositiveIntegerField(default=5 * 1024 * 1024)
-    next_index = models.PositiveIntegerField(default=0)
-    received_bytes = models.BigIntegerField(default=0)
-    completed = models.BooleanField(default=False)
-    media_uid = models.CharField(max_length=16, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
+    filename = models.CharField(max_length=255, verbose_name=_("file name"))
+    content_type = models.CharField(max_length=120, blank=True, verbose_name=_("content type"))
+    total_size = models.BigIntegerField(default=0, verbose_name=_("total size (bytes)"))
+    chunk_size = models.PositiveIntegerField(
+        default=5 * 1024 * 1024,
+        verbose_name=_("part size (bytes)"),
+    )
+    next_index = models.PositiveIntegerField(default=0, verbose_name=_("next part"))
+    received_bytes = models.BigIntegerField(default=0, verbose_name=_("bytes received"))
+    completed = models.BooleanField(default=False, verbose_name=_("completed"))
+    media_uid = models.CharField(max_length=16, blank=True, verbose_name=_("media id"))
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("updated at"))
 
     class Meta:
+        verbose_name = _("upload in parts")
+        verbose_name_plural = _("uploads in parts")
         ordering = ["-created_at"]
 
     def __str__(self) -> str:

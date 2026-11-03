@@ -48,14 +48,22 @@ class Live(models.Model):
     ON_AIR = (Status.LIVE, Status.INTERRUPTED)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    uid = models.CharField(max_length=16, unique=True, default=new_uid, editable=False)
-    playback_id = models.CharField(
-        max_length=32, unique=True, default=new_playback_id, editable=False
+    uid = models.CharField(
+        max_length=16, unique=True, default=new_uid, editable=False,
+        verbose_name=_("public id"),
     )
-    stream_key = models.CharField(max_length=64, unique=True, default=new_stream_key)
+    playback_id = models.CharField(
+        max_length=32, unique=True, default=new_playback_id, editable=False,
+        verbose_name=_("playback id"),
+    )
+    stream_key = models.CharField(
+        max_length=64, unique=True, default=new_stream_key,
+        verbose_name=_("stream key"),
+    )
 
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lives"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lives",
+        verbose_name=_("owner"),
     )
     title = models.CharField(_("title"), max_length=255)
     description = models.TextField(_("description"), blank=True)
@@ -77,28 +85,40 @@ class Live(models.Model):
     record = models.BooleanField(_("publish the recording"), default=True)
     chat_enabled = models.BooleanField(_("chat"), default=True)
 
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.SCHEDULED)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.SCHEDULED,
+        verbose_name=_("status"),
+    )
     #: An encoder is connected right now.
-    publishing = models.BooleanField(default=False)
+    publishing = models.BooleanField(default=False, verbose_name=_("encoder connected"))
     #: Encoder connections so far. Each one leaves one recording file, so the
     #: recording is complete once there are as many files as sessions.
-    sessions = models.PositiveIntegerField(default=0)
-    started_at = models.DateTimeField(null=True, blank=True)
-    interrupted_at = models.DateTimeField(null=True, blank=True)
-    ended_at = models.DateTimeField(null=True, blank=True)
-    peak_viewers = models.PositiveIntegerField(default=0)
+    sessions = models.PositiveIntegerField(default=0, verbose_name=_("encoder sessions"))
+    started_at = models.DateTimeField(null=True, blank=True, verbose_name=_("started at"))
+    interrupted_at = models.DateTimeField(null=True, blank=True, verbose_name=_("interrupted at"))
+    ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("ended at"))
+    peak_viewers = models.PositiveIntegerField(default=0, verbose_name=_("peak viewers"))
 
     recording = models.OneToOneField(
-        Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="live_source"
+        Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="live_source",
+        verbose_name=_("recording"),
     )
     #: Set once the end of the live has been handled, with a recording or not.
-    finalized_at = models.DateTimeField(null=True, blank=True)
-    recording_error = models.CharField(max_length=500, blank=True)
+    finalized_at = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name=_("recording published at"),
+    )
+    recording_error = models.CharField(
+        max_length=500, blank=True,
+        verbose_name=_("recording error"),
+    )
 
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("updated at"))
 
     class Meta:
+        verbose_name = _("live")
+        verbose_name_plural = _("lives")
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["status", "visibility"]),
@@ -143,11 +163,16 @@ class Live(models.Model):
 class LiveRecording(models.Model):
     """One file the ingest server wrote: one per encoder connection."""
 
-    live = models.ForeignKey(Live, on_delete=models.CASCADE, related_name="recordings")
-    filename = models.CharField(max_length=255)
-    created_at = models.DateTimeField(default=timezone.now)
+    live = models.ForeignKey(
+        Live, on_delete=models.CASCADE, related_name="recordings",
+        verbose_name=_("live"),
+    )
+    filename = models.CharField(max_length=255, verbose_name=_("file name"))
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
 
     class Meta:
+        verbose_name = _("live recording")
+        verbose_name_plural = _("live recordings")
         ordering = ["created_at", "id"]
         constraints = [
             models.UniqueConstraint(fields=["live", "filename"], name="live_recording_unique_file"),
@@ -158,16 +183,22 @@ class LiveRecording(models.Model):
 
 
 class ChatMessage(models.Model):
-    live = models.ForeignKey(Live, on_delete=models.CASCADE, related_name="messages")
-    author = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="live_messages"
+    live = models.ForeignKey(
+        Live, on_delete=models.CASCADE, related_name="messages",
+        verbose_name=_("live"),
     )
-    body = models.CharField(max_length=500)
-    created_at = models.DateTimeField(default=timezone.now)
-    is_hidden = models.BooleanField(default=False)
-    hidden_at = models.DateTimeField(null=True, blank=True)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="live_messages",
+        verbose_name=_("author"),
+    )
+    body = models.CharField(max_length=500, verbose_name=_("message"))
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
+    is_hidden = models.BooleanField(default=False, verbose_name=_("hidden"))
+    hidden_at = models.DateTimeField(null=True, blank=True, verbose_name=_("hidden at"))
 
     class Meta:
+        verbose_name = _("chat message")
+        verbose_name_plural = _("chat messages")
         ordering = ["id"]
         indexes = [models.Index(fields=["live", "id"])]
 

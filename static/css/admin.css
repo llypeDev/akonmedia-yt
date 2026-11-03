@@ -313,6 +313,8 @@ div.breadcrumbs a:hover { color: var(--q-accent); }
 /* --------------------------------------------------------- side menu */
 
 #nav-sidebar {
+  /* Django lays the page out around a 275px menu: the padding goes inside. */
+  box-sizing: border-box;
   background: var(--q-surface);
   border-right: 1px solid var(--q-line);
   padding: 16px 12px 24px;
@@ -438,7 +440,7 @@ thead th.sorted { background: var(--q-surface-3); }
 thead th.sorted .text a { color: var(--q-text); }
 tr.selected { background: var(--q-accent-soft) !important; }
 #result_list { width: 100%; }
-#result_list td, #result_list th { vertical-align: middle; }
+#result_list td, #result_list th { vertical-align: middle; padding-left: 12px; padding-right: 12px; }
 #result_list tbody th a { font-weight: 600; }
 .action-checkbox-column, td.action-checkbox { width: 36px; }
 
@@ -630,6 +632,12 @@ ul.errorlist li { font-size: 13px; }
 /* ---------------------------------------------------------- change list */
 
 #changelist .changelist-form-container { gap: 22px; }
+/* The gap above already separates the filters: no extra margin, and the list
+   column may shrink (its table scrolls inside) instead of pushing the page
+   wider than the screen. */
+#changelist .changelist-form-container > div { min-width: 0; }
+#changelist #changelist-filter { margin-left: 0; }
+#changelist #result_list thead th { white-space: normal; }
 #changelist #toolbar, #changelist .actions, #changelist .results, #changelist .paginator { box-sizing: border-box; }
 #changelist #toolbar {
   margin-bottom: 14px;

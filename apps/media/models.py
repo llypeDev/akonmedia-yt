@@ -111,9 +111,6 @@ class Media(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     published_at = models.DateTimeField(null=True, blank=True)
 
-    #: Identifier from an earlier deployment, used to make imports idempotent.
-    legacy_id = models.CharField(max_length=120, null=True, blank=True, unique=True)
-
     class Meta:
         ordering = ["-created_at"]
         indexes = [

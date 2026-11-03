@@ -26,8 +26,8 @@
 **/Thumbs.db
 
 # documentation not needed inside the image
-/CUTOVER.md
 /README.md
+/OPERATIONS.md
 
 # screenshots for the README
 /docs

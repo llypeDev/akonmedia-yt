@@ -42,8 +42,7 @@ rebuilt end to end. What remains is the cut-over itself.
 | Curation: encoding queue, failures with retry, comment moderation, account roles | done |
 | Subtitle upload (SRT/VTT), cue editor synced to a preview, WebVTT and SRT download | done |
 | Dark and light themes, phone layout, branded error pages | done |
-| Import from a previous deployment (`import_legacy` command) | done |
-| Cut-over: delete the legacy tree, switch the licence | see `CUTOVER.md` |
+| Backup and restore runbook | `OPERATIONS.md` |
 
 ## Requirements
 
@@ -147,7 +146,7 @@ apps/
   rbac/                 role ladder and the only place that interprets it
   users/                account model, admin, session API
   media/                models, access rules, REST API, ffmpeg pipeline, tasks,
-                        byte-range serving, importer, demo seeder
+                        byte-range serving, demo seeder
   uploader/             resumable chunked upload sessions and their purge
 templates/              HTML, written for this project only (allauth included)
 static/css/app.css      the design system: tokens, themes, layout, components

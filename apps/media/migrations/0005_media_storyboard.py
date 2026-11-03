@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("media", "0003_media_legacy_id"),
+        ("media", "0004_remove_media_legacy_id"),
     ]
 
     operations = [

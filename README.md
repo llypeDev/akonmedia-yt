@@ -28,8 +28,7 @@ in-browser subtitle editor are working. What remains is the cut-over itself.
 | Playlists: create, add, remove, reorder, share | done |
 | Curation queue: encoding, failures with retry, hidden comments | done |
 | Subtitle upload (SRT/VTT), cue editor, WebVTT served per track | done |
-| Import from a previous deployment (`import_legacy` command) | done |
-| Cut-over: delete the legacy tree, switch the licence | see `CUTOVER.md` |
+| Backup and restore runbook | `OPERATIONS.md` |
 
 ## Requirements
 

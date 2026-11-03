@@ -514,8 +514,10 @@
       root.appendChild(this.brand);
     }
 
-    this.live = h("div", "pl-sr", { "aria-live": "polite", "aria-atomic": "true" });
-    root.appendChild(this.live);
+    // Read aloud by screen readers. Not this.live, which says whether the
+    // stream is a live one.
+    this.announcer = h("div", "pl-sr", { "aria-live": "polite", "aria-atomic": "true" });
+    root.appendChild(this.announcer);
   };
 
   Player.prototype.buildControls = function () {
@@ -2270,7 +2272,7 @@
     osd.classList.remove("pl-osd-show");
     void osd.offsetWidth; // restart the animation
     osd.classList.add("pl-osd-show");
-    if (text) this.live.textContent = text;
+    if (text) this.announcer.textContent = text;
   };
 
   // ------------------------------------------------- theater, fullscreen, PiP

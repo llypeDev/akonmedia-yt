@@ -5,9 +5,11 @@ import secrets
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -15,8 +17,10 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy, ngettext
 from django.views.decorators.http import require_POST
 
+from apps.core.templatetags.akon import AVATAR_SIZES, avatar
 from apps.media import access, pipeline
 from apps.media.models import Category, Chapter, Comment, Media, Playlist
+from apps.users import avatars
 
 STUDIO_PAGE_SIZE = 20
 MAX_POSTER_BYTES = 10 * 1024 * 1024
@@ -260,4 +264,59 @@ def account(request):
         return redirect("core:account")
 
     stats = Media.objects.filter(owner=user).aggregate(items=Count("id"), views=Sum("views_count"))
-    return render(request, "core/account.html", {"stats": stats})
+    return render(
+        request,
+        "core/account.html",
+        {
+            "stats": stats,
+            "characters": [
+                (key, label, avatars.character_url(key)) for key, label in avatars.CHARACTERS.items()
+            ],
+            "photo_limit_mb": avatars.MAX_UPLOAD_BYTES // (1024 * 1024),
+        },
+    )
+
+
+#: Seconds between two photo uploads from the same account.
+AVATAR_UPLOAD_GAP = 3
+
+
+@login_required
+@require_POST
+def account_avatar(request):
+    """Pick a character, the photo or the initials; upload or remove a photo.
+
+    The account page's script asks for JSON and gets back the new picture at
+    every size, to swap in place; without the script it is a plain form post.
+    """
+    user = request.user
+    wants_json = "application/json" in request.headers.get("Accept", "")
+    try:
+        if request.FILES.get("photo"):
+            if not cache.add(f"avatar:upload:{user.pk}", 1, timeout=AVATAR_UPLOAD_GAP):
+                raise ValidationError(_("One photo at a time: try again in a few seconds."))
+            avatars.set_photo(user, request.FILES["photo"])
+            note = _("Profile photo updated.")
+        elif request.POST.get("remove_photo"):
+            avatars.remove_photo(user)
+            note = _("Profile photo removed.")
+        else:
+            avatars.choose(user, request.POST.get("choice", ""))
+            note = _("Profile picture updated.")
+    except ValidationError as error:
+        if wants_json:
+            return JsonResponse({"detail": error.messages[0]}, status=400)
+        messages.error(request, error.messages[0])
+        return redirect("core:account")
+
+    if wants_json:
+        return JsonResponse(
+            {
+                "detail": note,
+                "choice": user.avatar or "initials",
+                "photo": user.avatar_photo.url if user.avatar_photo else "",
+                "html": {size: str(avatar(user, size)) for size in AVATAR_SIZES},
+            }
+        )
+    messages.success(request, note)
+    return redirect("core:account")

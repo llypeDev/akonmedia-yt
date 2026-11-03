@@ -8,11 +8,14 @@ import uuid
 
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from apps.rbac.roles import Role
 
+from . import avatars
 from .managers import UserManager
 
 
@@ -36,6 +39,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text=_("Can sign in to the Admin."),
     )
     date_joined = models.DateTimeField(default=timezone.now, verbose_name=_("date joined"))
+
+    #: Empty for the initials, a gallery character's key, or "photo" for
+    #: ``avatar_photo``. See ``apps/users/avatars.py``.
+    avatar = models.CharField(
+        max_length=32, blank=True, default="", choices=avatars.choices,
+        verbose_name=_("profile picture"),
+    )
+    avatar_photo = models.ImageField(
+        upload_to="avatars/", blank=True, verbose_name=_("profile photo"),
+        help_text=_("Uploaded on the account page, where it is cropped and resized."),
+    )
 
     objects = UserManager()
 
@@ -65,6 +79,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         return (self.display_name or self.email).split("@")[0]
 
     @property
+    def avatar_url(self) -> str:
+        """The picture shown for the account, or "" when it shows its initials."""
+        return avatars.image_url(self)
+
+    @property
     def handle(self) -> str:
         """Stable, URL-safe label derived from the address."""
         return self.email.split("@")[0]
+
+
+@receiver(post_delete, sender=User)
+def _delete_avatar_photo(sender, instance, **kwargs):
+    """A deleted account's photo is deleted with it."""
+    if instance.avatar_photo:
+        instance.avatar_photo.delete(save=False)

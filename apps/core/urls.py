@@ -21,6 +21,7 @@ urlpatterns = [
     # creator
     path("studio/", studio_views.studio, name="studio"),
     path("account/", studio_views.account, name="account"),
+    path("account/avatar/", studio_views.account_avatar, name="account_avatar"),
     # subtitles
     path("view/<str:uid>/subtitles/", subtitle_views.subtitle_upload, name="subtitle_upload"),
     path(

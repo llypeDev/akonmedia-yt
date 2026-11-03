@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: QQplay\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 19:52+0000\n"
+"POT-Creation-Date: 2026-11-03 22:40+0000\n"
 "PO-Revision-Date: 2026-11-03 16:07+0000\n"
 "Last-Translator: QQplay\n"
 "Language-Team: Português (Brasil)\n"
@@ -23,7 +23,7 @@ msgid "Could not copy — select the text and copy it manually."
 msgstr "Não foi possível copiar — selecione o texto e copie manualmente."
 
 #. Translators: cancels the automatic jump to the next playlist item.
-#: static/js/app.js:302 static/js/player.js:2369
+#: static/js/app.js:302 static/js/avatar.js:253 static/js/player.js:2369
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -62,6 +62,43 @@ msgstr "Processamento concluído — carregando o player."
 #: static/js/app.js:444
 msgid "Processing failed."
 msgstr "O processamento falhou."
+
+#: static/js/avatar.js:61
+msgid "The picture could not be saved."
+msgstr "Não foi possível salvar a imagem."
+
+#: static/js/avatar.js:154
+msgid "This file is not a picture we can read. Use a JPEG, PNG, WebP or GIF."
+msgstr ""
+"Não conseguimos ler este arquivo como imagem. Use JPEG, PNG, WebP ou GIF."
+
+#: static/js/avatar.js:158
+msgid "The picture is too large: the limit is %(limit)s MB."
+msgstr "A imagem é grande demais: o limite é de %(limit)s MB."
+
+#: static/js/avatar.js:212
+msgid "Frame your photo"
+msgstr "Ajuste sua foto"
+
+#: static/js/avatar.js:216
+msgid "Drag to place it in the circle, and zoom in or out with the slider."
+msgstr ""
+"Arraste para posicioná-la no círculo e use o controle para aproximar ou "
+"afastar."
+
+#: static/js/avatar.js:222
+msgid "Photo being framed. Arrow keys move it, plus and minus zoom."
+msgstr ""
+"Foto sendo ajustada. As setas movem a imagem; mais e menos aproximam e "
+"afastam."
+
+#: static/js/avatar.js:243
+msgid "Zoom"
+msgstr "Zoom"
+
+#: static/js/avatar.js:260
+msgid "Use this photo"
+msgstr "Usar esta foto"
 
 #: static/js/cast.js:146 static/js/cast.js:456
 msgid "Streaming stopped."
@@ -160,62 +197,112 @@ msgstr "Limpar"
 msgid "Done"
 msgstr "Pronto"
 
+#. Translators: names of the reactions in the live chat, read out by screen
+#. readers.
+#: static/js/live.js:41
+msgid "Like"
+msgstr "Curtir"
+
+#: static/js/live.js:42
+msgid "Love"
+msgstr "Amei"
+
+#: static/js/live.js:43
+msgid "Funny"
+msgstr "Engraçado"
+
+#: static/js/live.js:44
+msgid "Wow"
+msgstr "Uau"
+
+#: static/js/live.js:45
+msgid "Applause"
+msgstr "Aplausos"
+
+#: static/js/live.js:46
+msgid "Fire"
+msgstr "Fogo"
+
 #. Translators: countdown pieces; d = days, h = hours, min = minutes, s =
 #. seconds.
-#: static/js/live.js:83
+#: static/js/live.js:111
 msgid "%(days)s d %(hours)s h"
 msgstr "%(days)s d %(hours)s h"
 
-#: static/js/live.js:84
+#: static/js/live.js:112
 msgid "%(hours)s h %(minutes)s min"
 msgstr "%(hours)s h %(minutes)s min"
 
-#: static/js/live.js:85
+#: static/js/live.js:113
 msgid "%(minutes)s min %(seconds)s s"
 msgstr "%(minutes)s min %(seconds)s s"
 
-#: static/js/live.js:86
+#: static/js/live.js:114
 msgid "%(seconds)s s"
 msgstr "%(seconds)s s"
 
 #. Translators: number of people watching a live stream right now.
-#: static/js/live.js:280
+#: static/js/live.js:312
 msgid "%(count)s watching"
 msgid_plural "%(count)s watching"
 msgstr[0] "%(count)s assistindo"
 msgstr[1] "%(count)s assistindo"
 
 #. Translators: %(time)s is a countdown such as "2 h 05 min".
-#: static/js/live.js:315
+#: static/js/live.js:347
 msgid "Starts in %(time)s"
 msgstr "Começa em %(time)s"
 
-#: static/js/live.js:316
+#: static/js/live.js:348
 msgid "Starting any moment now"
 msgstr "Começa a qualquer momento"
 
-#: static/js/live.js:388
+#: static/js/live.js:445
 msgid "The message could not be sent."
 msgstr "Não foi possível enviar a mensagem."
 
-#: static/js/live.js:419
+#: static/js/live.js:476
 msgid "Message hidden."
 msgstr "Mensagem ocultada."
 
-#: static/js/live.js:422
+#: static/js/live.js:479
 msgid "The message could not be hidden."
 msgstr "Não foi possível ocultar a mensagem."
 
+#. Translators: a reaction under a live chat message, e.g. "Like: 3".
+#: static/js/live.js:524
+msgid "%(reaction)s: %(count)s"
+msgstr "%(reaction)s: %(count)s"
+
+#: static/js/live.js:559
+msgid "Sign in to react."
+msgstr "Entre para reagir."
+
+#: static/js/live.js:595
+msgid "The reaction could not be saved."
+msgstr "Não foi possível salvar a reação."
+
 #. Translators: badge next to the name of the person streaming, in the live
 #. chat.
-#: static/js/live.js:462
+#: static/js/live.js:629
 msgid "Host"
 msgstr "Apresentador"
 
+#. Translators: button that reacts to a live chat message, e.g. "React: Like".
+#: static/js/live.js:664
+msgid "React: %(reaction)s"
+msgstr "Reagir: %(reaction)s"
+
 #. Translators: moderation button on a live chat message.
-#: static/js/live.js:483 static/js/live.js:484
+#: static/js/live.js:677 static/js/live.js:678
 msgid "Hide message"
 msgstr "Ocultar mensagem"
+
+#. Translators: button on a touch screen that shows the reactions of a live
+#. chat message.
+#: static/js/live.js:691
+msgid "React to this message"
+msgstr "Reagir a esta mensagem"
 
 #. Translators: playback speed 1×, in the player's settings menu.
 #: static/js/player.js:185

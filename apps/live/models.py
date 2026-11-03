@@ -98,6 +98,9 @@ class Live(models.Model):
     interrupted_at = models.DateTimeField(null=True, blank=True, verbose_name=_("interrupted at"))
     ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("ended at"))
     peak_viewers = models.PositiveIntegerField(default=0, verbose_name=_("peak viewers"))
+    #: Goes up by one with every reaction added or taken back in the chat.
+    #: A page that has seen this number has every reaction up to date.
+    reactions_rev = models.PositiveIntegerField(default=0, editable=False, verbose_name=_("reaction revision"))
 
     recording = models.OneToOneField(
         Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="live_source",
@@ -204,3 +207,52 @@ class ChatMessage(models.Model):
 
     def __str__(self) -> str:
         return self.body[:60]
+
+
+class ChatReaction(models.Model):
+    """One person's reaction to a chat message. A person may leave several
+    kinds on the same message, each once."""
+
+    class Kind(models.TextChoices):
+        # The labels are what a screen reader says; the pictures are emoji,
+        # drawn by the viewer's own system.
+        LIKE = "like", _("Like")
+        LOVE = "love", _("Love")
+        HAHA = "haha", _("Funny")
+        WOW = "wow", _("Wow")
+        CLAP = "clap", _("Applause")
+        FIRE = "fire", _("Fire")
+
+    #: The picture for each kind, in the order the chat offers them.
+    EMOJI = {
+        Kind.LIKE: "\U0001F44D",
+        Kind.LOVE: "\u2764\ufe0f",
+        Kind.HAHA: "\U0001F602",
+        Kind.WOW: "\U0001F62E",
+        Kind.CLAP: "\U0001F44F",
+        Kind.FIRE: "\U0001F525",
+    }
+
+    message = models.ForeignKey(
+        ChatMessage, on_delete=models.CASCADE, related_name="reactions",
+        verbose_name=_("chat message"),
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="live_reactions",
+        verbose_name=_("user"),
+    )
+    kind = models.CharField(max_length=8, choices=Kind.choices, verbose_name=_("reaction"))
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
+
+    class Meta:
+        verbose_name = _("chat reaction")
+        verbose_name_plural = _("chat reactions")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["message", "user", "kind"], name="one_reaction_of_a_kind_per_person"
+            )
+        ]
+        indexes = [models.Index(fields=["message", "kind"])]
+
+    def __str__(self) -> str:
+        return f"{self.EMOJI.get(self.kind, self.kind)} {self.message_id}"

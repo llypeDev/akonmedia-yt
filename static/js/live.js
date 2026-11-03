@@ -23,6 +23,34 @@
   };
 
   var POLL = { live: 4000, interrupted: 3000, scheduled: 10000, soon: 4000, ended: 8000 };
+  /* The chat's reactions, in the order they are offered. The pictures are
+     emoji, drawn by the viewer's own system. */
+  var REACTIONS = [
+    { kind: "like", emoji: "\uD83D\uDC4D" },
+    { kind: "love", emoji: "\u2764\uFE0F" },
+    { kind: "haha", emoji: "\uD83D\uDE02" },
+    { kind: "wow", emoji: "\uD83D\uDE2E" },
+    { kind: "clap", emoji: "\uD83D\uDC4F" },
+    { kind: "fire", emoji: "\uD83D\uDD25" },
+  ];
+  var REACTION_ORDER = {};
+  REACTIONS.forEach(function (r, index) { REACTION_ORDER[r.kind] = index; });
+
+  function reactionLabel(kind) {
+    // Translators: names of the reactions in the live chat, read out by screen readers.
+    if (kind === "like") return gettext("Like");
+    if (kind === "love") return gettext("Love");
+    if (kind === "haha") return gettext("Funny");
+    if (kind === "wow") return gettext("Wow");
+    if (kind === "clap") return gettext("Applause");
+    if (kind === "fire") return gettext("Fire");
+    return kind;
+  }
+
+  function reactionEmoji(kind) {
+    for (var i = 0; i < REACTIONS.length; i++) if (REACTIONS[i].kind === kind) return REACTIONS[i].emoji;
+    return "";
+  }
   var CLIENT_KEY = "akon.live.client";
 
   function each(scope, selector, fn) {
@@ -94,6 +122,10 @@
     this.stateUrl = root.getAttribute("data-state-url");
     this.chatUrl = root.getAttribute("data-chat-url");
     this.hideUrl = root.getAttribute("data-hide-url");
+    this.reactUrl = root.getAttribute("data-react-url");
+    this.reactionsRev = -1;
+    this.pendingReactions = {};
+    this.canReact = false;
     this.sprite = root.getAttribute("data-sprite") || "";
     this.client = clientId();
     this.lastId = 0;
@@ -155,7 +187,7 @@
 
   LivePage.prototype.poll = function () {
     var self = this;
-    var url = this.stateUrl + "?after=" + this.lastId;
+    var url = this.stateUrl + "?after=" + this.lastId + "&rrev=" + this.reactionsRev;
     // The host's control room is not an audience.
     if (this.mode !== "control") url += "&client=" + encodeURIComponent(this.client);
     fetch(url, { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } })
@@ -362,10 +394,35 @@
       update();
     }
     this.chat.addEventListener("click", function (event) {
+      var reaction = event.target.closest("[data-react-kind]");
+      if (reaction) {
+        event.preventDefault();
+        var item = reaction.closest(".chat-msg");
+        if (item) {
+          item.classList.remove("is-picking");
+          self.react(item, reaction.getAttribute("data-react-kind"));
+        }
+        return;
+      }
+      var opener = event.target.closest("[data-react-open]");
+      if (opener) {
+        event.preventDefault();
+        var message = opener.closest(".chat-msg");
+        var open = message && !message.classList.contains("is-picking");
+        each(self.chat, ".chat-msg.is-picking", function (node) { node.classList.remove("is-picking"); });
+        if (message && open) message.classList.add("is-picking");
+        opener.setAttribute("aria-expanded", open ? "true" : "false");
+        return;
+      }
       var button = event.target.closest("[data-chat-hide]");
       if (!button) return;
       event.preventDefault();
       self.hide(button.getAttribute("data-chat-hide"));
+    });
+    // Tapping elsewhere closes an open reaction picker.
+    document.addEventListener("click", function (event) {
+      if (event.target.closest && event.target.closest(".chat-msg.is-picking")) return;
+      each(self.chat, ".chat-msg.is-picking", function (node) { node.classList.remove("is-picking"); });
     });
   };
 
@@ -436,8 +493,118 @@
         : false;
       node.hidden = !show;
     });
+    this.canReact = !!chat.can_react;
+    root.classList.toggle("can-react", this.canReact);
     this.addMessages(chat.messages || [], first);
     this.removeMessages(chat.hidden || []);
+    if (chat.reactions_from) this.applyReactionWindow(chat.reactions || {}, chat.reactions_from);
+    if (typeof chat.reactions_rev === "number") this.reactionsRev = chat.reactions_rev;
+  };
+
+  // ----------------------------------------------------------- reactions
+
+  LivePage.prototype.renderReactions = function (item, list, pop) {
+    var box = item.querySelector("[data-reactions]");
+    if (!box) return;
+    var before = {};
+    (item.__reactions || []).forEach(function (r) { before[r.kind] = r.count; });
+    item.__reactions = list.map(function (r) { return { kind: r.kind, count: r.count, mine: !!r.mine }; });
+    box.textContent = "";
+    box.hidden = !list.length;
+    var canReact = this.canReact;
+    item.__reactions.forEach(function (r) {
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chat-chip" + (r.mine ? " is-mine" : "");
+      chip.setAttribute("data-react-kind", r.kind);
+      chip.setAttribute("aria-pressed", r.mine ? "true" : "false");
+      if (!canReact) chip.setAttribute("aria-disabled", "true");
+      var label = reactionLabel(r.kind);
+      // Translators: a reaction under a live chat message, e.g. "Like: 3".
+      var text = interpolate(gettext("%(reaction)s: %(count)s"), { reaction: label, count: r.count }, true);
+      chip.setAttribute("aria-label", text);
+      chip.title = text;
+      var emoji = document.createElement("span");
+      emoji.className = "chat-chip-emoji";
+      emoji.setAttribute("aria-hidden", "true");
+      emoji.textContent = reactionEmoji(r.kind);
+      var count = document.createElement("span");
+      count.className = "chat-chip-count";
+      count.setAttribute("aria-hidden", "true");
+      count.textContent = String(r.count);
+      chip.appendChild(emoji);
+      chip.appendChild(count);
+      if (r.kind === pop || (before[r.kind] !== undefined && r.count > before[r.kind])) chip.classList.add("is-pop");
+      box.appendChild(chip);
+    });
+  };
+
+  LivePage.prototype.applyReactionWindow = function (map, from) {
+    if (!this.chatList) return;
+    var self = this;
+    Array.prototype.forEach.call(this.chatList.children, function (item) {
+      var id = Number(item.getAttribute("data-id"));
+      if (!id || id < from || self.pendingReactions[id]) return;
+      var next = map[String(id)] || [];
+      var now = item.__reactions || [];
+      var same = next.length === now.length && next.every(function (r, i) {
+        return r.kind === now[i].kind && r.count === now[i].count && !!r.mine === now[i].mine;
+      });
+      if (!same) self.renderReactions(item, next);
+    });
+  };
+
+  LivePage.prototype.react = function (item, kind) {
+    if (!this.canReact) {
+      toast(gettext("Sign in to react."), "info");
+      return;
+    }
+    var id = Number(item.getAttribute("data-id"));
+    var url = this.reactUrl ? this.reactUrl.replace("/0/react/", "/" + id + "/react/") : "";
+    if (!id || !url) return;
+    var self = this;
+    var previous = (item.__reactions || []).map(function (r) { return { kind: r.kind, count: r.count, mine: r.mine }; });
+    var list = previous.map(function (r) { return { kind: r.kind, count: r.count, mine: r.mine }; });
+    var entry = null;
+    list.forEach(function (r) { if (r.kind === kind) entry = r; });
+    var on = !(entry && entry.mine);
+    // Shown at once; the answer then sets the real counts.
+    if (on) {
+      if (entry) { entry.count += 1; entry.mine = true; }
+      else list.push({ kind: kind, count: 1, mine: true });
+    } else if (entry) {
+      entry.count -= 1;
+      entry.mine = false;
+      if (entry.count <= 0) list = list.filter(function (r) { return r !== entry; });
+    }
+    list.sort(function (a, b) { return REACTION_ORDER[a.kind] - REACTION_ORDER[b.kind]; });
+    this.renderReactions(item, list, on ? kind : "");
+
+    this.pendingReactions[id] = (this.pendingReactions[id] || 0) + 1;
+    var data = new URLSearchParams();
+    data.set("kind", kind);
+    data.set("on", on ? "1" : "0");
+    fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { Accept: "application/json", "X-CSRFToken": csrf() },
+      body: data,
+    })
+      .then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (payload) {
+          if (!response.ok) throw new Error(payload.detail || gettext("The reaction could not be saved."));
+          return payload;
+        });
+      })
+      .then(function (payload) {
+        self.pendingReactions[id] -= 1;
+        if (!self.pendingReactions[id] && document.contains(item)) self.renderReactions(item, payload.reactions || []);
+      })
+      .catch(function (error) {
+        self.pendingReactions[id] -= 1;
+        if (document.contains(item)) self.renderReactions(item, previous);
+        toast(error.message, "error");
+      });
   };
 
   LivePage.prototype.messageNode = function (m) {
@@ -470,10 +637,37 @@
     var body = document.createElement("p");
     body.className = "chat-body";
     body.textContent = m.body;
+    var reactions = document.createElement("div");
+    reactions.className = "chat-reactions";
+    reactions.setAttribute("data-reactions", "");
+    reactions.hidden = true;
     main.appendChild(meta);
     main.appendChild(body);
+    main.appendChild(reactions);
     item.appendChild(face);
     item.appendChild(main);
+
+    // Hovering (or focusing) a message shows its tools: the reactions, and
+    // for moderators the button that hides it. On a touch screen a button
+    // opens them.
+    var tools = document.createElement("div");
+    tools.className = "chat-tools";
+    var picker = document.createElement("span");
+    picker.className = "chat-picker";
+    REACTIONS.forEach(function (r) {
+      var pick = document.createElement("button");
+      pick.type = "button";
+      pick.className = "chat-pick";
+      pick.setAttribute("data-react-kind", r.kind);
+      var label = reactionLabel(r.kind);
+      // Translators: button that reacts to a live chat message, e.g. "React: Like".
+      var text = interpolate(gettext("React: %(reaction)s"), { reaction: label }, true);
+      pick.setAttribute("aria-label", text);
+      pick.title = label;
+      pick.textContent = r.emoji;
+      picker.appendChild(pick);
+    });
+    tools.appendChild(picker);
     if (m.can_hide) {
       var hide = document.createElement("button");
       hide.type = "button";
@@ -485,8 +679,21 @@
       hide.innerHTML = this.sprite
         ? '<svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="' + this.sprite + '#i-eye-off"></use></svg>'
         : "×";
-      item.appendChild(hide);
+      tools.appendChild(hide);
     }
+    item.appendChild(tools);
+    var open = document.createElement("button");
+    open.type = "button";
+    open.className = "chat-react-open";
+    open.setAttribute("data-react-open", "");
+    open.setAttribute("aria-expanded", "false");
+    // Translators: button on a touch screen that shows the reactions of a live chat message.
+    open.setAttribute("aria-label", gettext("React to this message"));
+    open.innerHTML = this.sprite
+      ? '<svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="' + this.sprite + '#i-smile-plus"></use></svg>'
+      : "+";
+    item.appendChild(open);
+    if (m.reactions && m.reactions.length) this.renderReactions(item, m.reactions);
     return item;
   };
 
@@ -500,7 +707,11 @@
     var self = this;
     messages.forEach(function (m) {
       if (m.id > self.lastId) self.lastId = m.id;
-      if (list.querySelector('[data-id="' + m.id + '"]')) return;
+      var existing = list.querySelector('[data-id="' + m.id + '"]');
+      if (existing) {
+        if (m.reactions && !self.pendingReactions[m.id]) self.renderReactions(existing, m.reactions);
+        return;
+      }
       list.appendChild(self.messageNode(m));
     });
     // Keep the list bounded on very busy chats.

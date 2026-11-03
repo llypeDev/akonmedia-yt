@@ -1,0 +1,51 @@
+# QQplay behind a reverse proxy that already handles HTTPS on this machine,
+# such as Dokploy's Traefik: used by docker-compose.dokploy.yml, see
+# deploy/dokploy/README.md.
+#
+# The proxy in front gets the certificate and answers on 80 and 443; Caddy
+# listens on plain HTTP inside the Docker network and does the same as
+# deploy/Caddyfile from there on:
+#
+#   /hls/...   the lives on air, straight from the ingest server ("live")
+#   the rest   the portal ("web"), with the media files sent from the volume
+#
+# The upstreams are called by the aliases qqplay-web and qqplay-live, which
+# docker-compose.dokploy.yml gives them on the stack's own network. This
+# container is also on the proxy's shared network, where another application
+# may well have a service called "web".
+{
+	auto_https off
+	servers {
+		# Keep the X-Forwarded-Proto: https that the proxy sends, instead of
+		# replacing it with this hop's http: the portal needs it to know the
+		# visitor is on HTTPS (CSRF checks, secure cookies, absolute links).
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	encode zstd gzip
+
+	handle /hls/* {
+		reverse_proxy qqplay-live:8080
+	}
+
+	handle {
+		reverse_proxy qqplay-web:8000 {
+			# An upload chunk (5 MB) or a second of a browser stream arrives
+			# whole before the portal sees it, so a slow connection does not
+			# hold one of its workers.
+			request_buffers 8MB
+
+			@media header X-Accel-Redirect *
+			handle_response @media {
+				root * /srv
+				rewrite * {rp.header.X-Accel-Redirect}
+				copy_response_headers {
+					include Content-Type Content-Disposition Content-Security-Policy X-Content-Type-Options X-Frame-Options Cache-Control
+				}
+				file_server
+			}
+		}
+	}
+}

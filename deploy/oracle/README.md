@@ -111,7 +111,7 @@ Baixe o QQplay e rode o script de preparação. Ele abre as portas 80, 443 e
 instala o Docker:
 
 ```bash
-git clone https://github.com/llypeDev/qqplay.git
+git clone https://github.com/llypeDev/qqplay.git qqplay
 cd qqplay
 sh deploy/oracle/setup-host.sh
 exit

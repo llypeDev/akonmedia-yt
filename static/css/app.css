@@ -726,6 +726,71 @@ body:not(.drawer-open) .drawer-head { display: none; }
 .input-sm { min-height: 34px !important; padding: 6px 10px !important; font-size: 13.5px !important; }
 .select.input-sm, .field select.input-sm { padding-right: 32px !important; }
 
+/* The list a select opens. Browsers that let a page draw it (customizable
+ * select: Chrome and Edge 135 and later) show it like the portal's menus;
+ * the others keep the system's list, in the theme's colours at least. Same
+ * <select> either way: keyboard, screen readers and forms work as before. */
+:is(.select, .field select, .dtp-time select) option { background-color: var(--surface); color: var(--text); }
+
+@supports (appearance: base-select) {
+  :is(.select, .field select, .dtp-time select):not([multiple], [size]),
+  :is(.select, .field select, .dtp-time select)::picker(select) {
+    appearance: base-select;
+  }
+  :is(.select, .field select, .dtp-time select) { align-items: center; }
+  /* The arrow stays the one drawn in the background, as everywhere else. */
+  :is(.select, .field select, .dtp-time select)::picker-icon { display: none; }
+  :is(.select, .field select):open {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  /* Drawn this way, a select is as wide as its chosen option, not its longest
+     one: the role selects in a table column keep a common width. */
+  .inline-form .select { min-inline-size: 12em; }
+  .dtp-time select { justify-content: center; }
+  .dtp-time select:open { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  :is(.select, .field select, .dtp-time select)::picker(select) {
+    margin-block: 6px;
+    padding: 6px;
+    max-block-size: min(320px, 60vh);
+    overflow-y: auto;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-lg);
+  }
+  :is(.select, .field select, .dtp-time select):open::picker(select) { animation: pop-in 140ms var(--ease) both; }
+
+  :is(.select, .field select, .dtp-time select) option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-block-size: 36px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--fast), color var(--fast);
+  }
+  :is(.select, .field select, .dtp-time select) option:hover,
+  :is(.select, .field select, .dtp-time select) option:focus-visible {
+    outline: none;
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  :is(.select, .field select, .dtp-time select) option:checked { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  :is(.select, .field select, .dtp-time select) option:disabled { color: var(--faint); cursor: not-allowed; }
+  /* The tick of the chosen item, at the end of its line. */
+  :is(.select, .field select, .dtp-time select) option::checkmark { order: 1; margin-inline-start: auto; color: var(--accent); }
+  .dtp-time select option { justify-content: center; font: 600 14px/1 var(--font-mono); }
+  .dtp-time select option::checkmark { display: none; }
+}
+
 input[type="file"] { font: inherit; color: var(--muted); max-width: 100%; }
 .field input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.7; border-radius: 6px; padding: 4px; }
 .field input::-webkit-calendar-picker-indicator:hover { opacity: 1; background: var(--surface-3); }

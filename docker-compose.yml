@@ -1,0 +1,62 @@
+name: akonmedia
+
+x-app: &app
+  build:
+    context: .
+  image: akonmedia:local
+  restart: unless-stopped
+  env_file:
+    - .env.docker
+  volumes:
+    - media:/app/media
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: akonmedia
+      POSTGRES_USER: akonmedia
+      POSTGRES_PASSWORD: akonmedia
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U akonmedia -d akonmedia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    <<: *app
+    ports:
+      - "8000:8000"
+
+  worker:
+    <<: *app
+    command: celery -A config worker --loglevel=info --concurrency=2
+    environment:
+      RUN_MIGRATIONS: "0"
+
+  beat:
+    <<: *app
+    command: celery -A config beat --loglevel=info
+    environment:
+      RUN_MIGRATIONS: "0"
+
+volumes:
+  postgres:
+  media:

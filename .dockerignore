@@ -1,0 +1,27 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.sqlite3
+db.sqlite3
+
+# local rehearsal data
+media
+staticfiles
+.render
+.build
+.demo-import
+.test-media
+.test-import
+.uvcache
+
+# editors and OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# documentation not needed inside the image
+CUTOVER.md
+README.md

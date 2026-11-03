@@ -4,12 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token }}">
+  <link rel="icon" type="image/svg+xml" href="{% static 'brand/favicon.svg' %}">
   <title>{% block title %}{{ PORTAL_NAME }}{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="{% url 'core:index' %}">{% include "core/_brand.html" %}</a>
+    <a class="brand" href="{% url 'core:index' %}">
+      <img class="brand-logo" src="{% static 'brand/logo-wordmark-dark.svg' %}"
+           alt="{{ PORTAL_NAME }}" height="34">
+    </a>
 
     <form class="search" action="{% url 'core:search' %}" method="get" role="search">
       <input type="search" name="q" placeholder="Search media" value="{{ request.GET.q|default:'' }}"

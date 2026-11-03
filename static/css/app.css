@@ -1,4 +1,4 @@
-/* AkonMedia — single stylesheet, no framework. */
+/* AkonMedia â€” single stylesheet, no framework. */
 
 :root {
   --bg: #0b0d10;
@@ -46,9 +46,8 @@ a:hover { color: var(--accent); }
   z-index: 10;
 }
 
-.brand { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
-.brand-mark { color: var(--text); }
-.brand-accent { color: var(--accent); }
+.brand { display: block; line-height: 0; }
+.brand-logo { height: 34px; width: auto; display: block; }
 
 .search { flex: 1; max-width: 32rem; }
 

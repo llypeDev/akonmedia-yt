@@ -25,3 +25,7 @@ Thumbs.db
 .demo-import/
 .test-media/
 .test-import/
+
+# build and render artifacts
+.render/
+.build/

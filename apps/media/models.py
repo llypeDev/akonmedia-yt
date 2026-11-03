@@ -281,6 +281,10 @@ class PlaylistItem(models.Model):
             )
         ]
 
+    def __str__(self):
+        # Shown over each row of the playlist's items in the admin.
+        return str(self.media)
+
 
 class Comment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -20,8 +20,6 @@
 {% endblock %}
 
 {% block extrahead %}{{ block.super }}
-  {# Here rather than in extrastyle: the change list, change form and login pages add their own stylesheets after extrastyle, and these rules must come last. #}
-  <link rel="stylesheet" href="{% static 'css/admin.css' %}">
   <meta name="theme-color" content="#05070c">
   <script>
     // And the portal follows a theme picked here, with the admin's toggle.
@@ -38,6 +36,11 @@
   </script>
 {% endblock %}
 
+{% block responsive %}{{ block.super }}
+  {# Last of all, after Django's responsive.css too: the page stylesheets (change list, forms, login) come before this block, and every rule here must win a tie with theirs at every width. #}
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
 {% block branding %}
 <div id="site-name">
   <a href="{% url 'admin:index' %}" class="admin-brand" aria-label="{{ site_header|default:_('Django administration') }}">
@@ -52,22 +55,42 @@
 {% endblock %}
 
 {% block welcome-msg %}
-  <span class="admin-user">
-    <span class="admin-avatar" aria-hidden="true">{% firstof user.get_short_name user.get_username as who %}{{ who|slice:":1"|upper }}</span>
-    <strong>{% firstof user.get_short_name user.get_username %}</strong>
+  {% firstof user.get_short_name user.get_username as who %}
+  <span class="admin-user" title="{{ who }}">
+    <span class="admin-avatar" aria-hidden="true">{{ who|slice:":1"|upper }}</span>
+    <strong>{{ who }}</strong>
   </span>
 {% endblock %}
 
 {% block userlinks %}
-  {% if site_url %}<a href="{{ site_url }}">{% translate 'View site' %}</a>{% endif %}
+  {% static 'icons/sprite.svg' as sprite %}
+  {% if site_url %}
+    <a class="admin-link" href="{{ site_url }}" title="{% translate 'View site' %}">
+      <svg class="q-icon" aria-hidden="true" focusable="false"><use href="{{ sprite }}#i-external-link"></use></svg>
+      <span class="admin-link-label">{% translate 'View site' %}</span>
+    </a>
+  {% endif %}
   {% if user.is_active and user.is_staff %}
     {% url 'django-admindocs-docroot' as docsroot %}
-    {% if docsroot %}<a href="{{ docsroot }}">{% translate 'Documentation' %}</a>{% endif %}
+    {% if docsroot %}
+      <a class="admin-link" href="{{ docsroot }}" title="{% translate 'Documentation' %}">
+        <svg class="q-icon" aria-hidden="true" focusable="false"><use href="{{ sprite }}#i-file-text"></use></svg>
+        <span class="admin-link-label">{% translate 'Documentation' %}</span>
+      </a>
+    {% endif %}
   {% endif %}
-  {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a>{% endif %}
+  {% if user.has_usable_password %}
+    <a class="admin-link" href="{% url 'admin:password_change' %}" title="{% translate 'Change password' %}">
+      <svg class="q-icon" aria-hidden="true" focusable="false"><use href="{{ sprite }}#i-key"></use></svg>
+      <span class="admin-link-label">{% translate 'Change password' %}</span>
+    </a>
+  {% endif %}
   <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
     {% csrf_token %}
-    <button type="submit">{% translate 'Log out' %}</button>
+    <button type="submit" class="admin-link admin-logout" title="{% translate 'Log out' %}">
+      <svg class="q-icon" aria-hidden="true" focusable="false"><use href="{{ sprite }}#i-log-out"></use></svg>
+      <span class="admin-link-label">{% translate 'Log out' %}</span>
+    </button>
   </form>
   {% include "admin/color_theme_toggle.html" %}
 {% endblock %}

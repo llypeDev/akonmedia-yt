@@ -1,0 +1,75 @@
+{% extends "admin/base.html" %}
+{% load static i18n %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block dark-mode-vars %}
+  {# The admin follows the theme picked in the portal: its own toggle reads localStorage "theme". #}
+  <script>
+    try {
+      var portalTheme = localStorage.getItem("akon-theme");
+      localStorage.setItem("theme", portalTheme === "light" || portalTheme === "dark" ? portalTheme : "auto");
+    } catch (e) { /* storage blocked: the admin falls back to the system theme */ }
+  </script>
+  {{ block.super }}
+{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+  <link rel="icon" href="{% static 'brand/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+{% endblock %}
+
+{% block extrahead %}{{ block.super }}
+  {# Here rather than in extrastyle: the change list, change form and login pages add their own stylesheets after extrastyle, and these rules must come last. #}
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+  <meta name="theme-color" content="#05070c">
+  <script>
+    // And the portal follows a theme picked here, with the admin's toggle.
+    document.addEventListener("click", function (event) {
+      if (!event.target.closest || !event.target.closest(".theme-toggle")) return;
+      setTimeout(function () {
+        try {
+          var mode = localStorage.getItem("theme");
+          if (mode === "light" || mode === "dark") localStorage.setItem("akon-theme", mode);
+          else localStorage.removeItem("akon-theme");
+        } catch (e) { /* storage blocked */ }
+      }, 0);
+    });
+  </script>
+{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+  <a href="{% url 'admin:index' %}" class="admin-brand" aria-label="{{ site_header|default:_('Django administration') }}">
+    <img class="admin-logo admin-logo-dark" src="{% static 'brand/logo-wordmark-dark.svg' %}" alt="" width="107" height="32">
+    <img class="admin-logo admin-logo-light" src="{% static 'brand/logo-wordmark-light.svg' %}" alt="" width="107" height="32">
+    <span class="admin-badge">{% translate "Admin" %}</span>
+  </a>
+</div>
+{% if user.is_anonymous %}
+  {% include "admin/color_theme_toggle.html" %}
+{% endif %}
+{% endblock %}
+
+{% block welcome-msg %}
+  <span class="admin-user">
+    <span class="admin-avatar" aria-hidden="true">{% firstof user.get_short_name user.get_username as who %}{{ who|slice:":1"|upper }}</span>
+    <strong>{% firstof user.get_short_name user.get_username %}</strong>
+  </span>
+{% endblock %}
+
+{% block userlinks %}
+  {% if site_url %}<a href="{{ site_url }}">{% translate 'View site' %}</a>{% endif %}
+  {% if user.is_active and user.is_staff %}
+    {% url 'django-admindocs-docroot' as docsroot %}
+    {% if docsroot %}<a href="{{ docsroot }}">{% translate 'Documentation' %}</a>{% endif %}
+  {% endif %}
+  {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a>{% endif %}
+  <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+    {% csrf_token %}
+    <button type="submit">{% translate 'Log out' %}</button>
+  </form>
+  {% include "admin/color_theme_toggle.html" %}
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

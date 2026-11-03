@@ -1,0 +1,12 @@
+{% load i18n static %}{# Django's theme switch with the portal's icons; the class names are the ones admin/js/theme.js and admin/css/dark_mode.css expect. #}
+<button class="theme-toggle" type="button">
+  <span class="visually-hidden theme-label-when-auto">{% translate 'Toggle theme (current theme: auto)' %}</span>
+  <span class="visually-hidden theme-label-when-light">{% translate 'Toggle theme (current theme: light)' %}</span>
+  <span class="visually-hidden theme-label-when-dark">{% translate 'Toggle theme (current theme: dark)' %}</span>
+  <svg aria-hidden="true" focusable="false" class="theme-icon-when-auto" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/>
+  </svg>
+  <svg aria-hidden="true" focusable="false" class="theme-icon-when-dark q-icon"><use href="{% static 'icons/sprite.svg' %}#i-moon"></use></svg>
+  <svg aria-hidden="true" focusable="false" class="theme-icon-when-light q-icon"><use href="{% static 'icons/sprite.svg' %}#i-sun"></use></svg>
+</button>

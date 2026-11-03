@@ -260,7 +260,13 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 24,
-    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    # JSON first: it answers every client that does not ask for HTML by name
+    # (scripts, curl, the portal's own JavaScript). Browsers get the API as
+    # portal pages (apps/core/api_browser.py); ?format=json forces JSON.
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        "apps.core.api_browser.PortalAPIRenderer",
+    ],
 }
 
 

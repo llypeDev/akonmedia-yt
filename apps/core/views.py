@@ -2,6 +2,7 @@
 import json
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
@@ -9,10 +10,12 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import connection
 from django.db.models import Count, Exists, F, OuterRef, Prefetch, Q, Sum
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.cache import patch_vary_headers
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
@@ -524,9 +527,45 @@ def health(request):
     return JsonResponse({"status": "ok", "service": "qqplay"})
 
 
+#: The readiness checks as the status page names them: title, what depends
+#: on it, and an icon from the sprite.
+STATUS_CHECKS = {
+    "database": (
+        gettext_lazy("Database"),
+        gettext_lazy("Accounts, media, comments, playlists and lives."),
+        "hard-drive",
+    ),
+    "cache": (
+        gettext_lazy("Cache"),
+        gettext_lazy("Fast memory shared by the portal's processes, the lives' state included."),
+        "zap",
+    ),
+    "encoder": (
+        gettext_lazy("Encoder"),
+        gettext_lazy("ffmpeg and ffprobe, which turn uploads into adaptive video, posters and previews."),
+        "cpu",
+    ),
+}
+
+
+def wants_html(request) -> bool:
+    """Whether the client is a browser asking for a page.
+
+    Probes, monitors and scripts send no Accept header, or */*, and keep
+    getting JSON; ?format=json forces it in a browser too.
+    """
+    if request.GET.get("format") == "json":
+        return False
+    return request.get_preferred_type(["application/json", "text/html"]) == "text/html"
+
+
 @never_cache
 def ready(request):
-    """Readiness probe: can this instance actually serve traffic?"""
+    """Readiness probe: can this instance actually serve traffic?
+
+    JSON for probes and monitors, a status page for a browser. Both answer 503
+    when the instance cannot serve.
+    """
     checks = {}
     healthy = True
     try:
@@ -543,7 +582,65 @@ def ready(request):
     if checks["cache"] != "ok":
         healthy = False
     checks["encoder"] = "ok" if pipeline.available() else "missing"
-    return JsonResponse(
-        {"status": "ok" if healthy else "degraded", "checks": checks},
-        status=200 if healthy else 503,
+    status = 200 if healthy else 503
+
+    if wants_html(request):
+        response = HttpResponse(_status_page(checks, healthy), status=status)
+    else:
+        response = JsonResponse(
+            {"status": "ok" if healthy else "degraded", "checks": checks}, status=status
+        )
+    patch_vary_headers(response, ["Accept"])
+    return response
+
+
+def _status_page(checks: dict, healthy: bool) -> str:
+    """The status page. Rendered without the request on purpose: no context
+    processor, session or user lookup touches the database, so the page still
+    shows up, and says what is wrong, when the database is down."""
+    rows = []
+    for key, result in checks.items():
+        title, description, icon = STATUS_CHECKS[key]
+        if result == "ok":
+            tone, label = "ok", _("Operational")
+        elif result == "missing":
+            tone, label = "warn", _("Not installed")
+        else:
+            tone, label = "down", _("Failing")
+        detail = result.split(":", 1)[1].strip() if result.startswith("error:") else ""
+        rows.append({
+            "key": key, "title": title, "description": description, "icon": icon,
+            "tone": tone, "label": label, "detail": detail,
+        })
+
+    if not healthy:
+        overall = "down"
+        headline = _("The portal is having trouble")
+        summary = _(
+            "A service it depends on is not answering. Pages may fail until it comes back; "
+            "the details are below."
+        )
+    elif any(row["tone"] != "ok" for row in rows):
+        overall = "warn"
+        headline = _("Running, without the encoder")
+        summary = _(
+            "Browsing and playback work, but new uploads wait in the queue until ffmpeg is "
+            "available."
+        )
+    else:
+        overall = "ok"
+        headline = _("All systems operational")
+        summary = _("The portal is ready for visits, uploads and lives.")
+
+    return render_to_string(
+        "core/status.html",
+        {
+            "PORTAL_NAME": settings.PORTAL_NAME,
+            "overall": overall,
+            "headline": headline,
+            "summary": summary,
+            "checks": rows,
+            "checked_at": timezone.localtime(),
+            "refresh_seconds": 30,
+        },
     )

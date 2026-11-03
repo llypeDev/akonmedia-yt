@@ -27,6 +27,7 @@ reconstruída de ponta a ponta. Falta a virada (cut-over) em si.
 | Escada de papéis com cinco níveis e um único módulo de política | pronto |
 | Regras de visibilidade em um só módulo: pública, não listada (só com o link), privada | pronto |
 | API de sessão (`/api/v1/whoami/`), verificações de liveness e readiness | pronto |
+| Página de status (`/health/ready/`) e API navegável (`/api/v1/`) no navegador, com o JSON de sempre para scripts e monitores | pronto |
 | Modelos do domínio de mídia: mídia, categoria, playlist, comentário, legenda, capítulo | pronto |
 | Upload em partes retomável: novas tentativas, retomada depois de recarregar a página, cancelamento, limpeza de sessões abandonadas | pronto |
 | Pipeline ffprobe/ffmpeg: pôster, escada HLS com `CODECS`, storyboard para a prévia na barra de progresso | pronto |

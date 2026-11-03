@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     "apps.users",
     "apps.media",
     "apps.uploader",
+    "apps.live",
 ]
 
 MIDDLEWARE = [
@@ -161,10 +162,37 @@ CELERY_BEAT_SCHEDULE = {
         "task": "uploads.purge_stale",
         "schedule": 60 * 60,
     },
+    # Ends lives whose encoder never came back and finishes any that slipped
+    # through; the ingest server's callbacks handle the usual case at once.
+    "live-housekeeping": {
+        "task": "live.housekeeping",
+        "schedule": 30,
+    },
 }
 
 #: Unfinished chunked uploads older than this are removed by the purge task.
 UPLOAD_SESSION_TTL_HOURS = env_int("UPLOAD_SESSION_TTL_HOURS", 24)
+
+
+# --------------------------------------------------------------------------
+# Live streaming: encoders publish RTMP to the ingest server (nginx with the
+# RTMP module, see docker/live), viewers watch the HLS it writes.
+# --------------------------------------------------------------------------
+
+#: What encoders such as OBS connect to; shown in the live's control room.
+LIVE_RTMP_URL = env("LIVE_RTMP_URL", "rtmp://localhost:1935/live")
+#: Public base address of the HLS: <base>/<playback id>/index.m3u8.
+LIVE_HLS_URL = env("LIVE_HLS_URL", "http://localhost:8080/hls")
+#: The ingest server's control endpoint, used to cut an encoder off when a
+#: live is ended from the studio. Internal: never expose it publicly.
+LIVE_CONTROL_URL = env("LIVE_CONTROL_URL", "http://localhost:8081/control")
+#: Shared with the ingest server, which puts it in every callback URL. While it
+#: is empty the callbacks are refused and nobody can go live.
+LIVE_HOOK_SECRET = env("LIVE_HOOK_SECRET", "")
+#: Where the ingest server's recordings appear to this process.
+LIVE_RECORDINGS_DIR = env("LIVE_RECORDINGS_DIR", str(BASE_DIR / ".live" / "recordings"))
+#: How long a dropped encoder may take to reconnect before the live ends.
+LIVE_RECONNECT_GRACE_SECONDS = env_int("LIVE_RECONNECT_GRACE_SECONDS", 120)
 
 
 # --------------------------------------------------------------------------

@@ -1,0 +1,450 @@
+"""Pages and JSON endpoints for lives.
+
+Viewers' pages poll ``state`` every few seconds: one request answers what the
+page needs to know (status, stream address, viewers, recording) and brings the
+chat messages posted since the last one the page has.
+"""
+import json
+from datetime import timedelta
+
+from django import forms
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
+from django.db.models import F
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+from django.utils.html import escape
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
+from django.views.decorators.http import require_GET, require_POST
+
+from apps.core.templatetags.akon import avatar
+from apps.media import access
+from apps.media.models import Category, Media
+from apps.rbac import permissions as policy
+
+from . import presence, services
+from .models import ChatMessage, Live, new_stream_key
+
+CHAT_MAX_LENGTH = 500
+CHAT_HISTORY = 50
+CHAT_BATCH = 100
+CHAT_RATE_SECONDS = 2
+#: How long a hidden message keeps being announced so open pages drop it.
+HIDDEN_ANNOUNCE = timedelta(minutes=10)
+
+
+# ------------------------------------------------------------------ forms
+
+
+class LiveForm(forms.ModelForm):
+    #: The page's script fills this with the date and time field read in the
+    #: viewer's own time zone. Without JavaScript the field is read in the
+    #: server's time zone instead.
+    scheduled_for_iso = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    class Meta:
+        model = Live
+        fields = ["title", "description", "visibility", "category", "scheduled_for",
+                  "record", "chat_enabled"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 5}),
+            "scheduled_for": forms.DateTimeInput(
+                attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"].queryset = Category.objects.order_by("name")
+        self.fields["category"].empty_label = gettext_lazy("No category")
+        self.fields["title"].widget.attrs.update({"maxlength": 255, "autocomplete": "off"})
+        self.fields["scheduled_for"].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"]
+        # The script shows the stored instant in the browser's time zone and
+        # sends what is typed back as an ISO timestamp (see live.js).
+        widget = self.fields["scheduled_for"].widget
+        widget.attrs["data-iso-field"] = "scheduled_for_iso"
+        stored = self.instance.scheduled_for if not self.is_bound else None
+        widget.attrs["data-utc"] = stored.isoformat() if stored else ""
+
+    def clean(self):
+        data = super().clean()
+        raw = (data.get("scheduled_for_iso") or "").strip()
+        if raw:
+            parsed = parse_datetime(raw)
+            if parsed is not None and timezone.is_aware(parsed):
+                data["scheduled_for"] = parsed
+        return data
+
+
+# ---------------------------------------------------------------- helpers
+
+
+def _iso(value):
+    return value.isoformat() if value else None
+
+
+def _viewable(request, uid: str) -> Live:
+    live = get_object_or_404(
+        Live.objects.select_related("owner", "category", "recording"), uid=uid
+    )
+    if not access.can_view_live(request.user, live):
+        raise Http404("live not found")
+    return live
+
+
+def _editable(request, uid: str) -> Live:
+    live = get_object_or_404(
+        Live.objects.select_related("owner", "category", "recording"), uid=uid
+    )
+    if not access.can_edit_live(request.user, live):
+        raise Http404("live not found")
+    return live
+
+
+def chat_open(live: Live) -> bool:
+    return live.chat_enabled and not live.is_ended
+
+
+def can_post(user, live: Live) -> bool:
+    return bool(user and user.is_authenticated and chat_open(live))
+
+
+def message_payload(message: ChatMessage, user, live: Live, can_moderate: bool) -> dict:
+    return {
+        "id": message.id,
+        "author": message.author.get_short_name(),
+        "avatar": str(avatar(message.author, "sm")),
+        "body": message.body,
+        "at": message.created_at.isoformat(),
+        "host": message.author_id == live.owner_id,
+        "mine": bool(user and user.is_authenticated and message.author_id == user.id),
+        "can_hide": can_moderate,
+    }
+
+
+def chat_payload(request, live: Live, after: int = 0) -> dict:
+    user = request.user
+    can_moderate = access.can_moderate_live_chat(user, live)
+    visible = live.messages.filter(is_hidden=False).select_related("author")
+    if after > 0:
+        batch = list(visible.filter(id__gt=after).order_by("id")[:CHAT_BATCH])
+        hidden = list(
+            live.messages.filter(
+                is_hidden=True, id__lte=after, hidden_at__gte=timezone.now() - HIDDEN_ANNOUNCE
+            ).values_list("id", flat=True)[:200]
+        )
+    else:
+        batch = list(reversed(visible.order_by("-id")[:CHAT_HISTORY]))
+        hidden = []
+    return {
+        "enabled": live.chat_enabled,
+        "open": chat_open(live),
+        "can_post": can_post(user, live),
+        "can_moderate": can_moderate,
+        "messages": [message_payload(m, user, live, can_moderate) for m in batch],
+        "hidden": hidden,
+    }
+
+
+def recording_payload(request, live: Live):
+    if not live.is_ended:
+        return None
+    media = live.recording
+    if media is not None:
+        if media.state in (Media.State.PENDING, Media.State.PROCESSING):
+            return {"state": "processing", "ready": False, "url": ""}
+        if media.state == Media.State.FAILED:
+            return {"state": "failed", "ready": False, "url": ""}
+        if not access.can_view_media(request.user, media):
+            # The owner made the recording private after the live.
+            return {"state": "none", "ready": False, "url": ""}
+        return {
+            "state": "ready",
+            "ready": True,
+            "url": reverse("core:media", args=[media.uid]),
+            "embed": reverse("core:embed", args=[media.uid]),
+        }
+    if live.recording_error:
+        return {"state": "failed", "ready": False, "url": ""}
+    if not live.record or (live.finalized_at and not live.recordings.exists()):
+        return {"state": "none", "ready": False, "url": ""}
+    # Not finished yet, or being joined right now.
+    return {"state": "pending", "ready": False, "url": ""}
+
+
+def state_payload(request, live: Live, after: int = 0, client: str = "") -> dict:
+    services.tick(live)
+    on_air = live.is_on_air
+    if on_air and client:
+        presence.touch(live, client)
+    payload = {
+        "status": live.status,
+        "label": live.get_status_display(),
+        "on_air": on_air,
+        "hls": live.hls_url if on_air else "",
+        "scheduled_for": _iso(live.scheduled_for),
+        "started_at": _iso(live.started_at),
+        "ended_at": _iso(live.ended_at),
+        "viewers": presence.count(live) if on_air else 0,
+        "recording": recording_payload(request, live),
+        "chat": chat_payload(request, live, after),
+    }
+    if access.can_edit_live(request.user, live):
+        payload["control"] = {
+            "publishing": live.publishing,
+            "sessions": live.sessions,
+            "peak": live.peak_viewers,
+            "recording_error": live.recording_error,
+        }
+    return payload
+
+
+#: What Django's json_script escapes: with "<", ">" and "&" written as \u
+#: escapes, nothing in the data (a chat message, say) can end the <script>
+#: element or put the HTML parser in a state where its end tag is ignored.
+_JSON_SCRIPT_ESCAPES = {ord(">"): "\\u003E", ord("<"): "\\u003C", ord("&"): "\\u0026"}
+
+
+def _page_state(request, live: Live) -> tuple[dict, str]:
+    """The state for the template to render, and the same as JSON for the
+    page's script, safe to place inside <script type="application/json">."""
+    payload = state_payload(request, live)
+    return payload, json.dumps(payload).translate(_JSON_SCRIPT_ESCAPES)
+
+
+def _embed_snippet(live: Live, embed_url: str) -> str:
+    return (
+        f'<iframe src="{escape(embed_url)}" width="640" height="360" frameborder="0" '
+        f'allow="autoplay; fullscreen; picture-in-picture" allowfullscreen '
+        f'title="{escape(live.title)}"></iframe>'
+    )
+
+
+def _int(value, default: int = 0) -> int:
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return default
+
+
+# ------------------------------------------------------------------ pages
+
+
+def lives(request):
+    listed = Live.objects.filter(access.live_listed_q()).select_related("owner", "recording")
+    context = {
+        "on_air": listed.filter(status__in=Live.ON_AIR).order_by("-started_at"),
+        "upcoming": listed.filter(status=Live.Status.SCHEDULED).order_by(
+            F("scheduled_for").asc(nulls_last=True), "-created_at"
+        )[:24],
+        "recent": listed.filter(status=Live.Status.ENDED).order_by("-ended_at")[:12],
+    }
+    return render(request, "live/lives.html", context)
+
+
+def watch(request, uid: str):
+    live = _viewable(request, uid)
+    page_state, page_json = _page_state(request, live)
+    embed_url = request.build_absolute_uri(reverse("live:embed", args=[live.uid]))
+    return render(
+        request,
+        "live/watch.html",
+        {
+            "live": live,
+            "state": page_state,
+            "state_json": page_json,
+            "page_url": request.build_absolute_uri(live.get_absolute_url()),
+            "embed_url": embed_url,
+            "embed_snippet": _embed_snippet(live, embed_url),
+            "can_edit": access.can_edit_live(request.user, live),
+        },
+    )
+
+
+def embed(request, uid: str):
+    """The live's player for other sites: no header, no chat.
+
+    Once the recording is ready the same embed code plays it, so a page that
+    embedded a class keeps working after the class is over.
+    """
+    live = get_object_or_404(Live.objects.select_related("recording"), uid=uid)
+    available = access.can_view_live(request.user, live)
+    if available and live.is_ended and live.recording and live.recording.is_ready \
+            and access.can_view_media(request.user, live.recording):
+        target = reverse("core:embed", args=[live.recording.uid])
+        query = request.META.get("QUERY_STRING", "")
+        return redirect(f"{target}?{query}" if query else target)
+    page_state, page_json = _page_state(request, live) if available else ({}, "{}")
+    context = {
+        "live": live,
+        "available": available,
+        "state": page_state,
+        "state_json": page_json,
+        "page_url": request.build_absolute_uri(live.get_absolute_url()),
+    }
+    response = render(request, "live/embed.html", context, status=200 if available else 404)
+    response["X-Frame-Options"] = "ALLOWALL"
+    response["Content-Security-Policy"] = "frame-ancestors *"
+    return response
+
+
+@require_GET
+def state(request, uid: str):
+    live = _viewable(request, uid)
+    payload = state_payload(
+        request,
+        live,
+        after=_int(request.GET.get("after")),
+        client=(request.GET.get("client") or "")[:40],
+    )
+    response = JsonResponse(payload)
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+@require_POST
+def chat_post(request, uid: str):
+    live = _viewable(request, uid)
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": _("Sign in to take part in the chat.")}, status=403)
+    if not chat_open(live):
+        return JsonResponse({"detail": _("The chat is closed.")}, status=403)
+    body = (request.POST.get("body") or "").strip()
+    if not body:
+        return JsonResponse({"detail": _("Write a message first.")}, status=400)
+    if len(body) > CHAT_MAX_LENGTH:
+        return JsonResponse(
+            {"detail": _("Messages are limited to %(limit)d characters.") % {"limit": CHAT_MAX_LENGTH}},
+            status=400,
+        )
+    if not cache.add(f"live:chat:{request.user.pk}", 1, timeout=CHAT_RATE_SECONDS):
+        return JsonResponse({"detail": _("Slow down a little: one message every two seconds.")}, status=429)
+    message = ChatMessage.objects.create(live=live, author=request.user, body=body)
+    can_moderate = access.can_moderate_live_chat(request.user, live)
+    return JsonResponse({"message": message_payload(message, request.user, live, can_moderate)}, status=201)
+
+
+@require_POST
+def chat_hide(request, uid: str, message_id: int):
+    live = _viewable(request, uid)
+    if not access.can_moderate_live_chat(request.user, live):
+        return JsonResponse({"detail": _("You cannot moderate this chat.")}, status=403)
+    message = get_object_or_404(ChatMessage, pk=message_id, live=live)
+    if not message.is_hidden:
+        message.is_hidden = True
+        message.hidden_at = timezone.now()
+        message.save(update_fields=["is_hidden", "hidden_at"])
+    return JsonResponse({"hidden": message.id})
+
+
+# ----------------------------------------------------------------- studio
+
+
+@login_required
+def studio_lives(request):
+    mine = Live.objects.filter(owner=request.user).select_related("recording")
+    return render(
+        request,
+        "live/studio_lives.html",
+        {
+            "lives": mine.order_by("-created_at"),
+            "on_air": mine.filter(status__in=Live.ON_AIR).count(),
+            "scheduled": mine.filter(status=Live.Status.SCHEDULED).count(),
+            "ended": mine.filter(status=Live.Status.ENDED).count(),
+        },
+    )
+
+
+@login_required
+def live_new(request):
+    if not policy.can_upload(request.user):
+        raise PermissionDenied
+    form = LiveForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        live = form.save(commit=False)
+        live.owner = request.user
+        live.save()
+        messages.success(request, _("Live created. Point your encoder at it to go on air."))
+        return redirect("live:control", uid=live.uid)
+    return render(request, "live/form.html", {"form": form, "live": None})
+
+
+@login_required
+def control(request, uid: str):
+    live = _editable(request, uid)
+    page_state, page_json = _page_state(request, live)
+    embed_url = request.build_absolute_uri(reverse("live:embed", args=[live.uid]))
+    return render(
+        request,
+        "live/control.html",
+        {
+            "live": live,
+            "state": page_state,
+            "state_json": page_json,
+            "page_url": request.build_absolute_uri(live.get_absolute_url()),
+            "embed_url": embed_url,
+            "embed_snippet": _embed_snippet(live, embed_url),
+            "is_owner": live.owner_id == request.user.id,
+            "ingest_ready": bool(settings.LIVE_HOOK_SECRET),
+        },
+    )
+
+
+@login_required
+def live_edit(request, uid: str):
+    live = _editable(request, uid)
+    form = LiveForm(request.POST or None, instance=live)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, _("Live details saved."))
+        return redirect("live:control", uid=live.uid)
+    return render(request, "live/form.html", {"form": form, "live": live})
+
+
+@login_required
+@require_POST
+def live_end(request, uid: str):
+    live = _editable(request, uid)
+    if services.end(live):
+        messages.success(request, _("The live has ended."))
+    else:
+        messages.info(request, _("This live had already ended."))
+    return redirect("live:control", uid=live.uid)
+
+
+@login_required
+@require_POST
+def rotate_key(request, uid: str):
+    live = _editable(request, uid)
+    if live.publishing:
+        messages.error(request, _("Stop the encoder before changing the stream key."))
+    elif live.is_ended:
+        messages.info(request, _("This live has ended; its key no longer works."))
+    else:
+        live.stream_key = new_stream_key()
+        live.save(update_fields=["stream_key", "updated_at"])
+        messages.success(request, _("New stream key created. The old one no longer works."))
+    return redirect("live:control", uid=live.uid)
+
+
+@login_required
+@require_POST
+def live_delete(request, uid: str):
+    live = _editable(request, uid)
+    if live.is_on_air:
+        messages.error(request, _("End the live before deleting it."))
+        return redirect("live:control", uid=live.uid)
+    title = live.title
+    live.delete()
+    messages.success(
+        request,
+        _("“%(title)s” was deleted. Its recording, if there is one, stays in your media.") % {"title": title},
+    )
+    return redirect("live:studio")

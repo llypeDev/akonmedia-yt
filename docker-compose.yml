@@ -5,10 +5,16 @@ x-app: &app
     context: .
   image: akonmedia:local
   restart: unless-stopped
+  # Defaults first, then your own .env (copied from .env.docker and edited),
+  # whose values win. A missing .env is fine for a first local run.
   env_file:
     - .env.docker
+    - path: .env
+      required: false
   volumes:
     - media:/app/media
+    # The ingest server's recordings, joined into a video when a live ends.
+    - live:/app/live
   depends_on:
     db:
       condition: service_healthy
@@ -54,6 +60,24 @@ services:
     healthcheck:
       disable: true
 
+  live:
+    # nginx with the RTMP module: encoders publish here, viewers watch the HLS.
+    build:
+      context: docker/live
+    image: akonmedia-live:local
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+      - path: .env
+        required: false
+    ports:
+      - "1935:1935"   # RTMP from OBS and other encoders
+      - "8080:8080"   # HLS for viewers; put it behind your HTTPS proxy in production
+    volumes:
+      - live:/var/lib/akon-live
+    depends_on:
+      - web
+
   beat:
     <<: *app
     # Runs the hourly purge of abandoned uploads (CELERY_BEAT_SCHEDULE).
@@ -66,3 +90,4 @@ services:
 volumes:
   postgres:
   media:
+  live:

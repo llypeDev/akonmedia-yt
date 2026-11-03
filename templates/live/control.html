@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static akon i18n %}
+
+{% block title %}{% blocktranslate with title=live.title %}Control room: {{ title }}{% endblocktranslate %} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/player.css' %}">{% endblock %}
+
+{% block content %}
+<div data-live data-mode="control"
+     data-state-url="{% url 'live:state' live.uid %}"
+     data-chat-url="{% url 'live:chat' live.uid %}"
+     data-hide-url="{% url 'live:chat_hide' live.uid 0 %}"
+     data-title="{{ live.title }}"
+     data-sprite="{% static 'icons/sprite.svg' %}">
+  <script type="application/json" data-live-state>{{ state_json|safe }}</script>
+
+  <header class="page-head">
+    <div>
+      <a class="back-link" href="{% url 'live:studio' %}">{% icon "chevron-left" "icon-sm" %}{% translate "Your lives" %}</a>
+      <h1>{{ live.title }}</h1>
+      <p class="lede row" style="gap:10px">
+        <span class="live-status live-status-{{ live.status }}" data-live-status>{{ live.get_status_display }}</span>
+        <span class="badge badge-{{ live.visibility }}">{% icon live.visibility|visibility_icon %}{{ live.get_visibility_display }}</span>
+        {% if not is_owner %}<span class="badge badge-role">{% translate "Managing as curator" %}</span>{% endif %}
+      </p>
+    </div>
+    <div class="btn-group">
+      <a class="btn" href="{% url 'live:watch' live.uid %}">{% icon "eye" "icon-sm" %}{% translate "View page" %}</a>
+      <a class="btn" href="{% url 'live:edit' live.uid %}">{% icon "pencil" "icon-sm" %}{% translate "Edit" %}</a>
+      {% if not live.is_ended %}
+        <form method="post" action="{% url 'live:end' live.uid %}" data-confirm="{% translate "End this live now? Viewers see that it has ended and the stream key stops working." %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">{% icon "x-circle" "icon-sm" %}{% translate "End live" %}</button>
+        </form>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="split">
+    <div class="stack">
+      <section class="panel control-stage">
+        <div class="panel-head row-between">
+          <h2><span class="panel-title-icon">{% icon "monitor-play" %}</span>{% translate "Preview" %}</h2>
+          <span class="live-viewers" data-live-viewers hidden></span>
+        </div>
+        {% include "live/_stage.html" with mode="control" %}
+        <dl class="spec-grid">
+          <div class="spec"><dt>{% translate "Encoder" %}</dt><dd><span class="encoder-state{% if live.publishing %} is-on{% endif %}" data-control-publishing data-text-on="{% translate "Connected" %}" data-text-off="{% translate "Not connected" %}">{% if live.publishing %}{% translate "Connected" %}{% else %}{% translate "Not connected" %}{% endif %}</span></dd></div>
+          <div class="spec"><dt>{% translate "On air for" %}</dt><dd><span data-live-elapsed hidden></span><span data-when-status="scheduled ended"{% if live.is_on_air %} hidden{% endif %}>—</span></dd></div>
+          <div class="spec"><dt>{% translate "Peak viewers" %}</dt><dd data-control-peak>{{ live.peak_viewers }}</dd></div>
+          <div class="spec"><dt>{% translate "Connections" %}</dt><dd data-control-sessions>{{ live.sessions }}</dd></div>
+        </dl>
+        <p class="notice mt-2" data-control-error{% if not live.recording_error %} hidden{% endif %}>{{ live.recording_error }}</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "key" %}</span>{% translate "Connect your encoder" %}</h2></div>
+        {% if not ingest_ready %}
+          <p class="notice">{% icon "alert" "icon-sm" %}<span>{% translate "Live ingest is not configured on this server yet (LIVE_HOOK_SECRET is empty), so the encoder will be refused. See “Lives” in the README." %}</span></p>
+        {% endif %}
+        <div class="form-grid mt-2">
+          <div class="field">
+            <span class="field-label">{% translate "Server" %}</span>
+            <div class="copy-field">
+              <input class="input" id="ingest-url" readonly value="{{ live.ingest_url }}" aria-label="{% translate "Server" %}">
+              <button type="button" class="btn" data-copy-target="#ingest-url" data-copied="{% translate "Server copied" %}">{% icon "copy" "icon-sm" %}{% translate "Copy" %}</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">{% translate "Stream key" %}</span>
+            <div class="ingest-key">
+              <input class="input" id="encoder-key" type="password" readonly value="{{ live.encoder_key }}" aria-label="{% translate "Stream key" %}" autocomplete="off">
+              <button type="button" class="btn" data-reveal="#encoder-key" aria-pressed="false" data-text-show="{% translate "Show" %}" data-text-hide="{% translate "Hide" %}">{% icon "eye" "icon-sm" %}<span data-reveal-label>{% translate "Show" %}</span></button>
+              <button type="button" class="btn" data-copy-target="#encoder-key" data-copied="{% translate "Stream key copied" %}">{% icon "copy" "icon-sm" %}{% translate "Copy" %}</button>
+            </div>
+            <span class="field-help">{% translate "Anyone with this key can stream into this live. Keep it off your screen while you are on air." %}</span>
+          </div>
+        </div>
+        <ol class="steps mt-3">
+          <li><span>{% blocktranslate %}In OBS, open <strong>Settings → Stream</strong> and choose the <strong>Custom</strong> service.{% endblocktranslate %}</span></li>
+          <li><span>{% translate "Paste the server and the stream key above." %}</span></li>
+          <li><span>{% blocktranslate %}Under <strong>Output</strong>, use H.264 video with a <strong>2 s keyframe interval</strong> and AAC audio. For 720p, 2,500 to 4,000 Kbps works well.{% endblocktranslate %}</span></li>
+          <li><span>{% blocktranslate %}Click <strong>Start Streaming</strong>. The preview appears here a few seconds later.{% endblocktranslate %}</span></li>
+        </ol>
+        {% if not live.is_ended %}
+          <form class="mt-3" method="post" action="{% url 'live:rotate_key' live.uid %}" data-confirm="{% translate "Create a new stream key? The current one stops working." %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm"{% if live.publishing %} disabled title="{% translate "Stop the encoder first" %}"{% endif %}>{% icon "refresh" "icon-sm" %}{% translate "New stream key" %}</button>
+          </form>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="stack">
+      {% include "live/_chat.html" %}
+
+      <section class="panel">
+        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "share" %}</span>{% translate "Share" %}</h2></div>
+        <div class="form-grid">
+          <div class="field">
+            <span class="field-label">{% translate "Page" %}</span>
+            <div class="copy-field">
+              <input class="input" id="live-url" readonly value="{{ page_url }}" aria-label="{% translate "Link to this page" %}">
+              <button type="button" class="btn" data-copy-target="#live-url" data-copied="{% translate "Link copied" %}">{% icon "copy" "icon-sm" %}{% translate "Copy" %}</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">{% translate "Embed" %} <span class="hint">{% translate "for your school's site" %}</span></span>
+            <textarea class="textarea embed-code" id="live-embed" readonly aria-label="{% translate "Embed code" %}">{{ embed_snippet }}</textarea>
+            <span class="field-help">{% translate "The same code plays the recording once the live is over." %}</span>
+            <div><button type="button" class="btn btn-sm" data-copy-target="#live-embed" data-copied="{% translate "Embed code copied" %}">{% icon "code" "icon-sm" %}{% translate "Copy embed code" %}</button></div>
+          </div>
+        </div>
+      </section>
+
+      {% if not live.is_on_air %}
+        <section class="panel panel-danger">
+          <div class="panel-head"><h2><span class="panel-title-icon">{% icon "trash" %}</span>{% translate "Delete live" %}</h2></div>
+          <p class="muted">{% translate "Removes the live and its chat. A published recording stays in your media." %}</p>
+          <form class="mt-2" method="post" action="{% url 'live:delete' live.uid %}" data-confirm="{% translate "Delete this live and its chat for good?" %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">{% icon "trash" "icon-sm" %}{% translate "Delete live" %}</button>
+          </form>
+        </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'vendor/hls.min.js' %}"></script>
+  <script src="{% static 'js/player.js' %}"></script>
+  <script src="{% static 'js/live.js' %}"></script>
+{% endblock %}

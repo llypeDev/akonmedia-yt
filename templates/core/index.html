@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load akon humanize i18n %}
+{% load static akon humanize i18n %}
 
 {% block title %}{% if category %}{{ category.name }} — {% elif kind %}{{ kind_title }} — {% endif %}{{ PORTAL_NAME }}{% endblock %}
 
@@ -45,6 +45,30 @@
         </div>
       </div>
     </section>
+
+    {% if live_now %}
+      <section class="section">
+        <div class="section-head">
+          <h2><span class="live-dot" aria-hidden="true"></span>{% translate "On air now" %}</h2>
+          <a class="btn btn-ghost btn-sm" href="{% url 'live:lives' %}">{% translate "All lives" %}{% icon "chevron-right" "icon-sm" %}</a>
+        </div>
+        <div class="grid">
+          {% for live in live_now %}{% include "live/_card.html" %}{% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if upcoming_lives %}
+      <section class="section">
+        <div class="section-head">
+          <h2>{% icon "calendar" %}{% translate "Upcoming lives" %}</h2>
+          <a class="btn btn-ghost btn-sm" href="{% url 'live:lives' %}">{% translate "All lives" %}{% icon "chevron-right" "icon-sm" %}</a>
+        </div>
+        <div class="grid">
+          {% for live in upcoming_lives %}{% include "live/_card.html" %}{% endfor %}
+        </div>
+      </section>
+    {% endif %}
 
     {% if trending %}
       <section class="section">
@@ -115,3 +139,5 @@
     {% endif %}
   </section>
 {% endblock %}
+
+{% block scripts %}{% if live_now or upcoming_lives %}<script src="{% static 'js/live.js' %}"></script>{% endif %}{% endblock %}

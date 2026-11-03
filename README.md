@@ -44,6 +44,7 @@ reconstruída de ponta a ponta. Falta a virada (cut-over) em si.
 | Upload de legendas (SRT/VTT), editor de falas sincronizado com uma prévia, download em WebVTT e SRT | pronto |
 | Temas escuro e claro, layout para celular, páginas de erro com a marca | pronto |
 | Interface em português do Brasil (padrão) e em inglês, com seletor de idioma | pronto |
+| Lives: RTMP do OBS, HLS sem recodificar, chat, embed e a gravação publicada como vídeo | pronto |
 | Guia de backup e restauração | `OPERATIONS.md` |
 
 ## Requisitos
@@ -55,26 +56,29 @@ reconstruída de ponta a ponta. Falta a virada (cut-over) em si.
 ## Rodando com Docker
 
 ```bash
-cp .env.docker .env     # troque o SECRET_KEY antes de expor isto na rede
+cp .env.docker .env     # troque SECRET_KEY e LIVE_HOOK_SECRET antes de expor na rede
 docker compose up -d
 docker compose exec web python manage.py createsuperuser
 ```
 
 Abra <http://localhost:8000>. A primeira inicialização aplica as migrações e
 coleta os arquivos estáticos; os workers esperam o banco de dados ficar pronto
-em vez de disputar com ele.
+em vez de disputar com ele. Os valores do `.env` sobrepõem os padrões do
+`.env.docker`.
 
 | Serviço | Função |
 |---|---|
 | `web` | gunicorn, serve o site e a API; healthcheck em `/health/` |
 | `worker` | worker do Celery: transcodificação, miniaturas, storyboards |
-| `beat` | agendador do Celery: limpeza, de hora em hora, dos uploads abandonados |
+| `beat` | agendador do Celery: limpeza dos uploads abandonados e manutenção das lives |
+| `live` | nginx com o módulo RTMP: recebe o OBS na porta 1935 e entrega o HLS na 8080 (veja [Lives](#lives)) |
 | `db` | PostgreSQL 17 |
 | `redis` | cache e broker |
 
 A imagem já traz ffmpeg e poppler, então a codificação funciona sem configuração
-extra. A mídia enviada fica no volume `media`; para tráfego real, coloque nginx
-ou um armazenamento de objetos na frente e defina `SERVE_MEDIA=False`.
+extra. A mídia enviada fica no volume `media`, e as lives em andamento no volume
+`live`; para tráfego real, coloque nginx ou um armazenamento de objetos na
+frente e defina `SERVE_MEDIA=False`.
 
 ## Rodando sem Docker
 
@@ -136,6 +140,20 @@ E2E_MANAGER_EMAIL=kai@example.com E2E_MANAGER_PASSWORD=demo-pass-123 \
 node tools/e2e/smoke.mjs
 ```
 
+`tools/e2e/live.mjs` testa as lives contra o servidor de ingestão de verdade,
+com o ffmpeg no papel do OBS: a live é criada, a página espera com a contagem
+regressiva e passa sozinha para a transmissão, espectadores e apresentador
+conversam no chat, uma mensagem é ocultada, o codificador cai e volta, a live é
+encerrada e a gravação vira um vídeo que o mesmo embed passa a exibir. São 26
+verificações; ele precisa do servidor de ingestão rodando (veja
+[Lives](#lives)) e do ffmpeg.
+
+```bash
+BASE_URL=http://127.0.0.1:8000 \
+E2E_HOST_EMAIL=studio@example.com E2E_VIEWER_EMAIL=ana@example.com \
+E2E_PASSWORD=demo-pass-123 node tools/e2e/live.mjs
+```
+
 ## Estrutura
 
 ```
@@ -156,16 +174,20 @@ apps/
   media/                modelos, regras de acesso, API REST, pipeline ffmpeg,
                         tarefas, entrega com byte ranges, gerador da demo
   uploader/             sessões de upload em partes retomáveis e sua limpeza
+  live/                 lives: chamadas do servidor de ingestão, estado, chat,
+                        sala de controle, gravação publicada como vídeo
+docker/live/            servidor de ingestão das lives (nginx + módulo RTMP)
 templates/              HTML escrito só para este projeto (allauth incluído)
 locale/pt_BR/           catálogos em português (fontes .po e .mo compilados)
 static/css/app.css      o design system: tokens, temas, layout, componentes
 static/css/player.css   a aparência do player
-static/js/              app.js (interface), player.js, upload.js
+static/js/              app.js (interface), player.js, upload.js, live.js
 static/brand/           símbolo, logotipos, favicons, ícones de app, imagem OG
 static/icons/sprite.svg sprite de ícones (Lucide, veja Licenças)
 static/vendor/          builds e fontes de terceiros, com a licença ao lado
 tools/build_logo.py     regenera o kit da marca, as fontes e o sprite de ícones
 tools/e2e/smoke.mjs     teste de ponta a ponta no navegador
+tools/e2e/live.mjs      teste de ponta a ponta das lives
 ```
 
 ## Notas de design
@@ -265,6 +287,66 @@ python manage.py makemessages -l pt_BR --ignore=.venv --ignore="static/vendor/*"
 python manage.py makemessages -d djangojs -l pt_BR --ignore=.venv --ignore="static/vendor/*"
 python manage.py compilemessages -l pt_BR --ignore=.venv
 ```
+
+## Lives
+
+Transmissões ao vivo para aulas e eventos, no estilo do Vimeo: quem apresenta
+transmite pelo OBS, o público assiste na página da live (ou num embed no site da
+escola) com chat, e a gravação vira um vídeo da biblioteca quando a live
+termina.
+
+**Como funciona.** O serviço `live` é o nginx com o módulo RTMP
+(`docker/live`). O OBS publica com a chave mostrada na sala de controle; o nginx
+pergunta ao portal se a chave vale, reempacota o sinal em HLS sem recodificar
+(cabe numa máquina de dois núcleos) e avisa o portal quando o sinal cai e quando
+a gravação de cada conexão termina. Se o OBS cair, a live fica "interrompida"
+por `LIVE_RECONNECT_GRACE_SECONDS` (dois minutos) esperando a volta; depois
+disso, ou com o botão "Encerrar live", ela termina. O portal junta as gravações
+e publica o resultado como um vídeo comum, que passa pelo pipeline de sempre.
+O mesmo código de embed mostra a contagem regressiva, a transmissão e, no fim, a
+gravação.
+
+**No OBS.** Configurações → Transmissão, serviço Personalizado, com o servidor e
+a chave da sala de controle. Em Saída: vídeo H.264 com intervalo de quadro-chave
+de 2 s e áudio AAC; para 720p, de 2.500 a 4.000 Kbps. Como o servidor não
+recodifica, o público recebe exatamente a qualidade que o OBS envia.
+
+| Variável | Para quê |
+|---|---|
+| `LIVE_HOOK_SECRET` | segredo compartilhado entre o serviço `live` e o portal; vazio, ninguém entra no ar |
+| `LIVE_RTMP_URL` | o endereço que o OBS usa, ex. `rtmp://aulas.exemplo.com.br/live` |
+| `LIVE_HLS_URL` | de onde o navegador busca o HLS, ex. `https://aulas.exemplo.com.br/hls` |
+| `LIVE_CONTROL_URL` | controle interno do nginx (`http://live:8081/control`), usado para encerrar uma live |
+| `LIVE_RECORDINGS_DIR` | onde o portal enxerga as gravações (`/app/live/recordings` no Docker) |
+| `LIVE_RECONNECT_GRACE_SECONDS` | quanto tempo esperar o OBS voltar antes de encerrar a live |
+
+**Em produção.** Libere a porta TCP 1935 para o OBS. Sirva o HLS (porta 8080 do
+serviço `live`, caminho `/hls/`) pelo mesmo proxy HTTPS do site: com o site em
+HTTPS, o navegador bloqueia um HLS em HTTP. As chamadas do nginx para o portal
+chegam com o host `web`, que precisa estar em `ALLOWED_HOSTS` (o `.env.docker`
+já o inclui). Aulas longas demoram para processar numa máquina pequena: a tarefa
+que publica a gravação ganha um limite de tempo proporcional à duração.
+
+**Sem Docker**, para desenvolver: instale o nginx com o módulo
+(`apt install nginx-light libnginx-mod-rtmp`) e rode o mesmo modelo de
+configuração apontando para o `runserver`, com o mesmo segredo nos dois lados.
+
+```bash
+LIVE_HOOK_SECRET=dev-secret LIVE_PORTAL_URL=http://127.0.0.1:8000 \
+LIVE_DATA_DIR=$PWD/.live LIVE_NGINX_USER=$(whoami) \
+LIVE_NGINX_CONF=$PWD/.live/nginx.conf LIVE_NGINX_TEMPLATE=docker/live/nginx.conf.template \
+sh docker/live/entrypoint.sh
+```
+```bash
+LIVE_HOOK_SECRET=dev-secret python manage.py runserver
+```
+
+**Limitações.** Uma qualidade só, a do OBS: converter a live em várias
+qualidades em tempo real exigiria muito mais processador. A latência é a do HLS
+comum, de 10 a 20 segundos, boa para aula com chat; para aula em que os alunos
+abrem câmera e microfone, use uma ferramenta de videoconferência. O endereço do
+HLS é aleatório e só aparece para quem pode ver a live, mas, como os arquivos de
+mídia, não pede login.
 
 ## Regenerando o kit da marca
 

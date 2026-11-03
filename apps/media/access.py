@@ -13,7 +13,8 @@ The three levels mean:
 ``private``
     Only the owner and curators.
 
-A media item is only ever shown to other people once it is ``ready``.
+A media item is only ever shown to other people once it is ``ready``. Lives use
+the same three levels; they have no ready state to wait for.
 """
 from django.db.models import Q
 
@@ -79,3 +80,31 @@ def can_edit_playlist(user, playlist: Playlist) -> bool:
     if user is None or not user.is_authenticated:
         return False
     return playlist.owner_id == user.id or policy.can_curate_others(user)
+
+
+# ------------------------------------------------------------------ lives
+# Duck-typed on ``owner_id`` and ``visibility`` so this module needs no import
+# from apps.live, which itself depends on apps.media.
+
+
+def live_listed_q(prefix: str = "") -> Q:
+    """Lives that may appear in public listings, whatever their status."""
+    return Q(**{_field(prefix, "visibility"): Media.Visibility.PUBLIC})
+
+
+def can_view_live(user, live) -> bool:
+    if live.visibility in LINK_VISIBILITY:
+        return True
+    return can_edit_live(user, live)
+
+
+def can_edit_live(user, live) -> bool:
+    if user is None or not user.is_authenticated:
+        return False
+    return live.owner_id == user.id or policy.can_curate_others(user)
+
+
+def can_moderate_live_chat(user, live) -> bool:
+    if user is None or not user.is_authenticated:
+        return False
+    return live.owner_id == user.id or policy.can_moderate_comments(user)

@@ -4,8 +4,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: AkonMedia\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 13:20+0000\n"
-"PO-Revision-Date: 2026-11-03 13:21+0000\n"
+"POT-Creation-Date: 2026-11-03 15:44+0000\n"
+"PO-Revision-Date: 2026-11-03 15:44+0000\n"
 "Last-Translator: AkonMedia\n"
 "Language-Team: Português (Brasil)\n"
 "Language: pt_BR\n"
@@ -23,15 +23,15 @@ msgstr "“%(title)s” voltou para a fila."
 msgid "Media removed."
 msgstr "Mídia removida."
 
-#: apps/core/manage_views.py:126 apps/core/views.py:405
+#: apps/core/manage_views.py:126 apps/core/views.py:416
 msgid "Comment restored."
 msgstr "Comentário restaurado."
 
-#: apps/core/manage_views.py:130 apps/core/views.py:405
+#: apps/core/manage_views.py:130 apps/core/views.py:416
 msgid "Comment hidden."
 msgstr "Comentário ocultado."
 
-#: apps/core/manage_views.py:133 apps/core/views.py:400
+#: apps/core/manage_views.py:133 apps/core/views.py:411
 msgid "Comment deleted."
 msgstr "Comentário excluído."
 
@@ -84,7 +84,8 @@ msgstr "Detalhes da playlist salvos."
 msgid "Playlist “%(title)s” deleted."
 msgstr "Playlist “%(title)s” excluída."
 
-#: apps/core/studio_views.py:34 templates/core/upload.html:96
+#: apps/core/studio_views.py:34 apps/live/views.py:66
+#: templates/core/upload.html:96
 msgid "No category"
 msgstr "Sem categoria"
 
@@ -208,56 +209,169 @@ msgctxt "compact number, thousands"
 msgid "%(number)sK"
 msgstr "%(number)s mil"
 
-#: apps/core/views.py:34
+#: apps/core/views.py:37
 msgid "Latest"
 msgstr "Mais recentes"
 
-#: apps/core/views.py:35
+#: apps/core/views.py:38
 msgid "Most viewed"
 msgstr "Mais vistos"
 
-#: apps/core/views.py:36
+#: apps/core/views.py:39
 msgid "Oldest"
 msgstr "Mais antigos"
 
-#: apps/core/views.py:37
+#: apps/core/views.py:40
 msgid "A–Z"
 msgstr "A–Z"
 
-#: apps/core/views.py:40 templates/base.html:136
+#: apps/core/views.py:43 templates/base.html:136
 msgid "Videos"
 msgstr "Vídeos"
 
-#: apps/core/views.py:41 apps/media/models.py:62 templates/base.html:137
+#: apps/core/views.py:44 apps/media/models.py:62 templates/base.html:137
 msgid "Audio"
 msgstr "Áudio"
 
-#: apps/core/views.py:42 templates/base.html:138
+#: apps/core/views.py:45 templates/base.html:138
 msgid "Images"
 msgstr "Imagens"
 
-#: apps/core/views.py:43 templates/base.html:139
+#: apps/core/views.py:46 templates/base.html:139
 msgid "Documents"
 msgstr "Documentos"
 
-#: apps/core/views.py:360 templates/core/media_detail.html:316
+#: apps/core/views.py:371 templates/core/media_detail.html:316
 msgid "Comments open once the media is published."
 msgstr "Os comentários abrem quando a mídia é publicada."
 
-#: apps/core/views.py:438
+#: apps/core/views.py:449
 #, python-format
 msgid "Removed from “%(title)s”."
 msgstr "Removida de “%(title)s”."
 
-#: apps/core/views.py:440
+#: apps/core/views.py:451
 #, python-format
 msgid "Already in “%(title)s”."
 msgstr "Já está em “%(title)s”."
 
-#: apps/core/views.py:446
+#: apps/core/views.py:457
 #, python-format
 msgid "Added to “%(title)s”."
 msgstr "Adicionada a “%(title)s”."
+
+#: apps/live/apps.py:8 templates/live/lives.html:10
+msgid "Live streams"
+msgstr "Transmissões ao vivo"
+
+#: apps/live/models.py:42 templates/live/_card.html:27
+msgid "Scheduled"
+msgstr "Agendada"
+
+#: apps/live/models.py:43 templates/base.html:141 templates/live/lives.html:4
+#: templates/live/lives.html:9
+msgid "Live"
+msgstr "Ao vivo"
+
+#: apps/live/models.py:45
+msgid "Interrupted"
+msgstr "Interrompida"
+
+#: apps/live/models.py:46
+msgid "Ended"
+msgstr "Encerrada"
+
+#: apps/live/models.py:60
+msgid "title"
+msgstr "título"
+
+#: apps/live/models.py:61
+msgid "description"
+msgstr "descrição"
+
+#: apps/live/models.py:63
+msgid "visibility"
+msgstr "visibilidade"
+
+#: apps/live/models.py:70
+msgid "category"
+msgstr "categoria"
+
+#: apps/live/models.py:76
+msgid "starts at"
+msgstr "início"
+
+#: apps/live/models.py:77
+msgid "publish the recording"
+msgstr "publicar a gravação"
+
+#: apps/live/models.py:78
+msgid "chat"
+msgstr "chat"
+
+#: apps/live/views.py:316
+msgid "Sign in to take part in the chat."
+msgstr "Entre para participar do chat."
+
+#: apps/live/views.py:318 templates/live/_chat.html:17
+msgid "The chat is closed."
+msgstr "O chat está fechado."
+
+#: apps/live/views.py:321
+msgid "Write a message first."
+msgstr "Escreva uma mensagem primeiro."
+
+#: apps/live/views.py:324
+#, python-format
+msgid "Messages are limited to %(limit)d characters."
+msgstr "As mensagens têm no máximo %(limit)d caracteres."
+
+#: apps/live/views.py:328
+msgid "Slow down a little: one message every two seconds."
+msgstr "Calma: uma mensagem a cada dois segundos."
+
+#: apps/live/views.py:338
+msgid "You cannot moderate this chat."
+msgstr "Você não pode moderar este chat."
+
+#: apps/live/views.py:374
+msgid "Live created. Point your encoder at it to go on air."
+msgstr "Live criada. Configure o seu codificador para entrar no ar."
+
+#: apps/live/views.py:406
+msgid "Live details saved."
+msgstr "Detalhes da live salvos."
+
+#: apps/live/views.py:416
+msgid "The live has ended."
+msgstr "A live foi encerrada."
+
+#: apps/live/views.py:418
+msgid "This live had already ended."
+msgstr "Esta live já tinha sido encerrada."
+
+#: apps/live/views.py:427
+msgid "Stop the encoder before changing the stream key."
+msgstr "Pare o codificador antes de trocar a chave de transmissão."
+
+#: apps/live/views.py:429
+msgid "This live has ended; its key no longer works."
+msgstr "Esta live foi encerrada; a chave dela não funciona mais."
+
+#: apps/live/views.py:433
+msgid "New stream key created. The old one no longer works."
+msgstr "Nova chave de transmissão criada. A anterior não funciona mais."
+
+#: apps/live/views.py:442
+msgid "End the live before deleting it."
+msgstr "Encerre a live antes de excluí-la."
+
+#: apps/live/views.py:448
+#, python-format
+msgid ""
+"“%(title)s” was deleted. Its recording, if there is one, stays in your media."
+msgstr ""
+"“%(title)s” foi excluída. A gravação, se houver, continua nas suas mídias."
 
 #: apps/media/community.py:56
 msgid "That media is not published yet."
@@ -301,6 +415,7 @@ msgstr "Pronta"
 
 #: apps/media/models.py:70 templates/core/manage.html:22
 #: templates/core/manage.html:30 templates/core/manage.html:70
+#: templates/live/studio_lives.html:57
 msgid "Failed"
 msgstr "Com falha"
 
@@ -391,7 +506,7 @@ msgstr "Já tem uma conta? Então, por favor, %(link)sentre%(end_link)s."
 msgid "{portal} administration"
 msgstr "Administração do {portal}"
 
-#: config/urls.py:19 templates/base.html:154 templates/core/manage.html:9
+#: config/urls.py:19 templates/base.html:156 templates/core/manage.html:9
 msgid "Operations"
 msgstr "Operações"
 
@@ -517,8 +632,8 @@ msgstr "Buscar vídeos, músicas, imagens…"
 msgid "Search media"
 msgstr "Buscar mídias"
 
-#: templates/base.html:79 templates/base.html:148
-#: templates/core/channel.html:24 templates/core/studio.html:15
+#: templates/base.html:79 templates/base.html:149
+#: templates/core/channel.html:24 templates/core/studio.html:16
 #: templates/core/upload.html:4 templates/core/upload.html:9
 msgid "Upload"
 msgstr "Enviar"
@@ -535,17 +650,18 @@ msgstr "Alternar tema"
 msgid "Account menu"
 msgstr "Menu da conta"
 
-#: templates/base.html:96 templates/base.html:149
+#: templates/base.html:96 templates/base.html:151
 msgid "Your channel"
 msgstr "Seu canal"
 
-#: templates/base.html:97 templates/base.html:147
+#: templates/base.html:97 templates/base.html:148
 #: templates/core/channel.html:23 templates/core/media_edit.html:11
 #: templates/core/studio.html:4 templates/core/upload.html:13
+#: templates/live/studio_lives.html:14
 msgid "Studio"
 msgstr "Estúdio"
 
-#: templates/base.html:98 templates/base.html:140 templates/base.html:185
+#: templates/base.html:98 templates/base.html:140 templates/base.html:187
 #: templates/core/channel.html:55 templates/core/playlist_edit.html:9
 #: templates/core/playlists.html:4 templates/core/playlists.html:9
 msgid "Playlists"
@@ -555,7 +671,7 @@ msgstr "Playlists"
 msgid "Account settings"
 msgstr "Configurações da conta"
 
-#: templates/base.html:102 templates/base.html:155 templates/core/manage.html:4
+#: templates/base.html:102 templates/base.html:157 templates/core/manage.html:4
 #: templates/core/manage.html:10
 msgid "Manage"
 msgstr "Gerenciar"
@@ -584,45 +700,54 @@ msgstr "Fechar navegação"
 msgid "Home"
 msgstr "Início"
 
-#: templates/base.html:146
+#: templates/base.html:141 templates/core/index.html:52
+#: templates/live/lives.html:19
+msgid "On air now"
+msgstr "Ao vivo agora"
+
+#: templates/base.html:147
 msgid "You"
 msgstr "Você"
 
-#: templates/base.html:150 templates/core/account.html:4
+#: templates/base.html:150 templates/live/lives.html:14
+msgid "Go live"
+msgstr "Transmitir"
+
+#: templates/base.html:152 templates/core/account.html:4
 #: templates/core/account.html:9 templates/core/manage.html:185
 msgid "Account"
 msgstr "Conta"
 
-#: templates/base.html:156
+#: templates/base.html:158
 msgid "Admin"
 msgstr "Admin"
 
-#: templates/base.html:163
+#: templates/base.html:165
 msgid "Categories"
 msgstr "Categorias"
 
-#: templates/base.html:171
+#: templates/base.html:173
 msgid "Self-hosted · HLS · ABR"
 msgstr "Auto-hospedado · HLS · ABR"
 
-#: templates/base.html:172 templates/base.html:186
-#: templates/core/manage.html:185
+#: templates/base.html:174 templates/base.html:188
+#: templates/core/manage.html:185 templates/live/studio_lives.html:32
 msgid "Status"
 msgstr "Status"
 
-#: templates/base.html:182
+#: templates/base.html:184
 msgid "stream, curate, deliver."
 msgstr "transmita, organize, entregue."
 
-#: templates/base.html:184 templates/core/index.html:63
+#: templates/base.html:186 templates/core/index.html:87
 msgid "Library"
 msgstr "Biblioteca"
 
-#: templates/base.html:187
+#: templates/base.html:189
 msgid "search"
 msgstr "buscar"
 
-#: templates/base.html:200
+#: templates/base.html:202
 msgid "Dismiss"
 msgstr "Dispensar"
 
@@ -670,6 +795,7 @@ msgid "Delete"
 msgstr "Excluir"
 
 #: templates/core/_comment.html:38 templates/core/manage.html:140
+#: templates/live/control.html:73
 msgid "Hide"
 msgstr "Ocultar"
 
@@ -789,11 +915,11 @@ msgid "joined %(joined)s"
 msgstr "entrou em %(joined)s"
 
 #: templates/core/channel.html:31 templates/core/manage.html:185
-#: templates/core/studio.html:20
+#: templates/core/studio.html:21
 msgid "Uploads"
 msgstr "Envios"
 
-#: templates/core/channel.html:33 templates/core/index.html:89
+#: templates/core/channel.html:33 templates/core/index.html:113
 #: templates/core/search.html:32
 msgid "Sort by"
 msgstr "Ordenar por"
@@ -818,7 +944,7 @@ msgstr "Este criador ainda não publicou nada."
 msgid "This media is not available for embedding."
 msgstr "Esta mídia não está disponível para incorporação."
 
-#: templates/core/embed.html:68
+#: templates/core/embed.html:68 templates/live/embed.html:48
 #, python-format
 msgid "Open it on %(PORTAL_NAME)s"
 msgstr "Abrir no %(PORTAL_NAME)s"
@@ -846,8 +972,8 @@ msgstr ""
 "servidor. Streaming HLS adaptativo, capítulos, legendas e playlists — sem "
 "depender de terceiros."
 
-#: templates/core/index.html:16 templates/core/index.html:110
-#: templates/core/studio.html:88
+#: templates/core/index.html:16 templates/core/index.html:134
+#: templates/core/studio.html:89
 msgid "Upload media"
 msgstr "Enviar mídia"
 
@@ -855,7 +981,7 @@ msgstr "Enviar mídia"
 msgid "Open studio"
 msgstr "Abrir o estúdio"
 
-#: templates/core/index.html:19 templates/core/index.html:112
+#: templates/core/index.html:19 templates/core/index.html:136
 msgid "Create an account"
 msgstr "Criar uma conta"
 
@@ -875,7 +1001,7 @@ msgstr "Publicadas"
 msgid "items in the library"
 msgstr "itens na biblioteca"
 
-#: templates/core/index.html:32 templates/core/studio.html:23
+#: templates/core/index.html:32 templates/core/studio.html:24
 msgid "Runtime"
 msgstr "Duração total"
 
@@ -884,7 +1010,7 @@ msgid "of video and audio"
 msgstr "de vídeo e áudio"
 
 #: templates/core/index.html:37 templates/core/media_edit.html:152
-#: templates/core/studio.html:21 templates/core/studio.html:50
+#: templates/core/studio.html:22 templates/core/studio.html:51
 msgid "Views"
 msgstr "Visualizações"
 
@@ -900,51 +1026,59 @@ msgstr "Criadores"
 msgid "publishing here"
 msgstr "publicando aqui"
 
-#: templates/core/index.html:52
+#: templates/core/index.html:53 templates/core/index.html:65
+msgid "All lives"
+msgstr "Todas as lives"
+
+#: templates/core/index.html:64
+msgid "Upcoming lives"
+msgstr "Próximas lives"
+
+#: templates/core/index.html:76
 msgid "Trending now"
 msgstr "Em alta"
 
-#: templates/core/index.html:53
+#: templates/core/index.html:77
 msgid "See all"
 msgstr "Ver tudo"
 
-#: templates/core/index.html:64
+#: templates/core/index.html:88
 msgid "Everything"
 msgstr "Tudo"
 
-#: templates/core/index.html:67
+#: templates/core/index.html:91
 #, python-format
 msgid "%(shown)s item"
 msgid_plural "%(shown)s items"
 msgstr[0] "%(shown)s item"
 msgstr[1] "%(shown)s itens"
 
-#: templates/core/index.html:73
+#: templates/core/index.html:97
 msgid "Latest uploads"
 msgstr "Envios mais recentes"
 
-#: templates/core/index.html:77 templates/core/search.html:23
+#: templates/core/index.html:101 templates/core/search.html:23
 msgid "Filter by type"
 msgstr "Filtrar por tipo"
 
-#: templates/core/index.html:78 templates/core/search.html:24
-#: templates/core/studio.html:31
+#: templates/core/index.html:102 templates/core/search.html:24
+#: templates/core/studio.html:32
 msgid "All"
 msgstr "Todos"
 
-#: templates/core/index.html:93
+#: templates/core/index.html:117
 msgid "Sort"
 msgstr "Ordenar"
 
-#: templates/core/index.html:105
+#: templates/core/index.html:129
 msgid "Nothing published yet"
 msgstr "Nada publicado ainda"
 
-#: templates/core/index.html:106
+#: templates/core/index.html:130
 msgid "No published items match this filter. Try another one."
 msgstr "Nenhum item publicado corresponde a este filtro. Tente outro."
 
-#: templates/core/index.html:106
+#: templates/core/index.html:130
 msgid ""
 "The library is empty. Upload the first video, track, image or PDF and it will"
 " appear here once processed."
@@ -952,7 +1086,7 @@ msgstr ""
 "A biblioteca está vazia. Envie o primeiro vídeo, áudio, imagem ou PDF e ele "
 "aparecerá aqui depois de processado."
 
-#: templates/core/index.html:108 templates/core/studio.html:88
+#: templates/core/index.html:132 templates/core/studio.html:89
 msgid "Clear filters"
 msgstr "Limpar filtros"
 
@@ -969,7 +1103,7 @@ msgid "encoder missing"
 msgstr "codificador ausente"
 
 #: templates/core/manage.html:20 templates/core/manage.html:160
-#: templates/core/studio.html:50
+#: templates/core/studio.html:51
 msgid "Media"
 msgstr "Mídias"
 
@@ -1005,7 +1139,7 @@ msgstr[0] "%(shown)s playlist"
 msgstr[1] "%(shown)s playlists"
 
 #: templates/core/manage.html:24 templates/core/manage.html:31
-#: templates/core/studio.html:22 templates/core/studio.html:50
+#: templates/core/studio.html:23 templates/core/studio.html:51
 msgid "Comments"
 msgstr "Comentários"
 
@@ -1016,7 +1150,7 @@ msgid_plural "%(counter)s hidden"
 msgstr[0] "%(counter)s oculto"
 msgstr[1] "%(counter)s ocultos"
 
-#: templates/core/manage.html:25 templates/core/studio.html:24
+#: templates/core/manage.html:25 templates/core/studio.html:25
 msgid "Storage"
 msgstr "Armazenamento"
 
@@ -1044,6 +1178,7 @@ msgstr "Legendas"
 #: templates/core/manage.html:42 templates/core/manage.html:74
 #: templates/core/media_edit.html:26 templates/core/playlist_edit.html:88
 #: templates/core/playlists.html:20 templates/core/upload.html:76
+#: templates/live/form.html:29
 msgid "Title"
 msgstr "Título"
 
@@ -1051,7 +1186,7 @@ msgstr "Título"
 msgid "Owner"
 msgstr "Dono"
 
-#: templates/core/manage.html:42 templates/core/studio.html:50
+#: templates/core/manage.html:42 templates/core/studio.html:51
 msgid "State"
 msgstr "Estado"
 
@@ -1135,7 +1270,8 @@ msgid "Updated"
 msgstr "Atualizada"
 
 #: templates/core/manage.html:168 templates/core/media_detail.html:205
-#: templates/core/media_detail.html:264 templates/core/studio.html:74
+#: templates/core/media_detail.html:264 templates/core/studio.html:75
+#: templates/live/control.html:29
 msgid "Edit"
 msgstr "Editar"
 
@@ -1245,22 +1381,27 @@ msgstr[0] "%(shown)s envio público"
 msgstr[1] "%(shown)s envios públicos"
 
 #: templates/core/media_detail.html:134 templates/core/playlist_detail.html:27
+#: templates/live/control.html:98 templates/live/watch.html:51
 msgid "Share"
 msgstr "Compartilhar"
 
-#: templates/core/media_detail.html:136
+#: templates/core/media_detail.html:136 templates/live/watch.html:53
 msgid "Link"
 msgstr "Link"
 
-#: templates/core/media_detail.html:139
+#: templates/core/media_detail.html:139 templates/live/control.html:103
+#: templates/live/watch.html:56
 msgid "Link to this page"
 msgstr "Link para esta página"
 
-#: templates/core/media_detail.html:140
+#: templates/core/media_detail.html:140 templates/live/control.html:104
+#: templates/live/watch.html:57
 msgid "Link copied"
 msgstr "Link copiado"
 
-#: templates/core/media_detail.html:140
+#: templates/core/media_detail.html:140 templates/live/control.html:66
+#: templates/live/control.html:74 templates/live/control.html:104
+#: templates/live/watch.html:57
 msgid "Copy"
 msgstr "Copiar"
 
@@ -1272,11 +1413,13 @@ msgstr "Link no momento atual copiado"
 msgid "Copy link at current time"
 msgstr "Copiar link no momento atual"
 
-#: templates/core/media_detail.html:148
+#: templates/core/media_detail.html:148 templates/live/control.html:108
+#: templates/live/watch.html:61
 msgid "Embed"
 msgstr "Incorporar"
 
-#: templates/core/media_detail.html:150
+#: templates/core/media_detail.html:150 templates/live/control.html:109
+#: templates/live/watch.html:63
 msgid "Embed code"
 msgstr "Código de incorporação"
 
@@ -1292,11 +1435,13 @@ msgstr "Reprodução automática (sem som)"
 msgid "Show the title"
 msgstr "Mostrar o título"
 
-#: templates/core/media_detail.html:156
+#: templates/core/media_detail.html:156 templates/live/control.html:111
+#: templates/live/watch.html:65
 msgid "Embed code copied"
 msgstr "Código de incorporação copiado"
 
-#: templates/core/media_detail.html:156
+#: templates/core/media_detail.html:156 templates/live/control.html:111
+#: templates/live/watch.html:65
 msgid "Copy embed code"
 msgstr "Copiar código de incorporação"
 
@@ -1329,8 +1474,9 @@ msgstr "Nome da nova playlist"
 #: templates/core/media_detail.html:189 templates/core/media_edit.html:39
 #: templates/core/media_edit.html:40 templates/core/playlist_edit.html:96
 #: templates/core/playlist_edit.html:97 templates/core/playlists.html:22
-#: templates/core/studio.html:50 templates/core/upload.html:84
-#: templates/core/upload.html:85
+#: templates/core/studio.html:51 templates/core/upload.html:84
+#: templates/core/upload.html:85 templates/live/form.html:50
+#: templates/live/form.html:51
 msgid "Visibility"
 msgstr "Visibilidade"
 
@@ -1347,7 +1493,7 @@ msgid "No description."
 msgstr "Sem descrição."
 
 #: templates/core/media_detail.html:223 templates/core/media_edit.html:145
-#: templates/core/studio.html:38
+#: templates/core/studio.html:39
 msgid "Type"
 msgstr "Tipo"
 
@@ -1451,6 +1597,7 @@ msgid "Up next"
 msgstr "A seguir"
 
 #: templates/core/media_edit.html:4 templates/core/playlist_edit.html:4
+#: templates/live/form.html:4
 #, python-format
 msgid "Edit %(title)s"
 msgstr "Editar %(title)s"
@@ -1463,29 +1610,31 @@ msgstr "Editar mídia"
 msgid "Editing as curator"
 msgstr "Editando como curador"
 
-#: templates/core/media_edit.html:15
+#: templates/core/media_edit.html:15 templates/live/control.html:28
 msgid "View page"
 msgstr "Ver página"
 
 #: templates/core/media_edit.html:21 templates/core/playlist_edit.html:83
-#: templates/core/upload.html:73
+#: templates/core/upload.html:73 templates/live/form.html:23
 msgid "Details"
 msgstr "Detalhes"
 
 #: templates/core/media_edit.html:31 templates/core/playlist_edit.html:92
 #: templates/core/playlists.html:21 templates/core/upload.html:80
+#: templates/live/form.html:34
 msgid "Description"
 msgstr "Descrição"
 
-#: templates/core/media_edit.html:31
+#: templates/core/media_edit.html:31 templates/live/form.html:34
 msgid "links and line breaks are kept"
 msgstr "links e quebras de linha são mantidos"
 
 #: templates/core/media_edit.html:35 templates/core/upload.html:94
+#: templates/live/form.html:45
 msgid "Category"
 msgstr "Categoria"
 
-#: templates/core/media_edit.html:45
+#: templates/core/media_edit.html:45 templates/live/form.html:56
 msgid ""
 "Public is listed. Unlisted works for anyone with the link. Private is only "
 "you and curators."
@@ -1494,6 +1643,7 @@ msgstr ""
 "Privada é só para você e os curadores."
 
 #: templates/core/media_edit.html:47 templates/core/playlist_edit.html:103
+#: templates/live/form.html:64
 msgid "Save details"
 msgstr "Salvar detalhes"
 
@@ -1537,7 +1687,7 @@ msgstr "Idioma (en, pt-BR)"
 msgid "Upload .srt / .vtt"
 msgstr "Enviar .srt / .vtt"
 
-#: templates/core/media_edit.html:116
+#: templates/core/media_edit.html:116 templates/live/control.html:43
 msgid "Preview"
 msgstr "Pré-visualização"
 
@@ -1836,7 +1986,7 @@ msgstr ""
 "Nenhuma mídia publicada corresponde a “%(query)s”. Confira a grafia ou tente "
 "uma palavra mais ampla."
 
-#: templates/core/studio.html:9
+#: templates/core/studio.html:9 templates/live/studio_lives.html:9
 msgid "Creator studio"
 msgstr "Estúdio do criador"
 
@@ -1856,95 +2006,99 @@ msgstr ""
 msgid "Channel"
 msgstr "Canal"
 
-#: templates/core/studio.html:20
+#: templates/core/studio.html:15
+msgid "Lives"
+msgstr "Lives"
+
+#: templates/core/studio.html:21
 #, python-format
 msgid "%(counter)s published"
 msgid_plural "%(counter)s published"
 msgstr[0] "%(counter)s publicada"
 msgstr[1] "%(counter)s publicadas"
 
-#: templates/core/studio.html:21
+#: templates/core/studio.html:22
 msgid "across all items"
 msgstr "somando todos os itens"
 
-#: templates/core/studio.html:22
+#: templates/core/studio.html:23
 msgid "on your media"
 msgstr "nas suas mídias"
 
-#: templates/core/studio.html:23
+#: templates/core/studio.html:24
 msgid "video and audio"
 msgstr "vídeo e áudio"
 
-#: templates/core/studio.html:24
+#: templates/core/studio.html:25
 msgid "originals"
 msgstr "originais"
 
-#: templates/core/studio.html:25
+#: templates/core/studio.html:26
 msgid "Pipeline"
 msgstr "Processamento"
 
-#: templates/core/studio.html:25
+#: templates/core/studio.html:26
 #, python-format
 msgid "%(counter)s failed"
 msgid_plural "%(counter)s failed"
 msgstr[0] "%(counter)s com falha"
 msgstr[1] "%(counter)s com falha"
 
-#: templates/core/studio.html:25
+#: templates/core/studio.html:26
 #, python-format
 msgid "%(counter)s busy"
 msgid_plural "%(counter)s busy"
 msgstr[0] "%(counter)s em processamento"
 msgstr[1] "%(counter)s em processamento"
 
-#: templates/core/studio.html:25
+#: templates/core/studio.html:26
 msgid "Idle"
 msgstr "Ocioso"
 
-#: templates/core/studio.html:25
+#: templates/core/studio.html:26
 #, python-format
 msgid "%(counter)s playlist"
 msgid_plural "%(counter)s playlists"
 msgstr[0] "%(counter)s playlist"
 msgstr[1] "%(counter)s playlists"
 
-#: templates/core/studio.html:30
+#: templates/core/studio.html:31
 msgid "Filter by state"
 msgstr "Filtrar por estado"
 
-#: templates/core/studio.html:39
+#: templates/core/studio.html:40
 msgid "All types"
 msgstr "Todos os tipos"
 
-#: templates/core/studio.html:42
+#: templates/core/studio.html:43
 msgid "Filter by title"
 msgstr "Filtrar por título"
 
-#: templates/core/studio.html:50
+#: templates/core/studio.html:51
 msgid "Date"
 msgstr "Data"
 
-#: templates/core/studio.html:50
+#: templates/core/studio.html:51 templates/live/studio_lives.html:36
 msgid "Actions"
 msgstr "Ações"
 
-#: templates/core/studio.html:73
+#: templates/core/studio.html:74
 msgid "Open"
 msgstr "Abrir"
 
-#: templates/core/studio.html:86
+#: templates/core/studio.html:87
 msgid "Nothing matches this filter"
 msgstr "Nada corresponde a este filtro"
 
-#: templates/core/studio.html:86
+#: templates/core/studio.html:87
 msgid "No uploads yet"
 msgstr "Nenhum envio ainda"
 
-#: templates/core/studio.html:87
+#: templates/core/studio.html:88
 msgid "Clear the filters to see everything."
 msgstr "Limpe os filtros para ver tudo."
 
-#: templates/core/studio.html:87
+#: templates/core/studio.html:88
 msgid ""
 "Upload a video, track, image or PDF. Large files are sent in resumable "
 "chunks."
@@ -2157,3 +2311,469 @@ msgid ""
 msgstr ""
 "Quando fica pronto, a página se atualiza sozinha e o player escolhe a melhor "
 "qualidade para cada pessoa."
+
+#: templates/live/_card.html:10
+msgid "LIVE"
+msgstr "AO VIVO"
+
+#: templates/live/_card.html:12 templates/live/lives.html:33
+msgid "Coming up"
+msgstr "Em breve"
+
+#: templates/live/_card.html:15
+msgid "Streamed"
+msgstr "Transmitida"
+
+#: templates/live/_card.html:25
+#, python-format
+msgid "on air since <time datetime=\"%(iso)s\" data-local=\"time\">%(when)s</time>"
+msgstr "no ar desde <time datetime=\"%(iso)s\" data-local=\"time\">%(when)s</time>"
+
+#: templates/live/_card.html:27
+msgid "Starts when the host goes live"
+msgstr "Começa quando o apresentador entrar no ar"
+
+#: templates/live/_card.html:29
+#, python-format
+msgid "streamed %(when)s"
+msgstr "transmitida %(when)s"
+
+#: templates/live/_chat.html:2 templates/live/_chat.html:4
+msgid "Live chat"
+msgstr "Chat ao vivo"
+
+#: templates/live/_chat.html:8
+msgid "No messages yet."
+msgstr "Nenhuma mensagem ainda."
+
+#: templates/live/_chat.html:10
+msgid "Say something…"
+msgstr "Diga alguma coisa…"
+
+#: templates/live/_chat.html:10
+msgid "Chat message"
+msgstr "Mensagem do chat"
+
+#: templates/live/_chat.html:13
+msgid "Send"
+msgstr "Enviar"
+
+#: templates/live/_chat.html:16
+#, python-format
+msgid "<a href=\"%(url)s\">Sign in</a> to take part in the chat."
+msgstr "<a href=\"%(url)s\">Entre</a> para participar do chat."
+
+#: templates/live/_chat.html:18
+msgid "The chat is turned off for this live."
+msgstr "O chat está desativado nesta live."
+
+#: templates/live/_stage.html:7
+msgid "Waiting for your encoder"
+msgstr "Aguardando o seu codificador"
+
+#: templates/live/_stage.html:8
+msgid ""
+"Start streaming in OBS with the settings below. The preview appears here a "
+"few seconds later."
+msgstr ""
+"Comece a transmitir no OBS com as configurações abaixo. A prévia aparece aqui"
+" alguns segundos depois."
+
+#: templates/live/_stage.html:10
+msgid "This live has not started yet"
+msgstr "Esta live ainda não começou"
+
+#: templates/live/_stage.html:12
+msgid "Starting soon"
+msgstr "Começa em instantes"
+
+#: templates/live/_stage.html:13
+#, python-format
+msgid "Scheduled for <time datetime=\"%(iso)s\" data-local>%(when)s</time>."
+msgstr "Marcada para <time datetime=\"%(iso)s\" data-local>%(when)s</time>."
+
+#: templates/live/_stage.html:15
+msgid "This page switches to the stream by itself as soon as it starts."
+msgstr "Esta página passa para a transmissão sozinha assim que ela começar."
+
+#: templates/live/_stage.html:23
+msgid "The stream was interrupted."
+msgstr "A transmissão foi interrompida."
+
+#: templates/live/_stage.html:23
+msgid "Waiting for it to come back…"
+msgstr "Aguardando o retorno…"
+
+#: templates/live/_stage.html:25
+msgid "Watching a live stream needs JavaScript."
+msgstr "Para assistir a uma live é preciso JavaScript."
+
+#: templates/live/_stage.html:31
+msgid "This live has ended"
+msgstr "Esta live foi encerrada"
+
+#: templates/live/_stage.html:32
+msgid ""
+"The recording is being prepared. It appears here as soon as it is ready."
+msgstr ""
+"A gravação está sendo preparada. Ela aparece aqui assim que ficar pronta."
+
+#: templates/live/_stage.html:33
+msgid "The recording is ready."
+msgstr "A gravação está pronta."
+
+#: templates/live/_stage.html:34
+msgid "Watch the recording"
+msgstr "Assistir à gravação"
+
+#: templates/live/_stage.html:35
+msgid "There is no recording of this live."
+msgstr "Esta live não tem gravação."
+
+#: templates/live/_stage.html:36
+msgid "The recording could not be published."
+msgstr "Não foi possível publicar a gravação."
+
+#: templates/live/control.html:4
+#, python-format
+msgid "Control room: %(title)s"
+msgstr "Sala de controle: %(title)s"
+
+#: templates/live/control.html:19 templates/live/form.html:14
+#: templates/live/studio_lives.html:4 templates/live/studio_lives.html:10
+msgid "Your lives"
+msgstr "Suas lives"
+
+#: templates/live/control.html:24
+msgid "Managing as curator"
+msgstr "Gerenciando como curador"
+
+#: templates/live/control.html:31
+msgid ""
+"End this live now? Viewers see that it has ended and the stream key stops "
+"working."
+msgstr ""
+"Encerrar esta live agora? Os espectadores verão que ela terminou e a chave de"
+" transmissão deixará de funcionar."
+
+#: templates/live/control.html:33
+msgid "End live"
+msgstr "Encerrar live"
+
+#: templates/live/control.html:48
+msgid "Encoder"
+msgstr "Codificador"
+
+#: templates/live/control.html:48
+msgid "Connected"
+msgstr "Conectado"
+
+#: templates/live/control.html:48
+msgid "Not connected"
+msgstr "Desconectado"
+
+#: templates/live/control.html:49
+msgid "On air for"
+msgstr "No ar há"
+
+#: templates/live/control.html:50 templates/live/studio_lives.html:34
+msgid "Peak viewers"
+msgstr "Pico de espectadores"
+
+#: templates/live/control.html:51
+msgid "Connections"
+msgstr "Conexões"
+
+#: templates/live/control.html:57
+msgid "Connect your encoder"
+msgstr "Conecte o seu codificador"
+
+#: templates/live/control.html:59
+msgid ""
+"Live ingest is not configured on this server yet (LIVE_HOOK_SECRET is empty),"
+" so the encoder will be refused. See “Lives” in the README."
+msgstr ""
+"A recepção de lives ainda não está configurada neste servidor "
+"(LIVE_HOOK_SECRET está vazio), então o codificador será recusado. Veja "
+"“Lives” no README."
+
+#: templates/live/control.html:63 templates/live/control.html:65
+msgid "Server"
+msgstr "Servidor"
+
+#: templates/live/control.html:66
+msgid "Server copied"
+msgstr "Servidor copiado"
+
+#: templates/live/control.html:70 templates/live/control.html:72
+msgid "Stream key"
+msgstr "Chave de transmissão"
+
+#: templates/live/control.html:73
+msgid "Show"
+msgstr "Mostrar"
+
+#: templates/live/control.html:74
+msgid "Stream key copied"
+msgstr "Chave de transmissão copiada"
+
+#: templates/live/control.html:76
+msgid ""
+"Anyone with this key can stream into this live. Keep it off your screen while"
+" you are on air."
+msgstr ""
+"Quem tiver esta chave consegue transmitir nesta live. Não a deixe aparecer na"
+" tela durante a transmissão."
+
+#: templates/live/control.html:80
+msgid ""
+"In OBS, open <strong>Settings → Stream</strong> and choose the "
+"<strong>Custom</strong> service."
+msgstr ""
+"No OBS, abra <strong>Configurações → Transmissão</strong> e escolha o serviço"
+" <strong>Personalizado</strong>."
+
+#: templates/live/control.html:81
+msgid "Paste the server and the stream key above."
+msgstr "Cole o servidor e a chave de transmissão acima."
+
+#: templates/live/control.html:82
+msgid ""
+"Under <strong>Output</strong>, use H.264 video with a <strong>2 s keyframe "
+"interval</strong> and AAC audio. For 720p, 2,500 to 4,000 Kbps works well."
+msgstr ""
+"Em <strong>Saída</strong>, use vídeo H.264 com <strong>intervalo de quadro-"
+"chave de 2 s</strong> e áudio AAC. Para 720p, de 2.500 a 4.000 Kbps funcionam"
+" bem."
+
+#: templates/live/control.html:83
+msgid ""
+"Click <strong>Start Streaming</strong>. The preview appears here a few "
+"seconds later."
+msgstr ""
+"Clique em <strong>Iniciar transmissão</strong>. A prévia aparece aqui alguns "
+"segundos depois."
+
+#: templates/live/control.html:86
+msgid "Create a new stream key? The current one stops working."
+msgstr "Criar uma nova chave de transmissão? A atual deixará de funcionar."
+
+#: templates/live/control.html:88
+msgid "Stop the encoder first"
+msgstr "Pare o codificador primeiro"
+
+#: templates/live/control.html:88
+msgid "New stream key"
+msgstr "Nova chave de transmissão"
+
+#: templates/live/control.html:101
+msgid "Page"
+msgstr "Página"
+
+#: templates/live/control.html:108
+msgid "for your school's site"
+msgstr "para o site da sua escola"
+
+#: templates/live/control.html:110 templates/live/watch.html:64
+msgid "The same code plays the recording once the live is over."
+msgstr "O mesmo código passa a exibir a gravação quando a live terminar."
+
+#: templates/live/control.html:118 templates/live/control.html:122
+msgid "Delete live"
+msgstr "Excluir live"
+
+#: templates/live/control.html:119
+msgid ""
+"Removes the live and its chat. A published recording stays in your media."
+msgstr ""
+"Remove a live e o chat dela. Uma gravação já publicada continua nas suas "
+"mídias."
+
+#: templates/live/control.html:120
+msgid "Delete this live and its chat for good?"
+msgstr "Excluir esta live e o chat dela de vez?"
+
+#: templates/live/embed.html:48
+msgid "This live is not available for embedding."
+msgstr "Esta live não está disponível para incorporação."
+
+#: templates/live/form.html:4 templates/live/form.html:15
+#: templates/live/studio_lives.html:15 templates/live/studio_lives.html:77
+msgid "New live"
+msgstr "Nova live"
+
+#: templates/live/form.html:10 templates/live/studio_lives.html:66
+#: templates/live/watch.html:70
+msgid "Control room"
+msgstr "Sala de controle"
+
+#: templates/live/form.html:11
+msgid "Edit live"
+msgstr "Editar live"
+
+#: templates/live/form.html:16
+msgid ""
+"Give it a title and, if you like, a start time. The stream key is on the next"
+" page."
+msgstr ""
+"Dê um título e, se quiser, um horário de início. A chave de transmissão fica "
+"na próxima página."
+
+#: templates/live/form.html:39
+msgid "Starts at"
+msgstr "Início"
+
+#: templates/live/form.html:39
+msgid "optional"
+msgstr "opcional"
+
+#: templates/live/form.html:42
+msgid "Shown as a countdown. The live starts whenever your encoder connects."
+msgstr ""
+"Aparece como contagem regressiva. A live começa quando o seu codificador se "
+"conectar."
+
+#: templates/live/form.html:59
+msgid "Options"
+msgstr "Opções"
+
+#: templates/live/form.html:60
+msgid "Publish the recording in my media when the live ends"
+msgstr "Publicar a gravação nas minhas mídias quando a live terminar"
+
+#: templates/live/form.html:61
+msgid "Live chat for signed-in viewers"
+msgstr "Chat ao vivo para espectadores conectados"
+
+#: templates/live/form.html:64
+msgid "Create live"
+msgstr "Criar live"
+
+#: templates/live/form.html:70
+msgid "How it works"
+msgstr "Como funciona"
+
+#: templates/live/form.html:72
+msgid ""
+"Create the live. Its page can be shared right away and shows a countdown "
+"until you start."
+msgstr ""
+"Crie a live. A página dela já pode ser compartilhada e mostra uma contagem "
+"regressiva até você começar."
+
+#: templates/live/form.html:73
+msgid ""
+"In OBS (or any RTMP encoder), paste the server address and the stream key "
+"from the control room."
+msgstr ""
+"No OBS (ou em qualquer codificador RTMP), cole o endereço do servidor e a "
+"chave de transmissão da sala de controle."
+
+#: templates/live/form.html:74
+msgid ""
+"Start streaming. Viewers' pages switch to the stream by themselves, and the "
+"chat opens."
+msgstr ""
+"Comece a transmitir. As páginas dos espectadores passam para a transmissão "
+"sozinhas, e o chat abre."
+
+#: templates/live/form.html:75
+msgid ""
+"Stop streaming or end the live in the control room. The recording becomes a "
+"video in your media."
+msgstr ""
+"Pare a transmissão ou encerre a live na sala de controle. A gravação vira um "
+"vídeo nas suas mídias."
+
+#: templates/live/lives.html:11
+msgid ""
+"Classes and events as they happen, with chat. When a live ends, its recording"
+" joins the library."
+msgstr ""
+"Aulas e eventos enquanto acontecem, com chat. Quando uma live termina, a "
+"gravação entra na biblioteca."
+
+#: templates/live/lives.html:25
+msgid "Nothing on air right now"
+msgstr "Nada no ar agora"
+
+#: templates/live/lives.html:26
+msgid ""
+"A scheduled live's page switches to the stream by itself when it starts."
+msgstr ""
+"A página de uma live agendada passa para a transmissão sozinha quando ela "
+"começa."
+
+#: templates/live/lives.html:40
+msgid "Recently streamed"
+msgstr "Transmitidas recentemente"
+
+#: templates/live/studio_lives.html:11
+msgid ""
+"Schedule a live, connect your encoder and go on air. When a live ends, its "
+"recording joins your media."
+msgstr ""
+"Agende uma live, conecte o seu codificador e entre no ar. Quando uma live "
+"termina, a gravação entra nas suas mídias."
+
+#: templates/live/studio_lives.html:20
+msgctxt "number of lives"
+msgid "On air"
+msgstr "No ar"
+
+#: templates/live/studio_lives.html:20
+msgid "right now"
+msgstr "neste momento"
+
+#: templates/live/studio_lives.html:21
+msgctxt "number of lives"
+msgid "Scheduled"
+msgstr "Agendadas"
+
+#: templates/live/studio_lives.html:21
+msgid "waiting to start"
+msgstr "aguardando o início"
+
+#: templates/live/studio_lives.html:22
+msgctxt "number of lives"
+msgid "Ended"
+msgstr "Encerradas"
+
+#: templates/live/studio_lives.html:22
+msgid "recorded or not"
+msgstr "gravadas ou não"
+
+#: templates/live/studio_lives.html:31
+msgctxt "table column with the title of each live"
+msgid "Live"
+msgstr "Live"
+
+#: templates/live/studio_lives.html:33
+msgid "When"
+msgstr "Quando"
+
+#: templates/live/studio_lives.html:35
+msgid "Recording"
+msgstr "Gravação"
+
+#: templates/live/studio_lives.html:61
+msgid "Will be recorded"
+msgstr "Será gravada"
+
+#: templates/live/studio_lives.html:63
+msgid "Not recorded"
+msgstr "Sem gravação"
+
+#: templates/live/studio_lives.html:75
+msgid "No lives yet"
+msgstr "Nenhuma live ainda"
+
+#: templates/live/studio_lives.html:76
+msgid "Create one to get a stream key for OBS or any other RTMP encoder."
+msgstr ""
+"Crie uma para receber uma chave de transmissão para o OBS ou outro "
+"codificador RTMP."
+
+#: templates/live/watch.html:46
+msgid "Live stream"
+msgstr "Transmissão ao vivo"

@@ -113,3 +113,22 @@ class DateFormatTests(TestCase):
         owner = User.objects.create_user(email="joined@example.com", password="x" * 20)
         User.objects.filter(pk=owner.pk).update(date_joined=datetime.datetime(2026, 3, 9, tzinfo=datetime.UTC))
         self.assertContains(self.client.get(f"/channel/{owner.pk}/"), "entrou em mar. de 2026")
+
+
+class LiveTranslationTests(TestCase):
+    def test_live_pages_and_states_are_translated(self):
+        from apps.live.models import Live
+
+        owner = User.objects.create_user(email="live-pt@example.com", password="x" * 20)
+        live = Live.objects.create(owner=owner, title="Aula")
+        listing = self.client.get("/lives/")
+        self.assertContains(listing, "Transmissões ao vivo")
+        self.assertContains(listing, "Em breve")
+        page = self.client.get(f"/live/{live.uid}/")
+        self.assertContains(page, "Esta live ainda não começou")
+        self.assertContains(page, "Agendada")
+        self.assertContains(page, "Chat ao vivo")
+        self.assertEqual(self.client.get(f"/live/{live.uid}/state/").json()["label"], "Agendada")
+        with translation.override("en"):
+            self.client.cookies["django_language"] = "en"
+            self.assertContains(self.client.get(f"/live/{live.uid}/"), "This live has not started yet")

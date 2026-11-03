@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static akon i18n %}
+
+{% block title %}{% translate "Live" %} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">{% icon "radio" "icon-xs" %}{% translate "Live" %}</span>
+      <h1>{% translate "Live streams" %}</h1>
+      <p class="lede">{% translate "Classes and events as they happen, with chat. When a live ends, its recording joins the library." %}</p>
+    </div>
+    {% if CAN_UPLOAD %}
+      <a class="btn btn-primary" href="{% url 'live:new' %}">{% icon "radio" "icon-sm" %}{% translate "Go live" %}</a>
+    {% endif %}
+  </header>
+
+  <section class="section">
+    <div class="section-head"><h2>{% if on_air %}<span class="live-dot" aria-hidden="true"></span>{% else %}{% icon "radio" %}{% endif %}{% translate "On air now" %}</h2></div>
+    {% if on_air %}
+      <div class="grid">{% for live in on_air %}{% include "live/_card.html" %}{% endfor %}</div>
+    {% else %}
+      <div class="empty-state compact">
+        <div class="empty-icon">{% icon "radio" %}</div>
+        <h3>{% translate "Nothing on air right now" %}</h3>
+        <p>{% translate "A scheduled live's page switches to the stream by itself when it starts." %}</p>
+      </div>
+    {% endif %}
+  </section>
+
+  {% if upcoming %}
+    <section class="section">
+      <div class="section-head"><h2>{% icon "calendar" %}{% translate "Coming up" %}</h2></div>
+      <div class="grid">{% for live in upcoming %}{% include "live/_card.html" %}{% endfor %}</div>
+    </section>
+  {% endif %}
+
+  {% if recent %}
+    <section class="section">
+      <div class="section-head"><h2>{% icon "clock" %}{% translate "Recently streamed" %}</h2></div>
+      <div class="grid">{% for live in recent %}{% include "live/_card.html" %}{% endfor %}</div>
+    </section>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/live.js' %}"></script>{% endblock %}

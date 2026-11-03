@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load static akon i18n %}
+
+{% block title %}{% if live %}{% blocktranslate with title=live.title %}Edit {{ title }}{% endblocktranslate %}{% else %}{% translate "New live" %}{% endif %} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      {% if live %}
+        <a class="back-link" href="{% url 'live:control' live.uid %}">{% icon "chevron-left" "icon-sm" %}{% translate "Control room" %}</a>
+        <h1>{% translate "Edit live" %}</h1>
+        <p class="lede">{{ live.title }}</p>
+      {% else %}
+        <a class="back-link" href="{% url 'live:studio' %}">{% icon "chevron-left" "icon-sm" %}{% translate "Your lives" %}</a>
+        <h1>{% translate "New live" %}</h1>
+        <p class="lede">{% translate "Give it a title and, if you like, a start time. The stream key is on the next page." %}</p>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="split">
+    <section class="panel">
+      <div class="panel-head"><h2><span class="panel-title-icon">{% icon "pencil" %}</span>{% translate "Details" %}</h2></div>
+      <form class="form-grid" method="post">
+        {% csrf_token %}
+        {{ form.scheduled_for_iso }}
+        {% for error in form.non_field_errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        <label class="field">
+          <span class="field-label">{% translate "Title" %}</span>
+          {{ form.title }}
+          {% for error in form.title.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </label>
+        <label class="field">
+          <span class="field-label">{% translate "Description" %} <span class="hint">{% translate "links and line breaks are kept" %}</span></span>
+          {{ form.description }}
+        </label>
+        <div class="form-row">
+          <label class="field">
+            <span class="field-label">{% translate "Starts at" %} <span class="hint">{% translate "optional" %}</span></span>
+            {{ form.scheduled_for }}
+            {% for error in form.scheduled_for.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            <span class="field-help">{% translate "Shown as a countdown. The live starts whenever your encoder connects." %}</span>
+          </label>
+          <label class="field">
+            <span class="field-label">{% translate "Category" %}</span>
+            {{ form.category }}
+          </label>
+        </div>
+        <div class="field">
+          <span class="field-label">{% translate "Visibility" %}</span>
+          <div class="segmented" role="radiogroup" aria-label="{% translate "Visibility" %}">
+            {% for value, label in form.fields.visibility.choices %}
+              <label><input type="radio" name="visibility" value="{{ value }}" {% if form.visibility.value == value %}checked{% endif %}><span>{% icon value|visibility_icon "icon-sm" %}{{ label }}</span></label>
+            {% endfor %}
+          </div>
+          <span class="field-help">{% translate "Public is listed. Unlisted works for anyone with the link. Private is only you and curators." %}</span>
+        </div>
+        <div class="field toggle-row">
+          <span class="field-label">{% translate "Options" %}</span>
+          <label class="check"><input type="checkbox" name="record" {% if form.record.value %}checked{% endif %}> {% translate "Publish the recording in my media when the live ends" %}</label>
+          <label class="check"><input type="checkbox" name="chat_enabled" {% if form.chat_enabled.value %}checked{% endif %}> {% translate "Live chat for signed-in viewers" %}</label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">{% if live %}{% icon "check" "icon-sm" %}{% translate "Save details" %}{% else %}{% icon "radio" "icon-sm" %}{% translate "Create live" %}{% endif %}</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2><span class="panel-title-icon">{% icon "info" %}</span>{% translate "How it works" %}</h2></div>
+      <ol class="steps">
+        <li>{% translate "Create the live. Its page can be shared right away and shows a countdown until you start." %}</li>
+        <li>{% translate "In OBS (or any RTMP encoder), paste the server address and the stream key from the control room." %}</li>
+        <li>{% translate "Start streaming. Viewers' pages switch to the stream by themselves, and the chat opens." %}</li>
+        <li>{% translate "Stop streaming or end the live in the control room. The recording becomes a video in your media." %}</li>
+      </ol>
+    </section>
+  </div>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/live.js' %}"></script>{% endblock %}

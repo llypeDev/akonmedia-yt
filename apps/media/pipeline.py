@@ -183,12 +183,13 @@ def to_hls(
     width: int = 0,
     height: int = 0,
     segment_seconds: int = 6,
+    timeout: int = 60 * 60,
 ) -> Path:
     """Encode one MP4 into an adaptive-bitrate HLS ladder.
 
     Returns the path of ``master.m3u8``. A player that understands HLS picks a
     rung from it and switches as bandwidth changes; without a master playlist
-    there is nothing to adapt between.
+    there is nothing to adapt between. ``timeout`` applies to each rung.
     """
     ffmpeg = _binary("ffmpeg")
     out_dir = Path(out_dir)
@@ -218,7 +219,7 @@ def to_hls(
             ],
             capture_output=True,
             text=True,
-            timeout=60 * 60,
+            timeout=timeout,
         )
 
         if result.returncode != 0 or not playlist.exists():

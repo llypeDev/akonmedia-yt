@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN useradd --create-home --uid 1000 app \
- && mkdir -p /app/media /app/staticfiles \
+ && mkdir -p /app/media /app/staticfiles /app/live/recordings \
  && chmod +x /app/docker/entrypoint.sh \
  && chown -R app:app /app
 

@@ -1,0 +1,114 @@
+# Live ingest for AkonMedia: RTMP in from encoders such as OBS, HLS out for
+# viewers. Nothing is transcoded: the encoder's own stream is repackaged, which
+# keeps a small machine (two cores) comfortable. entrypoint.sh fills in the
+# ${...} values from the environment.
+
+load_module /usr/lib/nginx/modules/ngx_rtmp_module.so;
+
+user ${LIVE_NGINX_USER};
+# The RTMP module keeps every live stream inside a single worker process.
+worker_processes 1;
+pid ${LIVE_DATA_DIR}/nginx.pid;
+error_log /dev/stderr warn;
+
+events {
+    worker_connections 1024;
+}
+
+rtmp {
+    server {
+        listen 1935;
+        chunk_size 4096;
+        notify_method post;
+
+        application live {
+            live on;
+            # Viewers watch over HLS; nobody plays RTMP from here.
+            deny play all;
+
+            # Encoders publish "<playback id>?key=<stream key>". The portal
+            # checks the key, and is told when the stream stops and when its
+            # recording is complete.
+            on_publish http://127.0.0.1:8082/live/hooks/${LIVE_HOOK_SECRET}/publish/;
+            on_publish_done http://127.0.0.1:8082/live/hooks/${LIVE_HOOK_SECRET}/publish-done/;
+            on_record_done http://127.0.0.1:8082/live/hooks/${LIVE_HOOK_SECRET}/record-done/;
+
+            hls on;
+            hls_path ${LIVE_DATA_DIR}/hls;
+            hls_nested on;
+            hls_fragment 2s;
+            # Viewers can rewind up to five minutes.
+            hls_playlist_length 300s;
+            hls_cleanup on;
+            hls_continuous on;
+
+            # One file per encoder connection; the portal joins them when the
+            # live ends and publishes the result as a video.
+            record all;
+            record_path ${LIVE_DATA_DIR}/recordings;
+            record_unique on;
+        }
+    }
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    access_log off;
+    sendfile on;
+    tcp_nopush on;
+    server_tokens off;
+
+    client_body_temp_path ${LIVE_DATA_DIR}/tmp/body;
+    proxy_temp_path ${LIVE_DATA_DIR}/tmp/proxy;
+    fastcgi_temp_path ${LIVE_DATA_DIR}/tmp/fastcgi;
+    uwsgi_temp_path ${LIVE_DATA_DIR}/tmp/uwsgi;
+    scgi_temp_path ${LIVE_DATA_DIR}/tmp/scgi;
+
+    # Public: the HLS viewers fetch. In production, serve it through the
+    # site's HTTPS proxy so browsers do not block it as mixed content.
+    server {
+        listen 8080;
+
+        location /hls/ {
+            alias ${LIVE_DATA_DIR}/hls/;
+            types {
+                application/vnd.apple.mpegurl m3u8;
+                video/mp2t ts;
+            }
+            add_header Cache-Control "no-cache" always;
+            add_header Access-Control-Allow-Origin "*" always;
+        }
+
+        location / {
+            return 404;
+        }
+    }
+
+    # Internal only, never published: the portal cuts an encoder off here
+    # when a live is ended from the studio.
+    server {
+        listen 8081;
+
+        location /control {
+            rtmp_control all;
+        }
+    }
+
+    # Loopback only. The callbacks above leave through here so the portal's
+    # address is looked up again on every call: a recreated portal container
+    # with a new address does not break them.
+    server {
+        listen 127.0.0.1:8082;
+        resolver ${LIVE_RESOLVER} valid=10s ipv6=off;
+
+        location /live/hooks/ {
+            set $portal ${LIVE_PORTAL_URL};
+            proxy_pass $portal;
+            # Internal plain HTTP: tell the portal not to redirect it to HTTPS.
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_connect_timeout 3s;
+            proxy_read_timeout 20s;
+        }
+    }
+}

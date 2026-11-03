@@ -20,7 +20,11 @@
  *     </video>
  *   </div>
  *
- * Public API: window.AkonPlayer = { players, get(el), init(scope) }.
+ * Live streams (data-live="1", or detected from the playlist) get a seek bar
+ * over the window the server keeps, a LIVE button that jumps to the newest
+ * moment, and reconnect by themselves when the stream drops for a while.
+ *
+ * Public API: window.AkonPlayer = { players, get(el), init(scope), destroy(el) }.
  */
 (function () {
   "use strict";
@@ -333,6 +337,7 @@
       brandLabel: d.brandLabel || "",
       visualizer: flag(d.visualizer),
       resumeKey: d.resumeKey || "",
+      live: flag(d.live),
     };
   }
 
@@ -359,6 +364,9 @@
     this.lastText = "";
     this.raf = 0;
     this.timers = {};
+    this.live = false;
+    this.destroyed = false;
+    this.targetDuration = 0;
     root.__akonPlayer = this;
     this.opts = readOptions(root, this.video);
     this.mount();
@@ -395,6 +403,7 @@
 
     this.buildLayers();
     if (o.controls) this.buildControls();
+    if (o.live) this.setLive(true);
 
     this.restorePreferences();
     this.bindMedia();
@@ -402,7 +411,7 @@
     this.setupTracks();
     this.observeSize();
     this.attachSource();
-    this.initResume();
+    if (!o.live) this.initResume();
 
     // Only now that a working surface exists do the native controls go away.
     video.removeAttribute("controls");
@@ -607,6 +616,24 @@
     ]);
     left.appendChild(this.timeEl);
 
+    // Shown while a stream is live: says so, and jumps back to the live edge.
+    this.liveBtn = h("button", "pl-live-btn", {
+      type: "button",
+      hidden: true,
+      // Translators: tooltip of the player's LIVE button, which jumps to the newest moment of the stream.
+      "data-tip": gettext("Jump to live"),
+      "aria-label": gettext("Jump to live"),
+    }, [
+      h("span", "pl-live-dot", { "aria-hidden": "true" }),
+      // Translators: short badge on the player while a stream is live. Keep it very short.
+      h("span", "pl-live-text", { text: gettext("LIVE") }),
+    ]);
+    on(this.liveBtn, "click", function (event) {
+      self.goLive();
+      self.focusRoot(event);
+    });
+    left.appendChild(this.liveBtn);
+
     this.chapterEl = h("span", "pl-chapter", { hidden: true });
     left.appendChild(this.chapterEl);
 
@@ -722,17 +749,23 @@
     var Hls = window.Hls;
     var self = this;
     var video = this.video;
+    var live = this.live;
     var hls = (this.hls = new Hls({
       enableWorker: true,
       lowLatencyMode: false,
       capLevelToPlayerSize: true,
-      backBufferLength: 60,
-      startPosition: this.opts.start > 0 ? this.opts.start : -1,
+      backBufferLength: live ? 90 : 60,
+      startPosition: !live && this.opts.start > 0 ? this.opts.start : -1,
+      // Live: start three segments behind the newest one, and catch up when
+      // ten behind instead of drifting further and further away.
+      liveSyncDurationCount: 3,
+      liveMaxLatencyDurationCount: 10,
     }));
     var recovered = false;
     var retried = false;
 
     hls.on(Hls.Events.MANIFEST_PARSED, function () {
+      self.liveConnected();
       self.renderBadge();
       if (self.menuOpen) self.renderMenu(self.menu.getAttribute("data-page") || "main");
     });
@@ -743,6 +776,12 @@
         self.renderMenu(self.menu.getAttribute("data-page") || "main");
       }
     });
+    hls.on(Hls.Events.LEVEL_LOADED, function (_event, data) {
+      var details = data && data.details;
+      if (!details) return;
+      if (details.targetduration) self.targetDuration = details.targetduration;
+      if (details.live && !self.live) self.setLive(true);
+    });
     hls.on(Hls.Events.BUFFER_CODECS, function (_event, data) {
       var parts = [];
       if (data && data.video && data.video.codec) parts.push(data.video.codec);
@@ -751,6 +790,12 @@
     });
     hls.on(Hls.Events.ERROR, function (_event, data) {
       if (!data || !data.fatal) return;
+      if (self.live) {
+        // A live stream that is not there yet, or dropped for a moment: keep
+        // trying. There is no file to fall back to.
+        self.retryLive();
+        return;
+      }
       if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) {
         recovered = true;
         hls.recoverMediaError();
@@ -838,6 +883,140 @@
     this.badge.hidden = !text;
   };
 
+  // ---------------------------------------------------------------- live
+
+  Player.prototype.setLive = function (isLive) {
+    isLive = !!isLive;
+    if (this.live === isLive) return;
+    this.live = isLive;
+    this.root.classList.toggle("pl-live", isLive);
+    if (this.liveBtn) this.liveBtn.hidden = !isLive;
+    if (isLive) this.hideResume();
+    this.lastText = "";
+    this.renderTime();
+    this.renderBuffered();
+    if (this.menuOpen) this.renderMenu(this.menu.getAttribute("data-page") || "main");
+  };
+
+  /* The stretch of time the seek bar covers: the whole file, or for a live
+     stream the window the server still holds (a few minutes). */
+  Player.prototype.span = function () {
+    if (!this.live) return { start: 0, end: this.duration() };
+    var video = this.video;
+    var ranges = video.seekable;
+    if (ranges && ranges.length) {
+      var start = ranges.start(0);
+      var end = ranges.end(ranges.length - 1);
+      if (isFinite(start) && isFinite(end) && end > start) return { start: start, end: end };
+    }
+    var d = video.duration;
+    if (isFinite(d) && d > 0) return { start: 0, end: d };
+    return { start: 0, end: 0 };
+  };
+
+  Player.prototype.liveEdge = function () {
+    var sync = this.hls ? this.hls.liveSyncPosition : null;
+    if (typeof sync === "number" && isFinite(sync) && sync > 0) return sync;
+    var span = this.span();
+    return Math.max(span.start, span.end - 3 * (this.targetDuration || 2));
+  };
+
+  Player.prototype.behindLive = function () {
+    return Math.max(0, this.liveEdge() - (this.video.currentTime || 0));
+  };
+
+  Player.prototype.goLive = function () {
+    if (!this.live) return;
+    this.seek(this.liveEdge());
+    if (this.video.paused) this.play();
+  };
+
+  Player.prototype.retryLive = function () {
+    var self = this;
+    if (this.destroyed || this.timers.live) return;
+    this.wantsPlay = this.wantsPlay || !this.video.paused || this.opts.autoplay;
+    this.setWaiting(true);
+    this.root.classList.add("pl-reconnecting");
+    if (this.hls) {
+      try {
+        this.hls.destroy();
+      } catch (e) {
+        /* already torn down */
+      }
+      this.hls = null;
+    }
+    this.timers.live = window.setTimeout(function () {
+      self.timers.live = 0;
+      self.reconnectLive();
+    }, 3000);
+  };
+
+  Player.prototype.reconnectLive = function () {
+    if (this.destroyed) return;
+    if (this.engine === "native") {
+      this.video.src = this.opts.hls;
+      this.video.load();
+      this.resumeLivePlayback();
+    } else {
+      this.startHls();
+    }
+  };
+
+  /* The page learned that the stream is back: reconnect now, not at the next
+     retry. Does nothing while the stream plays. */
+  Player.prototype.reloadLive = function () {
+    if (this.destroyed || !this.live || !this.root.classList.contains("pl-reconnecting")) return;
+    if (this.timers.live) {
+      window.clearTimeout(this.timers.live);
+      this.timers.live = 0;
+    }
+    this.reconnectLive();
+  };
+
+  Player.prototype.liveConnected = function () {
+    if (!this.root.classList.contains("pl-reconnecting")) return;
+    this.root.classList.remove("pl-reconnecting");
+    this.resumeLivePlayback();
+  };
+
+  Player.prototype.resumeLivePlayback = function () {
+    if (!this.wantsPlay) return;
+    this.wantsPlay = false;
+    var promise = this.video.play();
+    if (promise && promise.catch) promise.catch(noop);
+  };
+
+  /* Stop everything (network included) before the page removes the player,
+     e.g. when a live ends and its recording takes its place. */
+  Player.prototype.destroy = function () {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    var timers = this.timers;
+    Object.keys(timers).forEach(function (key) {
+      window.clearTimeout(timers[key]);
+    });
+    if (this.raf) window.cancelAnimationFrame(this.raf);
+    if (this.resizeObserver) this.resizeObserver.disconnect();
+    if (this.hls) {
+      try {
+        this.hls.destroy();
+      } catch (e) {
+        /* already torn down */
+      }
+      this.hls = null;
+    }
+    try {
+      this.video.pause();
+      this.video.removeAttribute("src");
+      this.video.load();
+    } catch (e) {
+      /* the element is already gone */
+    }
+    var index = players.indexOf(this);
+    if (index >= 0) players.splice(index, 1);
+    this.root.__akonPlayer = null;
+  };
+
   // ------------------------------------------------------------ events
 
   Player.prototype.bindMedia = function () {
@@ -865,6 +1044,7 @@
     on(video, "playing", function () {
       self.setWaiting(false);
       self.updatePlayState();
+      if (self.live) self.liveConnected();
     });
     on(video, "waiting", function () {
       self.setWaiting(true);
@@ -886,6 +1066,8 @@
     });
     ["loadedmetadata", "durationchange"].forEach(function (type) {
       on(video, type, function () {
+        // Native HLS (Safari) reports a live stream as endless.
+        if (!self.live && video.duration === Infinity) self.setLive(true);
         self.renderTime();
         self.renderTicks();
         self.renderBuffered();
@@ -914,6 +1096,10 @@
     });
     on(video, "error", function () {
       if (self.engine === "hls.js") return; // hls.js reports and falls back by itself
+      if (self.live) {
+        self.retryLive();
+        return;
+      }
       self.reportMediaError();
     });
     on(video, "enterpictureinpicture", function () {
@@ -1135,7 +1321,12 @@
   Player.prototype.seek = function (seconds) {
     var d = this.duration();
     var target = Math.max(0, number(seconds, 0));
-    if (d) target = Math.min(target, d);
+    if (this.live) {
+      var span = this.span();
+      target = clamp(target, span.start, Math.max(span.start, span.end));
+    } else if (d) {
+      target = Math.min(target, d);
+    }
     try {
       this.video.currentTime = target;
     } catch (e) {
@@ -1273,6 +1464,10 @@
   };
 
   Player.prototype.renderTime = function (forced) {
+    if (this.live) {
+      this.renderLiveTime(forced);
+      return;
+    }
     var video = this.video;
     var d = this.duration();
     var t = typeof forced === "number" ? forced : this.scrubbing ? this.scrubTime : video.currentTime;
@@ -1298,17 +1493,44 @@
     }
   };
 
+  Player.prototype.renderLiveTime = function (forced) {
+    var t = typeof forced === "number" ? forced : this.scrubbing ? this.scrubTime : this.video.currentTime;
+    if (!isFinite(t)) t = 0;
+    var span = this.span();
+    var length = span.end - span.start;
+    var behind = Math.max(0, this.liveEdge() - t);
+    var atEdge = behind < 5;
+    this.root.classList.toggle("pl-behind-live", !atEdge);
+    if (!this.progress) return;
+    var fraction = length > 0 ? clamp((t - span.start) / length, 0, 1) : 1;
+    this.progress.style.setProperty("--pl-p", (fraction * 100).toFixed(3) + "%");
+    var label = atEdge ? "" : "−" + clock(behind);
+    var text = "live|" + label;
+    if (text === this.lastText) return;
+    this.lastText = text;
+    this.curEl.textContent = label;
+    this.durEl.textContent = "";
+    this.progress.setAttribute("aria-valuemax", String(Math.round(length)));
+    this.progress.setAttribute("aria-valuenow", String(Math.round(Math.max(0, t - span.start))));
+    this.progress.setAttribute(
+      "aria-valuetext",
+      // Translators: spoken value of the seek bar while watching a live stream behind the live edge, e.g. "0:42 behind live".
+      atEdge ? gettext("Live") : interpolate(gettext("%(time)s behind live"), { time: clock(behind) }, true)
+    );
+  };
+
   Player.prototype.renderBuffered = function () {
     if (!this.bufferedBox) return;
-    var d = this.duration();
+    var span = this.span();
+    var d = span.end - span.start;
     var ranges = this.video.buffered;
     var box = this.bufferedBox;
-    var count = d && ranges ? ranges.length : 0;
+    var count = d > 0 && ranges ? ranges.length : 0;
     while (box.children.length > count) box.removeChild(box.lastChild);
     while (box.children.length < count) box.appendChild(document.createElement("i"));
     for (var i = 0; i < count; i++) {
-      var start = ranges.start(i) / d;
-      var end = ranges.end(i) / d;
+      var start = clamp((ranges.start(i) - span.start) / d, 0, 1);
+      var end = clamp((ranges.end(i) - span.start) / d, 0, 1);
       box.children[i].style.left = (start * 100).toFixed(3) + "%";
       box.children[i].style.width = (Math.max(0, end - start) * 100).toFixed(3) + "%";
     }
@@ -1365,7 +1587,8 @@
     });
     on(progress, "pointerdown", function (event) {
       if (event.button !== undefined && event.button !== 0) return;
-      if (!self.duration()) return;
+      var span = self.span();
+      if (!(span.end > span.start)) return;
       event.preventDefault();
       self.loadStoryboard();
       try {
@@ -1401,8 +1624,9 @@
       if (!self.scrubbing) self.hideTip();
     });
     on(progress, "keydown", function (event) {
-      var d = self.duration();
-      if (!d) return;
+      var span = self.span();
+      var d = span.end - span.start;
+      if (!(d > 0)) return;
       var t = self.video.currentTime;
       var handled = true;
       switch (event.key) {
@@ -1421,10 +1645,11 @@
           self.seek(t + d / 10);
           break;
         case "Home":
-          self.seek(0);
+          self.seek(span.start);
           break;
         case "End":
-          self.seek(d);
+          if (self.live) self.goLive();
+          else self.seek(span.end);
           break;
         default:
           handled = false;
@@ -1444,10 +1669,11 @@
   };
 
   Player.prototype.scrubTo = function (event, final) {
-    var d = this.duration();
-    if (!d) return;
+    var span = this.span();
+    var d = span.end - span.start;
+    if (!(d > 0)) return;
     var fraction = this.fractionAt(event);
-    var t = fraction * d;
+    var t = span.start + fraction * d;
     this.scrubTime = t;
     this.renderTime(t);
     this.showTipAt(fraction, t);
@@ -1459,16 +1685,17 @@
   };
 
   Player.prototype.hoverAt = function (event) {
-    var d = this.duration();
-    if (!d) return;
+    var span = this.span();
+    var d = span.end - span.start;
+    if (!(d > 0)) return;
     var fraction = this.fractionAt(event);
     this.progress.style.setProperty("--pl-h", (fraction * 100).toFixed(3) + "%");
-    this.showTipAt(fraction, fraction * d);
+    this.showTipAt(fraction, span.start + fraction * d);
   };
 
   Player.prototype.showTipAt = function (fraction, t) {
     var chapter = this.chapterAt(t);
-    this.tipTime.textContent = clock(t);
+    this.tipTime.textContent = this.live ? "−" + clock(Math.max(0, this.liveEdge() - t)) : clock(t);
     this.tipChapter.textContent = chapter && this.opts.chapters.length > 1 ? chapter.title : "";
     this.renderPreview(t);
     this.tip.classList.add("pl-on");
@@ -1846,14 +2073,17 @@
         }));
       });
     } else {
-      menu.appendChild(self.menuItem({
-        icon: "speed",
-        label: gettext("Playback speed"),
-        value: rateLabel(video.playbackRate),
-        action: function () {
-          self.renderMenu("speed", true);
-        },
-      }));
+      // A live stream cannot be played faster than it happens.
+      if (!this.live) {
+        menu.appendChild(self.menuItem({
+          icon: "speed",
+          label: gettext("Playback speed"),
+          value: rateLabel(video.playbackRate),
+          action: function () {
+            self.renderMenu("speed", true);
+          },
+        }));
+      }
       if (this.levels().length > 1) {
         menu.appendChild(self.menuItem({
           icon: "quality",
@@ -2016,7 +2246,17 @@
     set("Speed", video.playbackRate + "×");
     // Translators: stats overlay, Volume row when the sound is off.
     set("Volume", video.muted ? gettext("muted") : Math.round(video.volume * 100) + "%");
-    set("Position", clock(video.currentTime) + " / " + clock(this.duration()));
+    if (this.live) {
+      var behind = this.behindLive();
+      var latency = this.hls ? this.hls.latency : NaN;
+      var where = behind < 5 ? gettext("Live") : "−" + clock(behind);
+      set("Position", isFinite(latency) && latency > 0
+        // Translators: stats overlay, Position row of a live stream; %(seconds)s is the delay behind the encoder, e.g. "6.2".
+        ? where + " · " + interpolate(gettext("%(seconds)s s latency"), { seconds: latency.toFixed(1) }, true)
+        : where);
+    } else {
+      set("Position", clock(video.currentTime) + " / " + clock(this.duration()));
+    }
   };
 
   // ----------------------------------------------------------------- OSD
@@ -2498,7 +2738,8 @@
         this.seek(0);
         break;
       case "End":
-        this.seek(this.duration());
+        if (this.live) this.goLive();
+        else this.seek(this.duration());
         break;
       case "<":
         this.stepRate(-1);
@@ -2516,9 +2757,10 @@
         break;
       default:
         if (/^[0-9]$/.test(key)) {
-          var d = this.duration();
-          if (!d) return false;
-          this.seek((d * Number(key)) / 10);
+          var span = this.span();
+          var length = span.end - span.start;
+          if (!(length > 0)) return false;
+          this.seek(span.start + (length * Number(key)) / 10);
           break;
         }
         return false;
@@ -2621,6 +2863,10 @@
     get: function (element) {
       var root = element && element.closest ? element.closest("[data-player]") : null;
       return (root && root.__akonPlayer) || null;
+    },
+    destroy: function (element) {
+      var root = element && element.closest ? element.closest("[data-player]") : null;
+      if (root && root.__akonPlayer) root.__akonPlayer.destroy();
     },
   };
 

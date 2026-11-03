@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static akon i18n %}
+
+{% block title %}{% translate "Your lives" %} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">{% icon "radio" "icon-xs" %}{% translate "Creator studio" %}</span>
+      <h1>{% translate "Your lives" %}</h1>
+      <p class="lede">{% translate "Schedule a live, connect your encoder and go on air. When a live ends, its recording joins your media." %}</p>
+    </div>
+    <div class="btn-group">
+      <a class="btn" href="{% url 'core:studio' %}">{% icon "dashboard" "icon-sm" %}{% translate "Studio" %}</a>
+      <a class="btn btn-primary" href="{% url 'live:new' %}">{% icon "plus" "icon-sm" %}{% translate "New live" %}</a>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">{% icon "radio" %}{% translate "On air" context "number of lives" %}</div><div class="stat-value">{{ on_air }}</div><div class="stat-note">{% translate "right now" %}</div></div>
+    <div class="stat"><div class="stat-label">{% icon "calendar" %}{% translate "Scheduled" context "number of lives" %}</div><div class="stat-value">{{ scheduled }}</div><div class="stat-note">{% translate "waiting to start" %}</div></div>
+    <div class="stat"><div class="stat-label">{% icon "check-circle" %}{% translate "Ended" context "number of lives" %}</div><div class="stat-value">{{ ended }}</div><div class="stat-note">{% translate "recorded or not" %}</div></div>
+  </div>
+
+  <section class="panel panel-flush mt-3">
+    {% if lives %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Live" context "table column with the title of each live" %}</th>
+              <th>{% translate "Status" %}</th>
+              <th>{% translate "When" %}</th>
+              <th class="num">{% translate "Peak viewers" %}</th>
+              <th>{% translate "Recording" %}</th>
+              <th class="actions"><span class="sr-only">{% translate "Actions" %}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for live in lives %}
+              <tr>
+                <td>
+                  <a class="row-title" href="{% url 'live:control' live.uid %}">{{ live.title }}</a>
+                  <div class="row-sub">{% icon live.visibility|visibility_icon "icon-xs" %} {{ live.get_visibility_display }}</div>
+                </td>
+                <td><span class="live-status live-status-{{ live.status }}">{{ live.get_status_display }}</span></td>
+                <td class="muted nowrap">
+                  {% if live.started_at %}<time datetime="{{ live.started_at|date:'c' }}" data-local>{{ live.started_at|date:"SHORT_DATETIME_FORMAT" }}</time>
+                  {% elif live.scheduled_for %}<time datetime="{{ live.scheduled_for|date:'c' }}" data-local>{{ live.scheduled_for|date:"SHORT_DATETIME_FORMAT" }}</time>
+                  {% else %}—{% endif %}
+                </td>
+                <td class="num">{{ live.peak_viewers }}</td>
+                <td>
+                  {% if live.recording %}
+                    <a class="text-link" href="{% url 'core:media' live.recording.uid %}">{% icon live.recording.state|state_icon "icon-xs" %} {{ live.recording.get_state_display }}</a>
+                  {% elif live.is_ended and live.recording_error %}
+                    <span class="badge badge-failed">{% translate "Failed" %}</span>
+                  {% elif live.is_ended %}
+                    <span class="muted">—</span>
+                  {% elif live.record %}
+                    <span class="muted">{% translate "Will be recorded" %}</span>
+                  {% else %}
+                    <span class="muted">{% translate "Not recorded" %}</span>
+                  {% endif %}
+                </td>
+                <td class="actions"><a class="btn btn-sm" href="{% url 'live:control' live.uid %}">{% icon "sliders" "icon-sm" %}{% translate "Control room" %}</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">{% icon "radio" %}</div>
+        <h3>{% translate "No lives yet" %}</h3>
+        <p>{% translate "Create one to get a stream key for OBS or any other RTMP encoder." %}</p>
+        <a class="btn btn-primary" href="{% url 'live:new' %}">{% icon "plus" "icon-sm" %}{% translate "New live" %}</a>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/live.js' %}"></script>{% endblock %}

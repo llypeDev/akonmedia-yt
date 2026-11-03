@@ -11,9 +11,10 @@ __pycache__/
 .coverage
 htmlcov/
 
-# collected assets
-staticfiles/
-media/
+# Runtime directories are anchored to the repository root. Without the leading
+# slash, "media/" would also match apps/media and silently drop application code.
+/staticfiles/
+/media/
 
 # editors and OS
 .vscode/
@@ -22,10 +23,12 @@ media/
 Thumbs.db
 
 # local rehearsal data
-.demo-import/
-.test-media/
-.test-import/
+/.demo-import/
+/.test-media/
+/.test-import/
+/.verify/
 
 # build and render artifacts
-.render/
-.build/
+/.render/
+/.build/
+/.uvcache/

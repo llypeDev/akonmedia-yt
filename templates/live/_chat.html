@@ -2,7 +2,7 @@
 <section class="panel live-chat" data-chat aria-label="{% translate "Live chat" %}">
   <div class="panel-head row-between">
     <h2><span class="panel-title-icon">{% icon "message" %}</span>{% translate "Live chat" %}</h2>
-    <span class="live-viewers" data-live-viewers hidden></span>
+    {% if embedded %}<span class="chat-who" data-chat-who hidden></span>{% else %}<span class="live-viewers" data-live-viewers hidden></span>{% endif %}
   </div>
   <ol class="chat-list" data-chat-list aria-live="polite" aria-relevant="additions"></ol>
   <div class="chat-empty" data-chat-empty>{% icon "message" %}<span>{% translate "No messages yet." %}</span></div>
@@ -13,7 +13,14 @@
       <button type="submit" class="btn btn-primary btn-sm">{% icon "send" "icon-sm" %}{% translate "Send" %}</button>
     </div>
   </form>
-  <p class="chat-note" data-chat-when="sign-in"{% if not chat.open or chat.can_post %} hidden{% endif %}>{% blocktranslate with url=login_url|add:"?next="|add:request.path %}<a href="{{ url }}">Sign in</a> to take part in the chat.{% endblocktranslate %}</p>
+  {% if not embedded %}
+    <p class="chat-note" data-chat-when="sign-in"{% if not chat.open or chat.can_post %} hidden{% endif %}>{% blocktranslate with url=login_url|add:"?next="|add:request.path %}<a href="{{ url }}">Sign in</a> to take part in the chat.{% endblocktranslate %}</p>
+  {% elif integration %}
+    {# On a site: the site signs the person in; until it does, or if it cannot, say so. #}
+    <p class="chat-note" data-chat-when="sign-in"{% if not chat.open or chat.can_post %} hidden{% endif %} data-school-note>{% blocktranslate with site=integration.name %}Sign in to {{ site }} to take part in the chat.{% endblocktranslate %}</p>
+  {% else %}
+    <p class="chat-note" data-chat-when="sign-in"{% if not chat.open or chat.can_post %} hidden{% endif %}>{% blocktranslate with url=page_url %}<a href="{{ url }}" target="_blank" rel="noopener">Open the live</a> to take part in the chat.{% endblocktranslate %}</p>
+  {% endif %}
   <p class="chat-note" data-chat-when="closed"{% if chat.open or not chat.enabled %} hidden{% endif %}>{% translate "The chat is closed." %}</p>
   <p class="chat-note" data-chat-when="disabled"{% if chat.enabled %} hidden{% endif %}>{% translate "The chat is turned off for this live." %}</p>
 </section>

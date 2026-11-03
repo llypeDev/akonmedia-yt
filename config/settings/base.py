@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     "apps.media",
     "apps.uploader",
     "apps.live",
+    "apps.integrations",
 ]
 
 MIDDLEWARE = [

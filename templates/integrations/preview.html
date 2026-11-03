@@ -1,0 +1,61 @@
+{% load static i18n %}{% get_current_language as LANGUAGE_CODE %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% translate "Preview" %} — {{ integration.name }}</title>
+  <link rel="icon" href="{% static 'brand/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+  <style>
+    /* A plain page standing in for the school's own: what matters is the frame. */
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f6fa; color: #1c2433; font: 15px/1.5 "Inter", system-ui, sans-serif; }
+    .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 24px; background: #fff; border-bottom: 1px solid #e3e7ef; }
+    .bar strong { font: 600 16px "Space Grotesk", "Inter", sans-serif; }
+    .tag { padding: 3px 9px; border-radius: 999px; background: #fff4d6; color: #8a5a00; font-size: 12px; font-weight: 600; }
+    .bar form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; font-size: 13.5px; }
+    .bar input[type=text] { width: 160px; padding: 7px 10px; border: 1px solid #d5dbe6; border-radius: 8px; font: inherit; }
+    .bar button { padding: 7px 12px; border: 0; border-radius: 8px; background: #1c2433; color: #fff; font: 600 13.5px "Inter", sans-serif; cursor: pointer; }
+    main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+    h1 { margin: 0 0 4px; font: 600 24px "Space Grotesk", "Inter", sans-serif; }
+    .lesson-note { margin: 0 0 18px; color: #5a6a81; }
+    .events { margin: 14px 0 0; padding: 10px 14px; border-radius: 10px; background: #fff; border: 1px solid #e3e7ef; color: #5a6a81; font: 12.5px/1.6 "JetBrains Mono", monospace; min-height: 42px; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <strong>{{ integration.name }}</strong>
+    <span class="tag">{% translate "Preview: this is how your site will show it" %}</span>
+    <form method="get">
+      <input type="hidden" name="live" value="{{ live.uid }}">
+      <input type="hidden" name="layout" value="{{ layout }}">
+      {% if theme %}<input type="hidden" name="theme" value="{{ theme }}">{% endif %}
+      <label>{% translate "Signed in as" %} <input type="text" name="name" value="{{ name }}" maxlength="60"></label>
+      <label><input type="checkbox" name="moderator" value="1"{% if moderator %} checked{% endif %}> {% translate "teacher (moderator)" %}</label>
+      <button type="submit">{% translate "Sign in again" %}</button>
+    </form>
+  </div>
+  <main>
+    <h1>{{ live.title }}</h1>
+    <p class="lesson-note">{% translate "Messages and reactions sent here are real: they appear in the live's chat for everyone." %}</p>
+
+    {# Exactly what a site pastes, with the token its server made. #}
+    <div id="qqplay" data-qqplay-live="{{ live.uid }}" data-layout="{{ layout }}"{% if theme %} data-theme="{{ theme }}"{% endif %} data-token="{{ token }}"></div>
+    <script src="{{ sdk_url }}" async></script>
+
+    <div class="events" data-events>{% translate "Waiting for the frame…" %}</div>
+  </main>
+  <script>
+    (function () {
+      var box = document.querySelector("[data-events]");
+      var target = document.getElementById("qqplay");
+      function show(text) { box.textContent = text; }
+      target.addEventListener("qqplay:signed-in", function (event) { show("qqplay:signed-in  " + JSON.stringify(event.detail)); });
+      target.addEventListener("qqplay:error", function (event) { show("qqplay:error  " + JSON.stringify(event.detail)); });
+      target.addEventListener("qqplay:signed-out", function () { show("qqplay:signed-out"); });
+    })();
+  </script>
+</body>
+</html>

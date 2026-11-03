@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: QQplay\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 22:40+0000\n"
+"POT-Creation-Date: 2026-11-03 23:09+0000\n"
 "PO-Revision-Date: 2026-11-03 16:07+0000\n"
 "Last-Translator: QQplay\n"
 "Language-Team: Português (Brasil)\n"
@@ -23,7 +23,7 @@ msgid "Could not copy — select the text and copy it manually."
 msgstr "Não foi possível copiar — selecione o texto e copie manualmente."
 
 #. Translators: cancels the automatic jump to the next playlist item.
-#: static/js/app.js:302 static/js/avatar.js:253 static/js/player.js:2369
+#: static/js/app.js:302 static/js/avatar.js:254 static/js/player.js:2369
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -92,11 +92,11 @@ msgstr ""
 "Foto sendo ajustada. As setas movem a imagem; mais e menos aproximam e "
 "afastam."
 
-#: static/js/avatar.js:243
+#: static/js/avatar.js:244
 msgid "Zoom"
 msgstr "Zoom"
 
-#: static/js/avatar.js:260
+#: static/js/avatar.js:261
 msgid "Use this photo"
 msgstr "Usar esta foto"
 
@@ -225,82 +225,102 @@ msgstr "Fogo"
 
 #. Translators: countdown pieces; d = days, h = hours, min = minutes, s =
 #. seconds.
-#: static/js/live.js:111
+#: static/js/live.js:149
 msgid "%(days)s d %(hours)s h"
 msgstr "%(days)s d %(hours)s h"
 
-#: static/js/live.js:112
+#: static/js/live.js:150
 msgid "%(hours)s h %(minutes)s min"
 msgstr "%(hours)s h %(minutes)s min"
 
-#: static/js/live.js:113
+#: static/js/live.js:151
 msgid "%(minutes)s min %(seconds)s s"
 msgstr "%(minutes)s min %(seconds)s s"
 
-#: static/js/live.js:114
+#: static/js/live.js:152
 msgid "%(seconds)s s"
 msgstr "%(seconds)s s"
 
 #. Translators: number of people watching a live stream right now.
-#: static/js/live.js:312
+#: static/js/live.js:365
 msgid "%(count)s watching"
 msgid_plural "%(count)s watching"
 msgstr[0] "%(count)s assistindo"
 msgstr[1] "%(count)s assistindo"
 
 #. Translators: %(time)s is a countdown such as "2 h 05 min".
-#: static/js/live.js:347
+#: static/js/live.js:400
 msgid "Starts in %(time)s"
 msgstr "Começa em %(time)s"
 
-#: static/js/live.js:348
+#: static/js/live.js:401
 msgid "Starting any moment now"
 msgstr "Começa a qualquer momento"
 
-#: static/js/live.js:445
+#: static/js/live.js:499
 msgid "The message could not be sent."
 msgstr "Não foi possível enviar a mensagem."
 
-#: static/js/live.js:476
+#: static/js/live.js:531
 msgid "Message hidden."
 msgstr "Mensagem ocultada."
 
-#: static/js/live.js:479
+#: static/js/live.js:534
 msgid "The message could not be hidden."
 msgstr "Não foi possível ocultar a mensagem."
 
+#: static/js/live.js:585
+msgid "Open this live from your school's site."
+msgstr "Abra esta live pelo site da sua escola."
+
+#: static/js/live.js:601
+msgid "You could not be signed in."
+msgstr "Não foi possível conectar você."
+
+#: static/js/live.js:626
+msgid "This live is only for the school's people"
+msgstr "Esta live é só para as pessoas da escola"
+
+#: static/js/live.js:644
+msgid "Signed in as %(name)s, moderator"
+msgstr "Conectado como %(name)s, moderador"
+
+#: static/js/live.js:645
+msgid "Signed in as %(name)s"
+msgstr "Conectado como %(name)s"
+
 #. Translators: a reaction under a live chat message, e.g. "Like: 3".
-#: static/js/live.js:524
+#: static/js/live.js:678
 msgid "%(reaction)s: %(count)s"
 msgstr "%(reaction)s: %(count)s"
 
-#: static/js/live.js:559
+#: static/js/live.js:713
 msgid "Sign in to react."
 msgstr "Entre para reagir."
 
-#: static/js/live.js:595
+#: static/js/live.js:750
 msgid "The reaction could not be saved."
 msgstr "Não foi possível salvar a reação."
 
 #. Translators: badge next to the name of the person streaming, in the live
 #. chat.
-#: static/js/live.js:629
+#: static/js/live.js:784
 msgid "Host"
 msgstr "Apresentador"
 
 #. Translators: button that reacts to a live chat message, e.g. "React: Like".
-#: static/js/live.js:664
+#: static/js/live.js:819
 msgid "React: %(reaction)s"
 msgstr "Reagir: %(reaction)s"
 
 #. Translators: moderation button on a live chat message.
-#: static/js/live.js:677 static/js/live.js:678
+#: static/js/live.js:832 static/js/live.js:833
 msgid "Hide message"
 msgstr "Ocultar mensagem"
 
 #. Translators: button on a touch screen that shows the reactions of a live
 #. chat message.
-#: static/js/live.js:691
+#: static/js/live.js:846
 msgid "React to this message"
 msgstr "Reagir a esta mensagem"
 

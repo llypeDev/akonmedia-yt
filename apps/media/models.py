@@ -99,6 +99,10 @@ class Media(models.Model):
     height = models.PositiveIntegerField(default=0)
     poster = models.ImageField(upload_to=poster_upload_path, max_length=500, blank=True)
     hls_playlist = models.CharField(max_length=500, blank=True)
+    #: Sprite sheet of thumbnails for the seek bar, relative to MEDIA_ROOT.
+    storyboard = models.CharField(max_length=500, blank=True)
+    #: interval, cols, rows, width, height and count of the storyboard tiles.
+    storyboard_meta = models.JSONField(default=dict, blank=True)
 
     views_count = models.PositiveIntegerField(default=0)
     failure_reason = models.TextField(blank=True)
@@ -140,12 +144,68 @@ class Media(models.Model):
     @property
     def hls_url(self) -> str:
         """Public URL of the HLS playlist, or an empty string when not packaged."""
-        if not self.hls_playlist:
+        return _media_url(self.hls_playlist)
+
+    @property
+    def storyboard_url(self) -> str:
+        return _media_url(self.storyboard)
+
+    @property
+    def storyboard_config(self) -> dict:
+        """What the player needs to show seek previews, or ``{}``."""
+        meta = self.storyboard_meta or {}
+        if not self.storyboard or not meta.get("count"):
+            return {}
+        return {"src": self.storyboard_url, **meta}
+
+    @property
+    def thumbnail_url(self) -> str:
+        """Best still picture for cards: the poster, or the image itself."""
+        if self.poster:
+            return self.poster.url
+        if self.kind == self.Kind.IMAGE and self.file:
+            return self.file.url
+        return ""
+
+    @property
+    def resolution_label(self) -> str:
+        if not self.height:
             return ""
-        base = settings.MEDIA_URL
-        if not base.startswith(("http://", "https://", "/")):
-            base = "/" + base
-        return f"{base.rstrip('/')}/{self.hls_playlist.lstrip('/')}"
+        if self.kind == self.Kind.VIDEO:
+            for label, minimum in (("4K", 2000), ("1440p", 1400), ("1080p", 1000),
+                                   ("720p", 700), ("480p", 460), ("360p", 340)):
+                if self.height >= minimum:
+                    return label
+            return f"{self.height}p"
+        return f"{self.width}×{self.height}"
+
+    def media_directory(self):
+        """The per-item folder holding the original and everything derived
+        from it, or ``None`` when that cannot be established safely."""
+        from pathlib import Path
+
+        if not self.file or not self.file.name:
+            return None
+        root = Path(settings.MEDIA_ROOT).resolve()
+        try:
+            folder = Path(self.file.path).resolve().parent
+        except (NotImplementedError, ValueError):
+            return None
+        # Only ever the folder named after this item, somewhere under media/.
+        if folder.name != self.uid or root not in folder.parents:
+            return None
+        if (root / "media") not in folder.parents:
+            return None
+        return folder
+
+
+def _media_url(relative: str) -> str:
+    if not relative:
+        return ""
+    base = settings.MEDIA_URL
+    if not base.startswith(("http://", "https://", "/")):
+        base = "/" + base
+    return f"{base.rstrip('/')}/{relative.lstrip('/')}"
 
 
 class Playlist(models.Model):

@@ -28,3 +28,6 @@
 # documentation not needed inside the image
 /CUTOVER.md
 /README.md
+
+# screenshots for the README
+/docs

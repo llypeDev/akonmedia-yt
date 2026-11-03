@@ -1,38 +1,53 @@
 {% extends "base.html" %}
+{% load akon humanize %}
 
-{% block title %}Search — {{ PORTAL_NAME }}{% endblock %}
+{% block title %}{% if query %}{{ query }} — {% endif %}Search — {{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
-  <section class="intro">
-    <h1>Search</h1>
-    <p class="lede">
-      {% if query %}
-        {{ count }} result{{ count|pluralize }} for “{{ query }}”
-      {% else %}
-        Type something in the field above.
-      {% endif %}
-    </p>
-  </section>
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">{% icon "search" "icon-xs" %}Search</span>
+      <h1>{% if query %}Results for “{{ query }}”{% else %}Search the library{% endif %}</h1>
+      <p class="lede">
+        {% if query %}
+          <span class="mono">{{ count|intcomma }}</span> result{{ count|pluralize }} across titles, descriptions, categories and creators.
+        {% else %}
+          Type something in the field above — press <kbd>/</kbd> from anywhere to jump to it.
+        {% endif %}
+      </p>
+    </div>
+  </header>
+
+  {% if query %}
+    <div class="toolbar">
+      <nav class="chips" aria-label="Filter by type">
+        <a class="chip {% if not kind %}active{% endif %}" href="{% querystring kind=None page=None %}">{% icon "grid" "icon-sm" %}All</a>
+        {% for value, label in kinds %}
+          <a class="chip {% if kind == value %}active{% endif %}" href="{% querystring kind=value page=None %}">{% icon value|kind_icon "icon-sm" %}{{ label }}</a>
+        {% endfor %}
+      </nav>
+      <form class="sort" method="get" action="{% url 'core:search' %}">
+        <input type="hidden" name="q" value="{{ query }}">
+        {% if kind %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
+        <label for="sort">{% icon "sort" "icon-sm" %}<span class="sr-only">Sort by</span></label>
+        <select class="select" id="sort" name="sort" onchange="this.form.submit()">
+          {% for value, label in sorts %}<option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </form>
+    </div>
+  {% endif %}
 
   {% if page_obj.object_list %}
     <div class="grid">
-      {% for media in page_obj.object_list %}
-        {% include "core/_card.html" %}
-      {% endfor %}
+      {% for media in page_obj.object_list %}{% include "core/_card.html" %}{% endfor %}
     </div>
+    {% include "core/_pager.html" %}
   {% elif query %}
-    <p class="empty">Nothing matched.</p>
-  {% endif %}
-
-  {% if page_obj.has_other_pages %}
-    <nav class="pager">
-      {% if page_obj.has_previous %}
-        <a href="?q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>
-      {% endif %}
-      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-      {% if page_obj.has_next %}
-        <a href="?q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
-      {% endif %}
-    </nav>
+    <div class="empty-state">
+      <div class="empty-icon">{% icon "search" %}</div>
+      <h3>Nothing matched</h3>
+      <p>No published media matches “{{ query }}”{% if kind %} in this type{% endif %}. Check the spelling or try a broader word.</p>
+      <a class="btn" href="{% url 'core:index' %}">{% icon "compass" "icon-sm" %}Browse the library</a>
+    </div>
   {% endif %}
 {% endblock %}

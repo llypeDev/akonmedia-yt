@@ -60,11 +60,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+    "django.contrib.humanize",
     # third party
     "rest_framework",
     "allauth",
     "allauth.account",
     # local
+    "apps.core",
     "apps.rbac",
     "apps.users",
     "apps.media",
@@ -84,6 +86,9 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
+
+# Pages may frame themselves (the PDF viewer does); /embed/ opts out per view.
+X_FRAME_OPTIONS = "SAMEORIGIN"
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
@@ -147,6 +152,17 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", REDIS_URL or "memory://")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", REDIS_URL or "cache+memory://")
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", False)
 CELERY_TASK_TIME_LIMIT = env_int("CELERY_TASK_TIME_LIMIT", 60 * 60)
+
+#: Periodic housekeeping, run by the ``beat`` service.
+CELERY_BEAT_SCHEDULE = {
+    "purge-stale-uploads": {
+        "task": "uploads.purge_stale",
+        "schedule": 60 * 60,
+    },
+}
+
+#: Unfinished chunked uploads older than this are removed by the purge task.
+UPLOAD_SESSION_TTL_HOURS = env_int("UPLOAD_SESSION_TTL_HOURS", 24)
 
 
 # --------------------------------------------------------------------------

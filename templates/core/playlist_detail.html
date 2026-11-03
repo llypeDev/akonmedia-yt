@@ -1,24 +1,60 @@
 {% extends "base.html" %}
+{% load akon humanize %}
 
 {% block title %}{{ playlist.title }} — {{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
-  <section class="intro">
-    <h1>{{ playlist.title }}</h1>
-    <p class="lede">
-      {{ playlist.owner.get_short_name }} · {{ entries|length }} item{{ entries|length|pluralize }}
-      {% if can_edit %} · <a href="{% url 'core:playlist_edit' playlist.uid %}">Edit playlist</a>{% endif %}
-    </p>
-    {% if playlist.description %}<p class="prose">{{ playlist.description|linebreaks }}</p>{% endif %}
+  <section class="playlist-hero">
+    <div class="playlist-cover">
+      <a class="thumb" {% if cover %}href="{% url 'core:media' cover.uid %}?list={{ playlist.uid }}"{% endif %}>
+        {% if cover and cover.thumbnail_url %}<img src="{{ cover.thumbnail_url }}" alt="">{% else %}<span class="thumb-fallback">{% icon "list-video" %}</span>{% endif %}
+        {% if cover %}<span class="thumb-play" style="opacity:1;transform:none">{% icon "play" %}</span>{% endif %}
+      </a>
+    </div>
+    <div>
+      <span class="eyebrow">{% icon "list-video" "icon-xs" %}Playlist <span class="badge badge-{{ playlist.visibility }}">{% icon playlist.visibility|visibility_icon %}{{ playlist.get_visibility_display }}</span></span>
+      <h1>{{ playlist.title }}</h1>
+      <div class="meta-row muted">
+        <a href="{% url 'core:channel' playlist.owner_id %}" class="row" style="gap:8px">{% avatar playlist.owner "xs" %}{{ playlist.owner.get_short_name }}</a>
+        <span class="meta-sep">·</span>
+        <span class="mono">{{ entries|length }}</span> item{{ entries|length|pluralize }}
+        {% if total_seconds %}<span class="meta-sep">·</span><span class="mono">{{ total_seconds|clock }}</span>{% endif %}
+        <span class="meta-sep">·</span> created {{ playlist.created_at|timesince }} ago
+      </div>
+      {% if playlist.description %}<div class="prose mt-2">{{ playlist.description|urlize|linebreaks }}</div>{% endif %}
+      <div class="btn-group mt-3">
+        {% if cover %}<a class="btn btn-primary" href="{% url 'core:media' cover.uid %}?list={{ playlist.uid }}">{% icon "play" "icon-sm" %}Play all</a>{% endif %}
+        <button type="button" class="btn" data-copy="{{ share_url }}" data-copied="Playlist link copied">{% icon "share" "icon-sm" %}Share</button>
+        {% if can_edit %}<a class="btn" href="{% url 'core:playlist_edit' playlist.uid %}">{% icon "pencil" "icon-sm" %}Edit playlist</a>{% endif %}
+      </div>
+    </div>
   </section>
 
   {% if entries %}
-    <div class="grid">
+    <ol class="track-list">
       {% for entry in entries %}
-        {% include "core/_card.html" with media=entry.media %}
+        <li class="track">
+          <span class="track-num">{{ forloop.counter }}</span>
+          <a class="thumb" href="{% url 'core:media' entry.media.uid %}?list={{ playlist.uid }}">
+            {% if entry.media.thumbnail_url %}<img src="{{ entry.media.thumbnail_url }}" alt="" loading="lazy">{% else %}<span class="thumb-fallback">{% icon entry.media.kind|kind_icon %}</span>{% endif %}
+            {% if entry.media.duration_seconds %}<span class="thumb-badge thumb-duration">{{ entry.media.duration_label }}</span>{% endif %}
+          </a>
+          <div style="min-width:0">
+            <a class="media-title" href="{% url 'core:media' entry.media.uid %}?list={{ playlist.uid }}">{{ entry.media.title }}</a>
+            <p class="media-meta meta-row">{{ entry.media.owner.get_short_name }} <span class="meta-sep">·</span> {{ entry.media.views_count|compact }} views <span class="meta-sep">·</span> {{ entry.media.get_kind_display }}</p>
+          </div>
+          <div class="track-actions">
+            <a class="btn btn-sm btn-ghost" href="{% url 'core:media' entry.media.uid %}?list={{ playlist.uid }}" aria-label="Play {{ entry.media.title }}">{% icon "play" "icon-sm" %}</a>
+          </div>
+        </li>
       {% endfor %}
-    </div>
+    </ol>
   {% else %}
-    <p class="empty">This playlist is empty.</p>
+    <div class="empty-state">
+      <div class="empty-icon">{% icon "list-video" %}</div>
+      <h3>This playlist is empty.</h3>
+      <p>{% if can_edit %}Add media from the editor, or use “Save” under any video.{% else %}Nothing has been added yet.{% endif %}</p>
+      {% if can_edit %}<a class="btn btn-primary" href="{% url 'core:playlist_edit' playlist.uid %}">{% icon "plus" "icon-sm" %}Add media</a>{% endif %}
+    </div>
   {% endif %}
 {% endblock %}

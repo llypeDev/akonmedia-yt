@@ -1,4 +1,11 @@
-"""Chunked upload endpoints."""
+"""Chunked upload endpoints.
+
+    POST   /api/v1/uploads/                 start a session
+    GET    /api/v1/uploads/<id>/            where did we get to? (used to resume)
+    DELETE /api/v1/uploads/<id>/            abandon the session and its bytes
+    PUT    /api/v1/uploads/<id>/chunk/?index=N
+    POST   /api/v1/uploads/<id>/complete/   turn the bytes into a media item
+"""
 from django.core.files import File
 from django.db import transaction
 from django.http import Http404
@@ -8,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.media.api import kind_for
-from apps.media.models import Media
+from apps.media.models import Category, Media
 
 from .models import UploadSession
 
@@ -58,6 +65,28 @@ class StartUploadView(APIView):
         return Response(UploadSessionSerializer(session).data, status=status.HTTP_201_CREATED)
 
 
+class UploadSessionView(APIView):
+    """Report a session so a browser can resume it, or abandon it."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, session_id):
+        session = _session_for(request, session_id)
+        # The part file is the truth: if bytes were lost, start that chunk again.
+        on_disk = session.bytes_on_disk()
+        if not session.completed and on_disk != session.received_bytes:
+            session.realign(on_disk)
+        return Response(UploadSessionSerializer(session).data)
+
+    def delete(self, request, session_id):
+        session = _session_for(request, session_id)
+        if session.completed:
+            return Response({"detail": "already completed"}, status=400)
+        session.discard_part()
+        session.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class ChunkUploadView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -77,7 +106,17 @@ class ChunkUploadView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        payload = request.body
+        try:
+            declared = int(request.META.get("CONTENT_LENGTH") or 0)
+        except ValueError:
+            declared = 0
+        if declared > MAX_CHUNK:
+            return Response({"detail": "chunk too large"}, status=413)
+
+        # Read the raw stream rather than ``request.body``: the body accessor
+        # enforces DATA_UPLOAD_MAX_MEMORY_SIZE, which is smaller than the
+        # largest chunk this endpoint accepts.
+        payload = request._request.read(MAX_CHUNK + 1)
         if not payload:
             return Response({"detail": "empty chunk"}, status=400)
         if len(payload) > MAX_CHUNK:
@@ -112,19 +151,28 @@ class CompleteUploadView(APIView):
                 status=400,
             )
 
-        title = request.data.get("title") or session.filename.rsplit(".", 1)[0]
+        title = (request.data.get("title") or "").strip() or session.filename.rsplit(".", 1)[0]
         visibility = request.data.get("visibility", Media.Visibility.PUBLIC)
         if visibility not in Media.Visibility.values:
             return Response({"detail": "invalid visibility"}, status=400)
 
+        category = None
+        category_id = request.data.get("category")
+        if category_id not in (None, ""):
+            category = Category.objects.filter(pk=category_id).first()
+            if category is None:
+                return Response({"detail": "unknown category"}, status=400)
+
         with transaction.atomic():
             media = Media(
                 title=title[:255],
+                description=(request.data.get("description") or "")[:10000],
                 owner=request.user,
                 original_name=session.filename,
                 size_bytes=session.total_size,
                 kind=kind_for(session.filename, session.content_type),
                 visibility=visibility,
+                category=category,
             )
             with part.open("rb") as handle:
                 media.file.save(session.filename, File(handle), save=True)
@@ -133,12 +181,16 @@ class CompleteUploadView(APIView):
             session.media_uid = media.uid
             session.save(update_fields=["completed", "media_uid", "updated_at"])
 
+        # The bytes now live with the media item; the part file is a duplicate.
+        session.discard_part()
+
         from apps.media.tasks import process_media
 
         process_media.delay(str(media.pk))
+        media.refresh_from_db(fields=["state"])
 
         return Response(
-            {"media_uid": media.uid, "state": media.state},
+            {"media_uid": media.uid, "state": media.state, "url": f"/view/{media.uid}/"},
             status=status.HTTP_201_CREATED,
         )
 

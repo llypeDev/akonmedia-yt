@@ -1,0 +1,24 @@
+{% load static %}<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Something broke</title>
+  <link rel="icon" href="{% static 'brand/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <main class="main" style="min-height:100vh;justify-content:center">
+    <section class="error-page">
+      <div>
+        <img src="{% static 'brand/logo-mark.svg' %}" alt="" width="56" height="56" style="margin:0 auto 18px">
+        <div class="error-code mono">500</div>
+        <h1>The server tripped over a frame</h1>
+        <p>An unexpected error happened and has been logged. Reload in a moment; if it keeps happening, tell an administrator.</p>
+        <div class="btn-group"><a class="btn btn-primary" href="/">Back to the library</a></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

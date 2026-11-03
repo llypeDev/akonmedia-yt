@@ -119,3 +119,121 @@ class PipelineUnitTests(TestCase):
             self.assertFalse(pipeline.available())
             with self.assertRaises(pipeline.PipelineUnavailable):
                 pipeline._binary("ffmpeg")
+
+
+def make_tone(target: Path, seconds: int = 2, cover: bool = False) -> Path:
+    """An MP3, optionally carrying an embedded cover picture like real music."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    command = ["ffmpeg", "-y", "-f", "lavfi", "-i", f"sine=frequency=330:duration={seconds}"]
+    if cover:
+        command += ["-f", "lavfi", "-i", "color=c=0x7c6cff:s=320x320:d=1",
+                    "-map", "0:a", "-map", "1:v", "-c:v", "mjpeg", "-frames:v", "1",
+                    "-disposition:v", "attached_pic", "-id3v2_version", "3"]
+    command += ["-c:a", "libmp3lame", str(target)]
+    subprocess.run(command, capture_output=True, check=True, timeout=120)
+    return target
+
+
+@requires_ffmpeg
+class AudioAndStillTests(TestCase):
+    """The kinds that used to fail (audio) or look broken (images) in the library."""
+
+    def setUp(self):
+        self.root = Path(settings.BASE_DIR) / ".test-media" / uuid.uuid4().hex
+        self.override = override_settings(MEDIA_ROOT=str(self.root), CELERY_TASK_ALWAYS_EAGER=False)
+        self.override.enable()
+        self.user = User.objects.create_user(email="aud@example.com", password="x" * 20)
+
+    def tearDown(self):
+        self.override.disable()
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _media(self, source: Path, kind: str) -> Media:
+        from django.core.files import File
+
+        media = Media(title=source.stem, owner=self.user, kind=kind, original_name=source.name)
+        with source.open("rb") as handle:
+            media.file.save(source.name, File(handle), save=True)
+        return media
+
+    def test_audio_without_cover_gets_a_waveform_poster(self):
+        media = self._media(make_tone(self.root / "src" / "tone.mp3"), Media.Kind.AUDIO)
+        self.assertEqual(process_media(str(media.pk)), "ready")
+        media.refresh_from_db()
+        self.assertEqual(media.state, Media.State.READY)
+        self.assertGreater(media.duration_seconds, 1.0)
+        self.assertTrue(media.poster.name.endswith("poster.jpg"))
+        from PIL import Image
+
+        with Image.open(media.poster.path) as poster:
+            self.assertEqual(poster.size, pipeline.POSTER_SIZE)
+
+    def test_audio_cover_art_becomes_the_poster(self):
+        media = self._media(make_tone(self.root / "src" / "album.mp3", cover=True), Media.Kind.AUDIO)
+        process_media(str(media.pk))
+        media.refresh_from_db()
+        self.assertEqual(media.state, Media.State.READY)
+        from PIL import Image
+
+        with Image.open(media.poster.path) as poster:
+            self.assertEqual(poster.size, (320, 320))
+
+    def test_sound_only_mp4_is_reclassified_as_audio(self):
+        source = self.root / "src" / "voice.m4a"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=200:duration=2", "-c:a", "aac", str(source)],
+            capture_output=True, check=True, timeout=120,
+        )
+        media = self._media(source, Media.Kind.VIDEO)
+        process_media(str(media.pk))
+        media.refresh_from_db()
+        self.assertEqual(media.state, Media.State.READY)
+        self.assertEqual(media.kind, Media.Kind.AUDIO)
+        self.assertEqual(media.hls_playlist, "")
+
+    def test_video_gets_a_storyboard_for_seek_previews(self):
+        media = self._media(make_clip(self.root / "src" / "board.mp4", seconds=4, size="640x360"), Media.Kind.VIDEO)
+        process_media(str(media.pk))
+        media.refresh_from_db()
+        self.assertEqual(media.state, Media.State.READY)
+        self.assertTrue(media.storyboard.endswith("storyboard.jpg"))
+        meta = media.storyboard_meta
+        self.assertEqual(meta["width"], 160)
+        self.assertGreaterEqual(meta["count"], 3)
+        config = media.storyboard_config
+        self.assertTrue(config["src"].startswith("/media/"))
+        from PIL import Image
+
+        with Image.open(Path(self.root, media.storyboard)) as sheet:
+            self.assertEqual(sheet.size, (meta["cols"] * 160, meta["rows"] * 90))
+
+    def test_images_get_an_upright_thumbnail(self):
+        from PIL import Image
+
+        source = self.root / "src" / "portrait.jpg"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        picture = Image.new("RGB", (400, 200), (34, 211, 238))
+        exif = picture.getexif()
+        exif[0x0112] = 6  # "rotate 90° clockwise to display"
+        picture.save(source, exif=exif)
+
+        media = self._media(source, Media.Kind.IMAGE)
+        process_media(str(media.pk))
+        media.refresh_from_db()
+        self.assertEqual((media.width, media.height), (200, 400))
+        with Image.open(media.poster.path) as poster:
+            self.assertEqual(poster.size, (200, 400))
+
+
+class StoryboardPlanTests(TestCase):
+    def test_short_clip_gets_one_tile_per_second(self):
+        self.assertEqual(pipeline.plan_storyboard(12), (1.0, 12))
+
+    def test_long_clip_is_capped(self):
+        interval, count = pipeline.plan_storyboard(3600)
+        self.assertEqual(count, pipeline.STORYBOARD_MAX_TILES)
+        self.assertEqual(interval, 36.0)
+
+    def test_no_duration_no_storyboard(self):
+        self.assertEqual(pipeline.plan_storyboard(0), (0.0, 0))

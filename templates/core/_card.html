@@ -1,20 +1,31 @@
-<article class="card">
-  <a class="card-thumb" href="{% url 'core:media' media.uid %}">
-    {% if media.poster %}
-      <img src="{{ media.poster.url }}" alt="" loading="lazy">
+{% load akon %}{% url 'core:media' media.uid as media_url %}
+<article class="media-card">
+  <a class="thumb thumb-{{ media.kind }}" href="{{ media_url }}{% if list_uid %}?list={{ list_uid }}{% endif %}" tabindex="-1" aria-hidden="true">
+    {% if media.thumbnail_url %}
+      <img src="{{ media.thumbnail_url }}" alt="" loading="lazy" decoding="async">
     {% else %}
-      <div class="card-placeholder" data-kind="{{ media.kind }}">{{ media.get_kind_display }}</div>
+      <span class="thumb-fallback">{% icon media.kind|kind_icon %}<span class="thumb-fallback-label">{{ media.get_kind_display }}</span></span>
     {% endif %}
-    {% if media.duration_seconds %}
-      <span class="card-duration">{{ media.duration_label }}</span>
-    {% endif %}
+    {% if media.kind == "video" or media.kind == "audio" %}<span class="thumb-play">{% icon "play" %}</span>{% endif %}
+    {% if media.duration_seconds %}<span class="thumb-badge thumb-duration">{{ media.duration_label }}</span>{% endif %}
+    {% if media.kind != "video" %}<span class="thumb-badge thumb-kind">{% icon media.kind|kind_icon %}{{ media.get_kind_display }}</span>{% endif %}
+    {% if media.kind == "video" and media.height >= 700 %}<span class="thumb-badge thumb-res">{{ media.resolution_label }}</span>{% endif %}
+    {% if show_state and media.state != "ready" %}<span class="thumb-badge thumb-state">{{ media.get_state_display }}</span>{% endif %}
   </a>
-  <div class="card-body">
-    <h2 class="card-title"><a href="{% url 'core:media' media.uid %}">{{ media.title }}</a></h2>
-    <p class="card-meta">
-      {{ media.owner.get_short_name }}
-      {% if media.category %}· {{ media.category.name }}{% endif %}
-      {% if media.views_count %}· {{ media.views_count }} views{% endif %}
-    </p>
+  <div class="media-card-body">
+    {% if not hide_owner %}
+      <a href="{% url 'core:channel' media.owner_id %}" title="{{ media.owner.get_short_name }}">{% avatar media.owner "md" %}</a>
+    {% endif %}
+    <div class="media-card-text">
+      <h3 class="media-title"><a href="{{ media_url }}{% if list_uid %}?list={{ list_uid }}{% endif %}">{{ media.title }}</a></h3>
+      {% if not hide_owner %}
+        <p class="media-meta"><a href="{% url 'core:channel' media.owner_id %}">{{ media.owner.get_short_name }}</a>{% if media.category %} <span class="meta-sep">·</span> {{ media.category.name }}{% endif %}</p>
+      {% endif %}
+      <p class="media-meta meta-row">
+        <span>{{ media.views_count|compact }} view{{ media.views_count|pluralize }}</span>
+        <span class="meta-sep">·</span>
+        <span>{{ media.created_at|timesince }} ago</span>
+      </p>
+    </div>
   </div>
 </article>

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load akon %}
+{% block title %}Bad request — {{ PORTAL_NAME }}{% endblock %}
+{% block content %}
+  <section class="error-page">
+    <div>
+      <div class="error-code mono">400</div>
+      <h1>That request did not make sense</h1>
+      <p>Something in the address or the form was malformed. Go back and try again.</p>
+      <div class="btn-group"><a class="btn btn-primary" href="{% url 'core:index' %}">{% icon "home" "icon-sm" %}Back to the library</a></div>
+    </div>
+  </section>
+{% endblock %}

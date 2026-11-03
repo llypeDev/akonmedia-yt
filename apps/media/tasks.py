@@ -3,6 +3,16 @@
 The task is written so a failure always leaves the record in a terminal state:
 either ``ready`` or ``failed`` with a reason. Nothing stays stuck in
 ``processing``.
+
+What each kind gets:
+
+``video``     probe, poster frame, adaptive HLS ladder, seek-preview storyboard
+``audio``     probe, embedded cover art or a rendered waveform as the poster
+``image``     dimensions and a JPEG thumbnail (EXIF orientation applied)
+``document``  a first-page thumbnail for PDFs when poppler is installed
+
+Posters and storyboards are a convenience: when one cannot be produced the
+item is still published, because the original remains perfectly playable.
 """
 import logging
 from pathlib import Path
@@ -15,6 +25,11 @@ from . import pipeline
 from .models import Media
 
 logger = logging.getLogger(__name__)
+
+SAVED_FIELDS = [
+    "state", "published_at", "duration_seconds", "width", "height", "poster",
+    "hls_playlist", "storyboard", "storyboard_meta", "kind",
+]
 
 
 @shared_task(name="media.process", bind=True, max_retries=0)
@@ -46,9 +61,12 @@ def process_media(self, media_id: str) -> str:
 
     media.state = Media.State.READY
     media.published_at = media.published_at or timezone.now()
-    media.save(update_fields=["state", "published_at", "duration_seconds", "width",
-                              "height", "poster", "hls_playlist"])
+    media.save(update_fields=SAVED_FIELDS)
     return "ready"
+
+
+def _relative(path: Path) -> str:
+    return str(path.relative_to(settings.MEDIA_ROOT)).replace("\\", "/")
 
 
 def _run(media: Media) -> None:
@@ -60,12 +78,15 @@ def _run(media: Media) -> None:
     if not source.exists():
         raise pipeline.PipelineError("uploaded file is missing on disk")
 
+    folder = source.parent
+    poster = folder / "poster.jpg"
+
     if media.kind == Media.Kind.DOCUMENT:
-        # Nothing to encode; the file is served as-is.
+        _document(media, source, poster)
         return
 
     if media.kind == Media.Kind.IMAGE:
-        media.width, media.height = _image_size(source)
+        _image(media, source, poster)
         return
 
     if not pipeline.available():
@@ -76,27 +97,69 @@ def _run(media: Media) -> None:
     media.width = info.width
     media.height = info.height
 
-    poster = source.parent / "poster.jpg"
+    if media.kind == Media.Kind.VIDEO and not info.has_video and info.has_audio:
+        # An .mp4 or .webm that only carries sound is music, not a video.
+        media.kind = Media.Kind.AUDIO
+
+    if media.kind == Media.Kind.AUDIO:
+        _audio(media, source, poster, info)
+        return
+
     pipeline.extract_poster(source, poster, at=min(3.0, max(0.0, info.duration / 3)))
-    media.poster.name = str(poster.relative_to(settings.MEDIA_ROOT)).replace("\\", "/")
+    media.poster.name = _relative(poster)
 
-    if media.kind == Media.Kind.VIDEO:
-        master = pipeline.to_hls(
-            source,
-            source.parent / "hls",
-            width=info.width,
-            height=info.height,
-        )
-        media.hls_playlist = str(master.relative_to(settings.MEDIA_ROOT)).replace("\\", "/")
+    master = pipeline.to_hls(
+        source,
+        folder / "hls",
+        width=info.width,
+        height=info.height,
+    )
+    media.hls_playlist = _relative(master)
 
-
-def _image_size(source: Path) -> tuple[int, int]:
     try:
-        from PIL import Image  # optional dependency
-    except ImportError:
-        return 0, 0
+        board = folder / "storyboard.jpg"
+        media.storyboard_meta = pipeline.storyboard(source, board, info.duration)
+        media.storyboard = _relative(board)
+    except pipeline.PipelineError as exc:
+        logger.warning("media %s: no storyboard (%s)", media.uid, exc)
+        media.storyboard, media.storyboard_meta = "", {}
+
+
+def _audio(media: Media, source: Path, poster: Path, info: pipeline.Probe) -> None:
+    media.width = media.height = 0
+    made = None
+    if info.has_cover:
+        try:
+            made = pipeline.extract_cover(source, poster)
+        except pipeline.PipelineError:
+            made = None
+    if made is None:
+        try:
+            made = pipeline.waveform_poster(source, poster)
+        except pipeline.PipelineError as exc:
+            logger.warning("media %s: no waveform (%s)", media.uid, exc)
+    if made is not None:
+        media.poster.name = _relative(made)
+
+
+def _image(media: Media, source: Path, poster: Path) -> None:
     try:
-        with Image.open(source) as img:
-            return img.width, img.height
-    except Exception:  # noqa: BLE001 - a broken image still belongs in the library
-        return 0, 0
+        media.width, media.height = pipeline.image_poster(source, poster)
+    except pipeline.PipelineError as exc:
+        # A picture Pillow cannot read (SVG, HEIC…) still belongs in the
+        # library; the browser may well be able to show it.
+        logger.info("media %s: no thumbnail (%s)", media.uid, exc)
+        media.width, media.height = 0, 0
+        return
+    media.poster.name = _relative(poster)
+
+
+def _document(media: Media, source: Path, poster: Path) -> None:
+    if source.suffix.lower() != ".pdf" or not pipeline.pdf_available():
+        return
+    try:
+        pipeline.pdf_poster(source, poster)
+    except pipeline.PipelineError as exc:
+        logger.info("media %s: no page preview (%s)", media.uid, exc)
+        return
+    media.poster.name = _relative(poster)

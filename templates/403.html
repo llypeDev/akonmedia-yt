@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load akon %}
+{% block title %}Not allowed — {{ PORTAL_NAME }}{% endblock %}
+{% block content %}
+  <section class="error-page">
+    <div>
+      <div class="error-code mono">403</div>
+      <h1>This area needs a higher role</h1>
+      <p>Your account is signed in but does not have permission for this page. Ask a manager if you think it should.</p>
+      <div class="btn-group">
+        <a class="btn btn-primary" href="{% url 'core:index' %}">{% icon "home" "icon-sm" %}Back to the library</a>
+        {% if not user.is_authenticated %}<a class="btn" href="{% url 'account_login' %}">{% icon "log-in" "icon-sm" %}Sign in</a>{% endif %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

@@ -1,50 +1,205 @@
-{% load static %}<!doctype html>
-<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+{% load static akon %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'en' }}" data-theme="dark">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="csrf-token" content="{{ csrf_token }}">
-  <link rel="icon" type="image/svg+xml" href="{% static 'brand/favicon.svg' %}">
+  <meta name="description" content="{% block description %}{{ PORTAL_DESCRIPTION|default:'Stream, curate and deliver video, audio and images from your own hardware.' }}{% endblock %}">
+  <meta name="theme-color" content="#05070c" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f7fb" media="(prefers-color-scheme: light)">
   <title>{% block title %}{{ PORTAL_NAME }}{% endblock %}</title>
+  <script>
+    /* Theme and sidebar state before first paint, so nothing flashes. */
+    (function () {
+      var root = document.documentElement;
+      try {
+        var theme = localStorage.getItem("akon-theme");
+        if (theme !== "light" && theme !== "dark") {
+          theme = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        }
+        root.setAttribute("data-theme", theme);
+        if (localStorage.getItem("akon-sidebar") === "collapsed") root.setAttribute("data-sidebar", "collapsed");
+      } catch (e) { /* storage blocked: keep the defaults */ }
+    })();
+  </script>
+  <link rel="icon" href="{% static 'brand/favicon.svg' %}" type="image/svg+xml">
+  <link rel="icon" href="{% static 'brand/favicon-32.png' %}" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="{% static 'brand/apple-touch-icon.png' %}">
+  <link rel="manifest" href="{% static 'brand/site.webmanifest' %}">
+  <link rel="preload" href="{% static 'vendor/fonts/inter-latin-var.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{% static 'vendor/fonts/space-grotesk-latin-var.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block og %}
+  <meta property="og:site_name" content="{{ PORTAL_NAME }}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ PORTAL_NAME }}">
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'brand/og-image.png' %}">
+  <meta name="twitter:card" content="summary_large_image">
+  {% endblock %}
+  {% block extra_head %}{% endblock %}
 </head>
-<body>
-  <header class="site-header">
-    <a class="brand" href="{% url 'core:index' %}">
-      <img class="brand-logo" src="{% static 'brand/logo-wordmark-dark.svg' %}"
-           alt="{{ PORTAL_NAME }}" height="34">
-    </a>
+<body class="{% block body_class %}{% endblock %}">
+  <script>
+    /* The player remembers theater mode; apply it before the first paint. */
+    try {
+      if (document.body.classList.contains("watch-page") && localStorage.getItem("akon.player.theater") === "true") {
+        document.body.classList.add("is-theater");
+      }
+    } catch (e) { /* storage blocked */ }
+  </script>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="topbar-start">
+      <button class="icon-btn" type="button" data-action="toggle-sidebar" aria-label="Toggle navigation" aria-controls="sidebar">
+        {% icon "menu" %}
+      </button>
+      <a class="brand" href="{% url 'core:index' %}" aria-label="{{ PORTAL_NAME }} home">
+        <img class="logo-dark" src="{% static 'brand/logo-wordmark-dark.svg' %}" alt="{{ PORTAL_NAME }}" width="142" height="32">
+        <img class="logo-light" src="{% static 'brand/logo-wordmark-light.svg' %}" alt="{{ PORTAL_NAME }}" width="142" height="32">
+      </a>
+    </div>
 
     <form class="search" action="{% url 'core:search' %}" method="get" role="search">
-      <input type="search" name="q" placeholder="Search media" value="{{ request.GET.q|default:'' }}"
-             aria-label="Search media">
+      <button class="icon-btn search-close" type="button" data-action="close-search" aria-label="Close search">{% icon "chevron-left" %}</button>
+      <div class="search-box">
+        {% icon "search" "icon-sm" %}
+        <input type="search" name="q" placeholder="Search videos, music, images…" value="{{ request.GET.q|default:'' }}"
+               aria-label="Search media" autocomplete="off" data-search-input>
+        <kbd aria-hidden="true">/</kbd>
+      </div>
     </form>
 
-    <nav class="site-nav">
+    <div class="topbar-end">
+      <button class="icon-btn search-toggle" type="button" data-action="open-search" aria-label="Search">{% icon "search" %}</button>
       {% if user.is_authenticated %}
-        <a href="{% url 'core:playlists' %}">Playlists</a>
-        <a href="{% url 'core:upload' %}">Upload</a>
-        {% if CAN_CURATE %}<a href="{% url 'core:manage' %}">Manage</a>{% endif %}
-        <a href="/admin/">{{ user.get_short_name }}</a>
-        <form action="{% url 'account_logout' %}" method="post" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="link">Sign out</button>
-        </form>
-      {% else %}
-        <a href="{% url 'account_login' %}">Sign in</a>
-        <a class="button" href="{% url 'account_signup' %}">Join</a>
+        <a class="btn btn-primary btn-sm btn-upload" href="{% url 'core:upload' %}">{% icon "upload" "icon-sm" %}<span>Upload</span></a>
       {% endif %}
-    </nav>
+      <button class="icon-btn" type="button" data-action="toggle-theme" aria-label="Switch colour theme" title="Switch theme">
+        {% icon "sun" "icon-sun" %}{% icon "moon" "icon-moon" %}
+      </button>
+      {% if user.is_authenticated %}
+        <details class="dropdown" data-dropdown>
+          <summary class="user-chip" aria-label="Account menu">{% avatar user "sm" %}</summary>
+          <div class="dropdown-menu" role="menu">
+            <div class="menu-head">
+              {% avatar user "lg" %}
+              <div class="grow">
+                <strong>{{ user.get_full_name }}</strong>
+                <span>{{ user.email }}</span>
+                <span class="badge badge-role mt-1">{{ user.get_role_display }}</span>
+              </div>
+            </div>
+            <a class="menu-item" role="menuitem" href="{% url 'core:channel' user.pk %}">{% icon "tv" %}Your channel</a>
+            <a class="menu-item" role="menuitem" href="{% url 'core:studio' %}">{% icon "dashboard" %}Studio</a>
+            <a class="menu-item" role="menuitem" href="{% url 'core:playlists' %}">{% icon "list-video" %}Playlists</a>
+            <a class="menu-item" role="menuitem" href="{% url 'core:account' %}">{% icon "settings" %}Account settings</a>
+            {% if CAN_CURATE %}
+              <div class="menu-sep"></div>
+              <a class="menu-item" role="menuitem" href="{% url 'core:manage' %}">{% icon "shield" %}Manage</a>
+            {% endif %}
+            {% if user.is_staff %}
+              <a class="menu-item" role="menuitem" href="{% url 'admin:index' %}">{% icon "server" %}Django admin</a>
+            {% endif %}
+            <div class="menu-sep"></div>
+            <form action="{% url 'account_logout' %}" method="post">
+              {% csrf_token %}
+              <button type="submit" class="menu-item" role="menuitem">{% icon "log-out" %}Sign out</button>
+            </form>
+          </div>
+        </details>
+      {% else %}
+        <a class="btn btn-ghost btn-sm hide-sm" href="{% url 'account_login' %}?next={{ request.get_full_path|urlencode }}">{% icon "log-in" "icon-sm" %}Sign in</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'account_signup' %}">Join</a>
+      {% endif %}
+    </div>
   </header>
 
-  <main class="site-main">
-    {% block content %}{% endblock %}
-  </main>
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="drawer-head">
+        <a class="brand" href="{% url 'core:index' %}">
+          <img class="logo-dark" src="{% static 'brand/logo-wordmark-dark.svg' %}" alt="{{ PORTAL_NAME }}" width="133" height="30">
+          <img class="logo-light" src="{% static 'brand/logo-wordmark-light.svg' %}" alt="{{ PORTAL_NAME }}" width="133" height="30">
+        </a>
+        <button class="icon-btn" type="button" data-action="toggle-sidebar" aria-label="Close navigation">{% icon "x" %}</button>
+      </div>
 
-  <footer class="site-footer">
-    <span>{{ PORTAL_NAME }}</span>
-  </footer>
+      <nav class="nav-section">
+        {% with kind=request.GET.kind %}
+        <a class="nav-link {% if NAV == 'index' and not kind and not request.GET.category %}active{% endif %}" href="{% url 'core:index' %}">{% icon "home" %}<span>Home</span></a>
+        <a class="nav-link {% if NAV == 'index' and kind == 'video' %}active{% endif %}" href="{% url 'core:index' %}?kind=video">{% icon "film" %}<span>Videos</span></a>
+        <a class="nav-link {% if NAV == 'index' and kind == 'audio' %}active{% endif %}" href="{% url 'core:index' %}?kind=audio">{% icon "music" %}<span>Audio</span></a>
+        <a class="nav-link {% if NAV == 'index' and kind == 'image' %}active{% endif %}" href="{% url 'core:index' %}?kind=image">{% icon "image" %}<span>Images</span></a>
+        <a class="nav-link {% if NAV == 'index' and kind == 'document' %}active{% endif %}" href="{% url 'core:index' %}?kind=document">{% icon "file-text" %}<span>Documents</span></a>
+        <a class="nav-link {% if NAV == 'playlists' or NAV == 'playlist' or NAV == 'playlist_edit' %}active{% endif %}" href="{% url 'core:playlists' %}">{% icon "list-video" %}<span>Playlists</span></a>
+        {% endwith %}
+      </nav>
 
+      {% if user.is_authenticated %}
+        <nav class="nav-section">
+          <div class="nav-title">You</div>
+          <a class="nav-link {% if NAV == 'studio' or NAV == 'media_edit' %}active{% endif %}" href="{% url 'core:studio' %}">{% icon "dashboard" %}<span>Studio</span></a>
+          <a class="nav-link {% if NAV == 'upload' %}active{% endif %}" href="{% url 'core:upload' %}">{% icon "upload" %}<span>Upload</span></a>
+          <a class="nav-link {% if NAV == 'channel' and is_self %}active{% endif %}" href="{% url 'core:channel' user.pk %}">{% icon "tv" %}<span>Your channel</span></a>
+          <a class="nav-link {% if NAV == 'account' %}active{% endif %}" href="{% url 'core:account' %}">{% icon "settings" %}<span>Account</span></a>
+        </nav>
+        {% if CAN_CURATE or user.is_staff %}
+          <nav class="nav-section">
+            <div class="nav-title">Operations</div>
+            {% if CAN_CURATE %}<a class="nav-link {% if NAV == 'manage' %}active{% endif %}" href="{% url 'core:manage' %}">{% icon "shield" %}<span>Manage</span></a>{% endif %}
+            {% if user.is_staff %}<a class="nav-link" href="{% url 'admin:index' %}">{% icon "server" %}<span>Admin</span></a>{% endif %}
+          </nav>
+        {% endif %}
+      {% endif %}
+
+      {% if NAV_CATEGORIES %}
+        <nav class="nav-section categories">
+          <div class="nav-title">Categories</div>
+          {% for category in NAV_CATEGORIES %}
+            <a class="nav-link {% if request.GET.category == category.slug %}active{% endif %}" href="{% url 'core:index' %}?category={{ category.slug }}"><i class="nav-dot"></i><span>{{ category.name }}</span></a>
+          {% endfor %}
+        </nav>
+      {% endif %}
+
+      <div class="sidebar-foot">
+        <span class="status-line"><span class="pulse-dot"></span> Self-hosted · HLS · ABR</span>
+        <span><a href="{% url 'core:ready' %}">Status</a> · <a href="/api/v1/">API</a> · MIT</span>
+      </div>
+    </aside>
+    <div class="drawer-backdrop" data-action="toggle-sidebar"></div>
+
+    <main class="main" id="main">
+      {% block main %}
+        <div class="content">{% block content %}{% endblock %}</div>
+      {% endblock %}
+      <footer class="site-footer">
+        <span>© {% now "Y" %} {{ PORTAL_NAME }} — stream, curate, deliver.</span>
+        <nav>
+          <a href="{% url 'core:index' %}">Library</a>
+          <a href="{% url 'core:playlists' %}">Playlists</a>
+          <a href="{% url 'core:ready' %}">Status</a>
+          <span class="kbd-hint"><kbd>/</kbd> search</span>
+        </nav>
+      </footer>
+    </main>
+  </div>
+
+  {% if messages %}
+    <ul class="toasts" role="status" aria-live="polite">
+      {% for message in messages %}
+        <li class="toast {{ message.tags }}" data-toast>
+          <span class="toast-icon">{% if message.level_tag == 'error' %}{% icon "alert" %}{% elif message.level_tag == 'success' %}{% icon "check" %}{% elif message.level_tag == 'warning' %}{% icon "alert" %}{% else %}{% icon "info" %}{% endif %}</span>
+          <span class="toast-text">{{ message }}</span>
+          <button class="toast-close" type="button" aria-label="Dismiss" data-action="dismiss-toast">{% icon "x" "icon-sm" %}</button>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <script src="{% static 'js/app.js' %}" defer></script>
   {% block scripts %}{% endblock %}
+  {% block extra_body %}{% endblock %}
 </body>
 </html>

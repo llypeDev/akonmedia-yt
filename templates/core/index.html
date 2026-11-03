@@ -1,39 +1,116 @@
 {% extends "base.html" %}
+{% load akon humanize %}
 
-{% block title %}{{ PORTAL_NAME }} — media library{% endblock %}
+{% block title %}{% if category %}{{ category.name }} — {% elif kind %}{{ kind_title }} — {% endif %}{{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
-  <section class="intro">
-    <h1>{{ PORTAL_NAME }}</h1>
-    <p class="lede">{{ PORTAL_DESCRIPTION|default:"Publish, organise and deliver video, audio and images from your own hardware." }}</p>
-  </section>
+  {% if show_hero %}
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="pulse-dot"></span> Self-hosted media platform</span>
+        <h1>{{ PORTAL_NAME }}: stream, curate and deliver <span class="grad-text">every format</span>.</h1>
+        <p class="lede">{{ PORTAL_DESCRIPTION|default:"Publish video, audio, images and documents from your own hardware. Adaptive HLS streaming, chapters, subtitles and playlists — no third party in the loop." }}</p>
+        <div class="hero-actions">
+          {% if user.is_authenticated %}
+            <a class="btn btn-primary btn-lg" href="{% url 'core:upload' %}">{% icon "upload" %}Upload media</a>
+            <a class="btn btn-lg" href="{% url 'core:studio' %}">{% icon "dashboard" %}Open studio</a>
+          {% else %}
+            <a class="btn btn-primary btn-lg" href="{% url 'account_signup' %}">{% icon "sparkles" %}Create an account</a>
+            <a class="btn btn-lg" href="#library">{% icon "compass" %}Browse the library</a>
+          {% endif %}
+        </div>
+        <div class="terminal" aria-hidden="true"><b>$</b> ffmpeg → 1080p · 720p · 480p → master.m3u8 <span class="caret"></span></div>
+      </div>
+      <div class="hero-stats" aria-label="Library statistics">
+        <div class="stat">
+          <div class="stat-label">{% icon "layers" %}Published</div>
+          <div class="stat-value">{{ stats.items|intcomma }}</div>
+          <div class="stat-note">items in the library</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">{% icon "timer" %}Runtime</div>
+          <div class="stat-value">{{ stats.seconds|runtime_value }}<small>{{ stats.seconds|runtime_unit }}</small></div>
+          <div class="stat-note">of video and audio</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">{% icon "eye" %}Views</div>
+          <div class="stat-value">{{ stats.views|default:0|compact }}</div>
+          <div class="stat-note">plays served</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">{% icon "users" %}Creators</div>
+          <div class="stat-value">{{ stats.creators|intcomma }}</div>
+          <div class="stat-note">publishing here</div>
+        </div>
+      </div>
+    </section>
 
-  <nav class="filters">
-    <a class="chip {% if not kind %}active{% endif %}" href="{% url 'core:index' %}">All</a>
-    {% for value, label in kinds %}
-      <a class="chip {% if kind == value %}active{% endif %}" href="{% url 'core:index' %}?kind={{ value }}">{{ label }}</a>
-    {% endfor %}
-  </nav>
-
-  {% if page_obj.object_list %}
-    <div class="grid">
-      {% for media in page_obj.object_list %}
-        {% include "core/_card.html" %}
-      {% endfor %}
-    </div>
+    {% if trending %}
+      <section class="section">
+        <div class="section-head">
+          <h2>{% icon "flame" %}Trending now</h2>
+          <a class="btn btn-ghost btn-sm" href="?sort=popular">See all{% icon "chevron-right" "icon-sm" %}</a>
+        </div>
+        <div class="grid">
+          {% for media in trending %}{% include "core/_card.html" %}{% endfor %}
+        </div>
+      </section>
+    {% endif %}
   {% else %}
-    <p class="empty">Nothing published yet.</p>
+    <header class="page-head">
+      <div>
+        <span class="eyebrow">{% icon "compass" "icon-xs" %}Library</span>
+        <h1>{% if category %}{{ category.name }}{% if kind %} · {{ kind_title }}{% endif %}{% elif kind %}{{ kind_title }}{% else %}Everything{% endif %}</h1>
+        {% if category.description %}<p class="lede">{{ category.description }}</p>{% endif %}
+      </div>
+      <span class="muted mono">{{ page_obj.paginator.count|intcomma }} item{{ page_obj.paginator.count|pluralize }}</span>
+    </header>
   {% endif %}
 
-  {% if page_obj.has_other_pages %}
-    <nav class="pager">
-      {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}{% if kind %}&kind={{ kind }}{% endif %}">Previous</a>
-      {% endif %}
-      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-      {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}{% if kind %}&kind={{ kind }}{% endif %}">Next</a>
-      {% endif %}
-    </nav>
-  {% endif %}
+  <section class="section" id="library">
+    {% if show_hero %}
+      <div class="section-head"><h2>{% icon "sparkles" %}Latest uploads</h2></div>
+    {% endif %}
+
+    <div class="toolbar">
+      <nav class="chips" aria-label="Filter by type">
+        <a class="chip {% if not kind and not category %}active{% endif %}" href="{% url 'core:index' %}{% if sort != 'latest' %}?sort={{ sort }}{% endif %}">{% icon "grid" "icon-sm" %}All</a>
+        {% for value, label in kinds %}
+          <a class="chip {% if kind == value %}active{% endif %}" href="{% querystring kind=value page=None %}">{% icon value|kind_icon "icon-sm" %}{{ label }}</a>
+        {% endfor %}
+        {% for item in categories %}
+          <a class="chip {% if category and category.pk == item.pk %}active{% endif %}" href="{% querystring category=item.slug page=None %}">{{ item.name }} <span class="count">{{ item.listed }}</span></a>
+        {% endfor %}
+      </nav>
+      <form class="sort" method="get" action="{% url 'core:index' %}">
+        {% if kind %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
+        {% if category %}<input type="hidden" name="category" value="{{ category.slug }}">{% endif %}
+        <label for="sort">{% icon "sort" "icon-sm" %}<span class="sr-only">Sort by</span></label>
+        <select class="select" id="sort" name="sort" onchange="this.form.submit()">
+          {% for value, label in sorts %}<option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <noscript><button class="btn btn-sm" type="submit">Sort</button></noscript>
+      </form>
+    </div>
+
+    {% if page_obj.object_list %}
+      <div class="grid">
+        {% for media in page_obj.object_list %}{% include "core/_card.html" %}{% endfor %}
+      </div>
+      {% include "core/_pager.html" %}
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">{% icon "film" %}</div>
+        <h3>Nothing published yet</h3>
+        <p>{% if kind or category %}No published items match this filter. Try another one.{% else %}The library is empty. Upload the first video, track, image or PDF and it will appear here once processed.{% endif %}</p>
+        {% if kind or category %}
+          <a class="btn" href="{% url 'core:index' %}">Clear filters</a>
+        {% elif user.is_authenticated %}
+          <a class="btn btn-primary" href="{% url 'core:upload' %}">{% icon "upload" "icon-sm" %}Upload media</a>
+        {% else %}
+          <a class="btn btn-primary" href="{% url 'account_signup' %}">Create an account</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </section>
 {% endblock %}

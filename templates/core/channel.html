@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load akon humanize %}
+
+{% block title %}{{ owner.get_short_name }} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <div class="channel-banner" aria-hidden="true"></div>
+  <header class="channel-head">
+    {% avatar owner "xl" %}
+    <div class="grow">
+      <h1>{{ owner.get_short_name }}</h1>
+      <div class="meta-row">
+        <span class="mono">{{ stats.items|default:0|intcomma }}</span> upload{{ stats.items|default:0|pluralize }}
+        <span class="meta-sep">·</span>
+        <span class="mono">{{ stats.views|default:0|compact }}</span> view{{ stats.views|default:0|pluralize }}
+        <span class="meta-sep">·</span>
+        joined {{ owner.date_joined|date:"M Y" }}
+        {% if owner.role != "member" %}<span class="badge badge-role">{{ owner.get_role_display }}</span>{% endif %}
+      </div>
+    </div>
+    {% if is_self %}
+      <div class="btn-group">
+        <a class="btn" href="{% url 'core:studio' %}">{% icon "dashboard" "icon-sm" %}Studio</a>
+        <a class="btn btn-primary" href="{% url 'core:upload' %}">{% icon "upload" "icon-sm" %}Upload</a>
+      </div>
+    {% endif %}
+  </header>
+
+  <section class="section">
+    <div class="toolbar">
+      <h2 style="font-size:19px">Uploads</h2>
+      <form class="sort" method="get">
+        <label for="sort">{% icon "sort" "icon-sm" %}<span class="sr-only">Sort by</span></label>
+        <select class="select" id="sort" name="sort" onchange="this.form.submit()">
+          {% for value, label in sorts %}<option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </form>
+    </div>
+    {% if page_obj.object_list %}
+      <div class="grid">
+        {% for media in page_obj.object_list %}{% include "core/_card.html" with hide_owner=True %}{% endfor %}
+      </div>
+      {% include "core/_pager.html" %}
+    {% else %}
+      <div class="empty-state compact">
+        <div class="empty-icon">{% icon "tv" %}</div>
+        <h3>No public uploads yet</h3>
+        <p>{% if is_self %}Your public, processed uploads appear here. Private and unlisted items stay in your studio.{% else %}This creator has not published anything yet.{% endif %}</p>
+      </div>
+    {% endif %}
+  </section>
+
+  {% if playlists %}
+    <section class="section">
+      <div class="section-head"><h2>{% icon "list-video" %}Playlists</h2></div>
+      <div class="grid grid-tight">
+        {% for playlist in playlists %}{% include "core/_playlist_card.html" %}{% endfor %}
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

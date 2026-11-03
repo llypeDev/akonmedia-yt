@@ -50,12 +50,18 @@ services:
     command: celery -A config worker --loglevel=info --concurrency=2
     environment:
       RUN_MIGRATIONS: "0"
+    # The HTTP health check in the image is for the web process only.
+    healthcheck:
+      disable: true
 
   beat:
     <<: *app
-    command: celery -A config beat --loglevel=info
+    # Runs the hourly purge of abandoned uploads (CELERY_BEAT_SCHEDULE).
+    command: celery -A config beat --loglevel=info --schedule /tmp/celerybeat-schedule
     environment:
       RUN_MIGRATIONS: "0"
+    healthcheck:
+      disable: true
 
 volumes:
   postgres:

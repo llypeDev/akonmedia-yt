@@ -1,26 +1,24 @@
-"""Subtitle tracks: upload, edit in place, and serve as WebVTT."""
+"""Subtitle tracks: upload, edit in place, and serve as WebVTT or SubRip."""
 from django.contrib import messages
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.media import access
 from apps.media import subtitles as subs
 from apps.media.models import Media, Subtitle, SubtitleCue
-from apps.rbac import permissions as policy
+
+MAX_SUBTITLE_BYTES = 2 * 1024 * 1024
 
 
 def _editable(user, media: Media) -> bool:
-    if not user.is_authenticated:
-        return False
-    return media.owner_id == user.id or policy.can_curate_others(user)
+    return access.can_edit_media(user, media)
 
 
 def _media_for(user, uid: str) -> Media:
     media = get_object_or_404(Media, uid=uid)
     if not _editable(user, media):
-        from django.http import Http404
-
         raise Http404("media not found")
     return media
 
@@ -35,21 +33,28 @@ def subtitle_upload(request, uid: str):
     media = _media_for(request.user, uid)
     upload = request.FILES.get("file")
     language = _normalise_language(request.POST.get("language", ""))
+    back = request.POST.get("next") == "edit"
+
+    def bounce():
+        return redirect("core:media_edit" if back else "core:media", uid=media.uid)
 
     if upload is None:
         messages.error(request, "Choose a .srt or .vtt file.")
-        return redirect("core:media", uid=media.uid)
+        return bounce()
+    if upload.size > MAX_SUBTITLE_BYTES:
+        messages.error(request, "Subtitle files must be 2 MB or smaller.")
+        return bounce()
 
     raw = upload.read()
     try:
         text = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
-        text = raw.decode("utf-8", errors="replace")
+        text = raw.decode("latin-1", errors="replace")
 
     cues = subs.parse(text)
     if not cues:
         messages.error(request, "No cues could be read from that file.")
-        return redirect("core:media", uid=media.uid)
+        return bounce()
 
     with transaction.atomic():
         subtitle, created = Subtitle.objects.get_or_create(
@@ -106,10 +111,12 @@ def _save(request, media: Media, subtitle: Subtitle):
 
     rebuilt = []
     for index, (start, end, text) in enumerate(zip(starts, ends, texts)):
+        if not start.strip() and not end.strip() and not text.strip():
+            continue  # a blank row added in the editor and never filled in
         try:
             start_ms = subs.parse_timestamp(start)
             end_ms = subs.parse_timestamp(end)
-        except subs.SubtitleFormatError as exc:
+        except (subs.SubtitleFormatError, ValueError) as exc:
             messages.error(request, f"Cue {index + 1}: {exc}")
             return redirect("core:subtitle_editor", uid=media.uid, language=subtitle.language)
 
@@ -127,7 +134,15 @@ def _save(request, media: Media, subtitle: Subtitle):
             )
         )
 
+    rebuilt.sort(key=lambda cue: (cue.start_ms, cue.position))
+    for position, cue in enumerate(rebuilt):
+        cue.position = position
+
+    label = request.POST.get("label")
     with transaction.atomic():
+        if label is not None:
+            subtitle.label = label.strip()[:120]
+            subtitle.save(update_fields=["label", "updated_at"])
         subtitle.cues.all().delete()
         SubtitleCue.objects.bulk_create(rebuilt)
 
@@ -143,19 +158,26 @@ def subtitle_delete(request, uid: str, language: str):
     return redirect("core:media", uid=media.uid)
 
 
+def _readable_track(request, uid: str, language: str):
+    media = get_object_or_404(Media, uid=uid)
+    if not access.can_view_media(request.user, media):
+        raise Http404("subtitle not found")
+    subtitle = get_object_or_404(Subtitle, media=media, language=language)
+    cues = [
+        {"start_ms": c.start_ms, "end_ms": c.end_ms, "text": c.text}
+        for c in subtitle.cues.order_by("position", "start_ms")
+    ]
+    return media, subtitle, cues
+
+
 def subtitle_vtt(request, uid: str, language: str):
     """The browser needs WebVTT; cues are stored structurally, so render on read."""
-    media = get_object_or_404(Media, uid=uid)
-    subtitle = get_object_or_404(Subtitle, media=media, language=language)
+    _, _, cues = _readable_track(request, uid, language)
+    return HttpResponse(subs.to_vtt(cues), content_type="text/vtt; charset=utf-8")
 
-    if media.visibility != Media.Visibility.PUBLIC:
-        if not _editable(request.user, media):
-            from django.http import Http404
 
-            raise Http404("subtitle not found")
-
-    body = subs.to_vtt(
-        [{"start_ms": c.start_ms, "end_ms": c.end_ms, "text": c.text}
-         for c in subtitle.cues.order_by("position", "start_ms")]
-    )
-    return HttpResponse(body, content_type="text/vtt; charset=utf-8")
+def subtitle_srt(request, uid: str, language: str):
+    media, subtitle, cues = _readable_track(request, uid, language)
+    response = HttpResponse(subs.to_srt(cues), content_type="application/x-subrip; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{media.uid}.{subtitle.language}.srt"'
+    return response

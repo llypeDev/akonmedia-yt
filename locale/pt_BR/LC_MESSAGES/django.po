@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: QQplay\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 21:24+0000\n"
+"POT-Creation-Date: 2026-11-03 21:38+0000\n"
 "PO-Revision-Date: 2026-11-03 16:07+0000\n"
 "Last-Translator: QQplay\n"
 "Language-Team: Português (Brasil)\n"
@@ -44,11 +44,11 @@ msgstr "Comentário"
 
 #: apps/core/api_browser.py:40
 msgid ""
-"What viewers wrote under each media item, replies included. Filter with ?"
-"media=<uid>."
+"What viewers wrote under each media item, replies included. Filter with "
+"?media=<uid>."
 msgstr ""
-"O que o público escreveu em cada mídia, com as respostas. Filtre com ?"
-"media=<uid>."
+"O que o público escreveu em cada mídia, com as respostas. Filtre com "
+"?media=<uid>."
 
 #: apps/core/api_browser.py:44
 msgctxt "API resource"
@@ -96,8 +96,12 @@ msgid ""
 "The data behind the portal, as JSON: public reading for everyone, writing "
 "with the session of a signed-in account."
 msgstr ""
-"Os dados do portal em JSON: leitura pública para todos, escrita com a sessão "
-"de uma conta conectada."
+"Os dados do portal em JSON: leitura pública para todos, escrita com a sessão"
+" de uma conta conectada."
+
+#: apps/core/apps.py:8
+msgid "Core"
+msgstr "Núcleo"
 
 #: apps/core/manage_views.py:116
 #, python-format
@@ -205,7 +209,8 @@ msgstr "Os campos de capítulos estão inconsistentes."
 #: apps/core/studio_views.py:201
 #, python-format
 msgid "Chapter %(number)d needs a start time (like 1:30) and a title."
-msgstr "O capítulo %(number)d precisa de um início (como 1:30) e de um título."
+msgstr ""
+"O capítulo %(number)d precisa de um início (como 1:30) e de um título."
 
 #: apps/core/studio_views.py:206
 #, python-format
@@ -314,7 +319,7 @@ msgstr "A–Z"
 msgid "Videos"
 msgstr "Vídeos"
 
-#: apps/core/views.py:47 apps/media/models.py:62 templates/base.html:137
+#: apps/core/views.py:47 apps/media/models.py:64 templates/base.html:137
 msgid "Audio"
 msgstr "Áudio"
 
@@ -441,33 +446,148 @@ msgstr "Interrompida"
 msgid "Ended"
 msgstr "Encerrada"
 
-#: apps/live/models.py:60
+#: apps/live/models.py:53 apps/media/models.py:82 apps/media/models.py:234
+msgid "public id"
+msgstr "ID público"
+
+#: apps/live/models.py:57
+msgid "playback id"
+msgstr "ID de reprodução"
+
+#: apps/live/models.py:61
+msgid "stream key"
+msgstr "chave de transmissão"
+
+#: apps/live/models.py:66 apps/media/models.py:102 apps/media/models.py:246
+#: apps/uploader/models.py:21
+msgid "owner"
+msgstr "dono"
+
+#: apps/live/models.py:68 apps/media/models.py:85 apps/media/models.py:236
+#: apps/media/models.py:386
 msgid "title"
 msgstr "título"
 
-#: apps/live/models.py:61
+#: apps/live/models.py:69 apps/media/models.py:40 apps/media/models.py:86
+#: apps/media/models.py:237
 msgid "description"
 msgstr "descrição"
 
-#: apps/live/models.py:63
+#: apps/live/models.py:71 apps/media/models.py:97 apps/media/models.py:242
 msgid "visibility"
 msgstr "visibilidade"
 
-#: apps/live/models.py:70
+#: apps/live/models.py:78 apps/media/models.py:48 apps/media/models.py:106
 msgid "category"
 msgstr "categoria"
 
-#: apps/live/models.py:76
+#: apps/live/models.py:84
 msgid "starts at"
 msgstr "início"
 
-#: apps/live/models.py:77
+#: apps/live/models.py:85
 msgid "publish the recording"
 msgstr "publicar a gravação"
 
-#: apps/live/models.py:78
+#: apps/live/models.py:86
 msgid "chat"
 msgstr "chat"
+
+#: apps/live/models.py:90
+msgid "status"
+msgstr "status"
+
+#: apps/live/models.py:93
+msgid "encoder connected"
+msgstr "codificador conectado"
+
+#: apps/live/models.py:96
+msgid "encoder sessions"
+msgstr "conexões do codificador"
+
+#: apps/live/models.py:97
+msgid "started at"
+msgstr "começou em"
+
+#: apps/live/models.py:98
+msgid "interrupted at"
+msgstr "interrompida em"
+
+#: apps/live/models.py:99
+msgid "ended at"
+msgstr "encerrada em"
+
+#: apps/live/models.py:100
+msgid "peak viewers"
+msgstr "pico de espectadores"
+
+#: apps/live/models.py:104
+msgid "recording"
+msgstr "gravação"
+
+#: apps/live/models.py:109
+msgid "recording published at"
+msgstr "gravação publicada em"
+
+#: apps/live/models.py:113
+msgid "recording error"
+msgstr "erro na gravação"
+
+#: apps/live/models.py:116 apps/live/models.py:171 apps/live/models.py:195
+#: apps/media/models.py:45 apps/media/models.py:131 apps/media/models.py:252
+#: apps/media/models.py:303 apps/media/models.py:326
+#: apps/uploader/models.py:34
+msgid "created at"
+msgstr "data de criação"
+
+#: apps/live/models.py:117 apps/media/models.py:132 apps/media/models.py:327
+#: apps/uploader/models.py:35
+msgid "updated at"
+msgstr "última alteração"
+
+#: apps/live/models.py:120 apps/live/models.py:168 apps/live/models.py:188
+msgid "live"
+msgstr "live"
+
+#: apps/live/models.py:121
+msgid "lives"
+msgstr "lives"
+
+#: apps/live/models.py:170 apps/uploader/models.py:23
+msgid "file name"
+msgstr "nome do arquivo"
+
+#: apps/live/models.py:174
+msgid "live recording"
+msgstr "gravação de live"
+
+#: apps/live/models.py:175
+msgid "live recordings"
+msgstr "gravações de live"
+
+#: apps/live/models.py:192 apps/media/models.py:293
+msgid "author"
+msgstr "autor"
+
+#: apps/live/models.py:194
+msgid "message"
+msgstr "mensagem"
+
+#: apps/live/models.py:196 apps/media/models.py:302
+msgid "hidden"
+msgstr "oculto"
+
+#: apps/live/models.py:197
+msgid "hidden at"
+msgstr "ocultado em"
+
+#: apps/live/models.py:200
+msgid "chat message"
+msgstr "mensagem do chat"
+
+#: apps/live/models.py:201
+msgid "chat messages"
+msgstr "mensagens do chat"
 
 #: apps/live/views.py:325
 msgid "Sign in to take part in the chat."
@@ -529,7 +649,8 @@ msgstr "Encerre a live antes de excluí-la."
 #: apps/live/views.py:457
 #, python-format
 msgid ""
-"“%(title)s” was deleted. Its recording, if there is one, stays in your media."
+"“%(title)s” was deleted. Its recording, if there is one, stays in your "
+"media."
 msgstr ""
 "“%(title)s” foi excluída. A gravação, se houver, continua nas suas mídias."
 
@@ -545,8 +666,8 @@ msgstr "A recepção de lives não está configurada neste servidor."
 msgid ""
 "The previous stream from a browser is stopping. Try again in a few seconds."
 msgstr ""
-"A transmissão anterior pelo navegador está sendo encerrada. Tente de novo em "
-"alguns segundos."
+"A transmissão anterior pelo navegador está sendo encerrada. Tente de novo em"
+" alguns segundos."
 
 #: apps/live/views.py:515
 msgid "An encoder is already streaming to this live. Stop it first."
@@ -559,6 +680,11 @@ msgstr "Não foi possível iniciar a transmissão no servidor."
 #: apps/live/views.py:546
 msgid "The stream from this browser has stopped."
 msgstr "A transmissão por este navegador parou."
+
+#: apps/media/apps.py:8 templates/base.html:186 templates/core/index.html:87
+#: templates/core/status.html:104
+msgid "Library"
+msgstr "Biblioteca"
 
 #: apps/media/community.py:56
 msgid "That media is not published yet."
@@ -576,51 +702,228 @@ msgstr "Responda a um comentário da mesma mídia."
 msgid "Not your comment."
 msgstr "Este comentário não é seu."
 
-#: apps/media/models.py:61
+#: apps/media/models.py:38
+msgid "name"
+msgstr "nome"
+
+#: apps/media/models.py:39
+msgid "address name"
+msgstr "nome no endereço"
+
+#: apps/media/models.py:43
+msgid "parent category"
+msgstr "categoria-mãe"
+
+#: apps/media/models.py:49
+msgid "categories"
+msgstr "categorias"
+
+#: apps/media/models.py:63
 msgid "Video"
 msgstr "Vídeo"
 
-#: apps/media/models.py:63
+#: apps/media/models.py:65
 msgid "Image"
 msgstr "Imagem"
 
-#: apps/media/models.py:64
+#: apps/media/models.py:66
 msgid "Document"
 msgstr "Documento"
 
-#: apps/media/models.py:67
+#: apps/media/models.py:69
 msgid "Pending"
 msgstr "Na fila"
 
-#: apps/media/models.py:68 templates/core/media_detail.html:103
+#: apps/media/models.py:70 templates/core/media_detail.html:103
 msgid "Processing"
 msgstr "Processando"
 
-#: apps/media/models.py:69
+#: apps/media/models.py:71
 msgid "Ready"
 msgstr "Pronta"
 
-#: apps/media/models.py:70 templates/core/manage.html:22
+#: apps/media/models.py:72 templates/core/manage.html:22
 #: templates/core/manage.html:30 templates/core/manage.html:70
 #: templates/live/studio_lives.html:57
 msgid "Failed"
 msgstr "Com falha"
 
-#: apps/media/models.py:73 templates/core/media_detail.html:192
+#: apps/media/models.py:75 templates/core/media_detail.html:192
 msgid "Public"
 msgstr "Pública"
 
-#: apps/media/models.py:74 templates/core/media_detail.html:191
+#: apps/media/models.py:76 templates/core/media_detail.html:191
 msgid "Unlisted"
 msgstr "Não listada"
 
-#: apps/media/models.py:75 templates/core/media_detail.html:190
+#: apps/media/models.py:77 templates/core/media_detail.html:190
 msgid "Private"
 msgstr "Privada"
+
+#: apps/media/models.py:89
+msgid "type"
+msgstr "tipo"
+
+#: apps/media/models.py:93
+msgid "processing"
+msgstr "processamento"
+
+#: apps/media/models.py:109 apps/media/models.py:324
+msgid "file"
+msgstr "arquivo"
+
+#: apps/media/models.py:110
+msgid "original name"
+msgstr "nome original"
+
+#: apps/media/models.py:111
+msgid "size in bytes"
+msgstr "tamanho em bytes"
+
+#: apps/media/models.py:112
+msgid "duration in seconds"
+msgstr "duração em segundos"
+
+#: apps/media/models.py:113
+msgid "width"
+msgstr "largura"
+
+#: apps/media/models.py:114
+msgid "height"
+msgstr "altura"
+
+#: apps/media/models.py:117
+msgid "poster"
+msgstr "pôster"
+
+#: apps/media/models.py:119
+msgid "HLS playlist"
+msgstr "playlist HLS"
+
+#: apps/media/models.py:121
+msgid "storyboard"
+msgstr "storyboard"
+
+#: apps/media/models.py:125
+msgid "storyboard layout"
+msgstr "grade do storyboard"
+
+#: apps/media/models.py:128
+msgid "views"
+msgstr "visualizações"
+
+#: apps/media/models.py:129
+msgid "failure reason"
+msgstr "motivo da falha"
+
+#: apps/media/models.py:133
+msgid "published at"
+msgstr "data de publicação"
+
+#: apps/media/models.py:136 apps/media/models.py:270 apps/media/models.py:289
+#: apps/media/models.py:318 apps/media/models.py:384
+msgid "media item"
+msgstr "mídia"
+
+#: apps/media/models.py:137
+msgid "media items"
+msgstr "mídias"
+
+#: apps/media/models.py:250
+msgid "items"
+msgstr "itens"
+
+#: apps/media/models.py:255 apps/media/models.py:266
+msgid "playlist"
+msgstr "playlist"
+
+#: apps/media/models.py:256
+msgid "playlists"
+msgstr "playlists"
+
+#: apps/media/models.py:272 apps/media/models.py:354 apps/media/models.py:388
+msgid "position"
+msgstr "posição"
+
+#: apps/media/models.py:275
+msgid "playlist item"
+msgstr "item da playlist"
+
+#: apps/media/models.py:276
+msgid "playlist items"
+msgstr "itens da playlist"
+
+#: apps/media/models.py:297
+msgid "reply to"
+msgstr "resposta a"
+
+#: apps/media/models.py:299 apps/media/models.py:357
+msgid "text"
+msgstr "texto"
+
+#: apps/media/models.py:301
+msgid "moment in the video"
+msgstr "momento no vídeo"
+
+#: apps/media/models.py:306
+msgid "comment"
+msgstr "comentário"
+
+#: apps/media/models.py:307
+msgid "comments"
+msgstr "comentários"
+
+#: apps/media/models.py:320
+msgid "language"
+msgstr "idioma"
+
+#: apps/media/models.py:321
+msgid "label"
+msgstr "rótulo"
+
+#: apps/media/models.py:330 apps/media/models.py:352
+msgid "subtitle track"
+msgstr "faixa de legenda"
+
+#: apps/media/models.py:331
+msgid "subtitle tracks"
+msgstr "faixas de legenda"
+
+#: apps/media/models.py:355
+msgid "start (ms)"
+msgstr "início (ms)"
+
+#: apps/media/models.py:356
+msgid "end (ms)"
+msgstr "fim (ms)"
+
+#: apps/media/models.py:360
+msgid "cue"
+msgstr "fala da legenda"
+
+#: apps/media/models.py:361
+msgid "cues"
+msgstr "falas da legenda"
+
+#: apps/media/models.py:387
+msgid "start (seconds)"
+msgstr "início (segundos)"
+
+#: apps/media/models.py:391
+msgid "chapter"
+msgstr "capítulo"
+
+#: apps/media/models.py:392
+msgid "chapters"
+msgstr "capítulos"
 
 #: apps/media/serializers.py:74
 msgid "Files above 4 GB must use the chunked uploader."
 msgstr "Arquivos acima de 4 GB precisam do envio em partes."
+
+#: apps/rbac/apps.py:8
+msgid "Access control"
+msgstr "Controle de acesso"
 
 #: apps/rbac/roles.py:7
 msgid "Member"
@@ -641,6 +944,47 @@ msgstr "Gestor"
 #: apps/rbac/roles.py:11
 msgid "Administrator"
 msgstr "Administrador"
+
+#: apps/uploader/apps.py:8 templates/core/channel.html:31
+#: templates/core/manage.html:185 templates/core/studio.html:21
+msgid "Uploads"
+msgstr "Envios"
+
+#: apps/uploader/models.py:24
+msgid "content type"
+msgstr "tipo de conteúdo"
+
+#: apps/uploader/models.py:25
+msgid "total size (bytes)"
+msgstr "tamanho total (bytes)"
+
+#: apps/uploader/models.py:28
+msgid "part size (bytes)"
+msgstr "tamanho de cada parte (bytes)"
+
+#: apps/uploader/models.py:30
+msgid "next part"
+msgstr "próxima parte"
+
+#: apps/uploader/models.py:31
+msgid "bytes received"
+msgstr "bytes recebidos"
+
+#: apps/uploader/models.py:32
+msgid "completed"
+msgstr "concluído"
+
+#: apps/uploader/models.py:33
+msgid "media id"
+msgstr "ID da mídia"
+
+#: apps/uploader/models.py:38
+msgid "upload in parts"
+msgstr "envio em partes"
+
+#: apps/uploader/models.py:39
+msgid "uploads in parts"
+msgstr "envios em partes"
 
 #: apps/uploader/views.py:57
 msgid "chunk_size out of range"
@@ -682,6 +1026,62 @@ msgstr "Visibilidade inválida."
 #: apps/uploader/views.py:165
 msgid "Unknown category."
 msgstr "Categoria desconhecida."
+
+#: apps/users/admin.py:18 templates/allauth/layouts/manage.html:7
+msgid "Profile"
+msgstr "Perfil"
+
+#: apps/users/admin.py:19
+msgid "Permissions"
+msgstr "Permissões"
+
+#: apps/users/admin.py:20
+msgid "History"
+msgstr "Histórico"
+
+#: apps/users/apps.py:8
+msgid "People"
+msgstr "Pessoas"
+
+#: apps/users/models.py:22
+msgid "email address"
+msgstr "endereço de e-mail"
+
+#: apps/users/models.py:23
+msgid "display name"
+msgstr "nome de exibição"
+
+#: apps/users/models.py:28
+msgid "Determines what the account may do across the portal."
+msgstr "Define o que a conta pode fazer no portal."
+
+#: apps/users/models.py:29
+msgid "role"
+msgstr "papel"
+
+#: apps/users/models.py:32
+msgid "active"
+msgstr "ativo"
+
+#: apps/users/models.py:35
+msgid "admin access"
+msgstr "acesso ao Admin"
+
+#: apps/users/models.py:36
+msgid "Can sign in to the Admin."
+msgstr "Pode entrar no Admin."
+
+#: apps/users/models.py:38
+msgid "date joined"
+msgstr "data de cadastro"
+
+#: apps/users/models.py:47
+msgid "user"
+msgstr "usuário"
+
+#: apps/users/models.py:48
+msgid "users"
+msgstr "usuários"
 
 #: apps/users/translations.py:14
 #, python-format
@@ -772,13 +1172,49 @@ msgstr ""
 "Aconteceu um erro inesperado, e ele foi registrado. Recarregue daqui a "
 "pouco; se continuar, avise um administrador."
 
+#: templates/admin/base_site.html:4
+msgid "Django site admin"
+msgstr "Site de administração do Django"
+
+#: templates/admin/base_site.html:43
+msgid "Django administration"
+msgstr "Administração do Django"
+
+#: templates/admin/base_site.html:46 templates/base.html:158
+msgid "Admin"
+msgstr "Admin"
+
+#: templates/admin/base_site.html:62
+msgid "View site"
+msgstr "Ver o site"
+
+#: templates/admin/base_site.html:65
+msgid "Documentation"
+msgstr "Documentação"
+
+#: templates/admin/base_site.html:67 templates/core/account.html:50
+msgid "Change password"
+msgstr "Alterar senha"
+
+#: templates/admin/base_site.html:70
+msgid "Log out"
+msgstr "Encerrar sessão"
+
+#: templates/admin/color_theme_toggle.html:3
+msgid "Toggle theme (current theme: auto)"
+msgstr "Alternar tema (tema atual: automático)"
+
+#: templates/admin/color_theme_toggle.html:4
+msgid "Toggle theme (current theme: light)"
+msgstr "Alternar tema (tema atual: claro)"
+
+#: templates/admin/color_theme_toggle.html:5
+msgid "Toggle theme (current theme: dark)"
+msgstr "Alternar tema (tema atual: escuro)"
+
 #: templates/allauth/layouts/manage.html:6
 msgid "Account sections"
 msgstr "Seções da conta"
-
-#: templates/allauth/layouts/manage.html:7
-msgid "Profile"
-msgstr "Perfil"
 
 #: templates/allauth/layouts/manage.html:8 templates/core/account.html:44
 msgid "Email"
@@ -859,8 +1295,8 @@ msgstr "Playlists"
 msgid "Account settings"
 msgstr "Configurações da conta"
 
-#: templates/base.html:102 templates/base.html:157 templates/core/manage.html:4
-#: templates/core/manage.html:10
+#: templates/base.html:102 templates/base.html:157
+#: templates/core/manage.html:4 templates/core/manage.html:10
 msgid "Manage"
 msgstr "Gerenciar"
 
@@ -906,10 +1342,6 @@ msgstr "Transmitir"
 msgid "Account"
 msgstr "Conta"
 
-#: templates/base.html:158
-msgid "Admin"
-msgstr "Admin"
-
 #: templates/base.html:165
 msgid "Categories"
 msgstr "Categorias"
@@ -927,11 +1359,6 @@ msgstr "Status"
 #: templates/base.html:184
 msgid "stream, curate, deliver."
 msgstr "transmita, organize, entregue."
-
-#: templates/base.html:186 templates/core/index.html:87
-#: templates/core/status.html:104
-msgid "Library"
-msgstr "Biblioteca"
 
 #: templates/base.html:189
 msgid "search"
@@ -1022,8 +1449,8 @@ msgid_plural "items"
 msgstr[0] "item"
 msgstr[1] "itens"
 
-#: templates/core/_playlist_card.html:21 templates/core/playlist_detail.html:28
-#: templates/core/playlist_edit.html:10
+#: templates/core/_playlist_card.html:21
+#: templates/core/playlist_detail.html:28 templates/core/playlist_edit.html:10
 msgid "Edit playlist"
 msgstr "Editar playlist"
 
@@ -1078,10 +1505,6 @@ msgstr "Último acesso"
 #: templates/core/account.html:49
 msgid "Email addresses"
 msgstr "Endereços de e-mail"
-
-#: templates/core/account.html:50
-msgid "Change password"
-msgstr "Alterar senha"
 
 #: templates/core/account.html:55
 msgid "Sign out of this device"
@@ -1138,9 +1561,11 @@ msgstr "Copiar o comando"
 
 #: templates/core/api_browser.html:101
 msgid ""
-"Lists come 24 items at a time: follow next and previous to page through them."
+"Lists come 24 items at a time: follow next and previous to page through "
+"them."
 msgstr ""
-"As listas vêm de 24 em 24 itens: siga next e previous para passar as páginas."
+"As listas vêm de 24 em 24 itens: siga next e previous para passar as "
+"páginas."
 
 #: templates/core/api_browser.html:102
 msgid "In the browser, add ?format=json to any address to see the plain JSON."
@@ -1195,11 +1620,6 @@ msgstr[1] "<span class=\"mono\">%(shown)s</span> visualizações"
 #, python-format
 msgid "joined %(joined)s"
 msgstr "entrou em %(joined)s"
-
-#: templates/core/channel.html:31 templates/core/manage.html:185
-#: templates/core/studio.html:21
-msgid "Uploads"
-msgstr "Envios"
 
 #: templates/core/channel.html:33 templates/core/index.html:113
 #: templates/core/search.html:32
@@ -1857,8 +2277,7 @@ msgstr "Comentar"
 
 #: templates/core/media_detail.html:322
 #, python-format
-msgid ""
-"<a class=\"text-link\" href=\"%(url)s?next=%(next)s\">Sign in</a> to comment."
+msgid "<a class=\"text-link\" href=\"%(url)s?next=%(next)s\">Sign in</a> to comment."
 msgstr ""
 "<a class=\"text-link\" href=\"%(url)s?next=%(next)s\">Entre</a> para "
 "comentar."
@@ -2046,8 +2465,8 @@ msgstr "Zona de perigo"
 
 #: templates/core/media_edit.html:168
 msgid ""
-"Deleting removes the original, every rendition, subtitles and comments. This "
-"cannot be undone."
+"Deleting removes the original, every rendition, subtitles and comments. This"
+" cannot be undone."
 msgstr ""
 "Excluir remove o original, todas as versões, as legendas e os comentários. "
 "Não dá para desfazer."
@@ -2136,8 +2555,8 @@ msgstr "Nada nesta playlist ainda."
 
 #: templates/core/playlist_edit.html:75
 msgid ""
-"Paste a link to any media page above, or choose one of your uploads from the "
-"suggestions."
+"Paste a link to any media page above, or choose one of your uploads from the"
+" suggestions."
 msgstr ""
 "Cole acima o link de qualquer página de mídia ou escolha um dos seus envios "
 "nas sugestões."
@@ -2238,8 +2657,8 @@ msgstr[1] ""
 
 #: templates/core/search.html:15
 msgid ""
-"Type something in the field above — press <kbd>/</kbd> from anywhere to jump "
-"to it."
+"Type something in the field above — press <kbd>/</kbd> from anywhere to jump"
+" to it."
 msgstr ""
 "Digite algo no campo acima — aperte <kbd>/</kbd> em qualquer lugar para ir "
 "até ele."
@@ -2263,8 +2682,8 @@ msgid ""
 "No published media matches “%(query)s”. Check the spelling or try a broader "
 "word."
 msgstr ""
-"Nenhuma mídia publicada corresponde a “%(query)s”. Confira a grafia ou tente "
-"uma palavra mais ampla."
+"Nenhuma mídia publicada corresponde a “%(query)s”. Confira a grafia ou tente"
+" uma palavra mais ampla."
 
 #: templates/core/status.html:54
 msgid "System status"
@@ -2303,8 +2722,8 @@ msgstr ""
 #: templates/core/status.html:96
 msgid "Liveness: 200 while the process answers, even with the database down."
 msgstr ""
-"Processo no ar: 200 enquanto o processo responde, mesmo com o banco de dados "
-"fora do ar."
+"Processo no ar: 200 enquanto o processo responde, mesmo com o banco de dados"
+" fora do ar."
 
 #: templates/core/studio.html:9 templates/live/studio_lives.html:9
 msgid "Creator studio"
@@ -2522,8 +2941,8 @@ msgid ""
 "Video, audio, images and PDFs. Large files are sent in resumable chunks, so "
 "a dropped connection resumes instead of starting over."
 msgstr ""
-"Vídeos, áudios, imagens e PDFs. Arquivos grandes vão em partes com retomada: "
-"se a conexão cair, o envio continua em vez de recomeçar."
+"Vídeos, áudios, imagens e PDFs. Arquivos grandes vão em partes com retomada:"
+" se a conexão cair, o envio continua em vez de recomeçar."
 
 #: templates/core/upload.html:16
 msgid "Uploading needs JavaScript: files are sent in chunks by the browser."
@@ -2614,23 +3033,23 @@ msgid ""
 "ffprobe reads it, ffmpeg cuts a poster and an adaptive HLS ladder (up to "
 "1080p / 720p / 480p) plus seek previews."
 msgstr ""
-"O ffprobe lê o arquivo, e o ffmpeg gera um pôster, uma escada HLS adaptativa "
-"(até 1080p / 720p / 480p) e as prévias da barra de progresso."
+"O ffprobe lê o arquivo, e o ffmpeg gera um pôster, uma escada HLS adaptativa"
+" (até 1080p / 720p / 480p) e as prévias da barra de progresso."
 
 #: templates/core/upload.html:110
 msgid ""
 "Audio gets a waveform cover, images a thumbnail, PDFs a first-page preview."
 msgstr ""
-"Áudios ganham uma capa com a forma de onda, imagens uma miniatura e PDFs uma "
-"prévia da primeira página."
+"Áudios ganham uma capa com a forma de onda, imagens uma miniatura e PDFs uma"
+" prévia da primeira página."
 
 #: templates/core/upload.html:111
 msgid ""
 "When it is ready, the page refreshes itself and the player picks the best "
 "rendition for each viewer."
 msgstr ""
-"Quando fica pronto, a página se atualiza sozinha e o player escolhe a melhor "
-"qualidade para cada pessoa."
+"Quando fica pronto, a página se atualiza sozinha e o player escolhe a melhor"
+" qualidade para cada pessoa."
 
 #: templates/live/_card.html:10
 msgid "LIVE"
@@ -2646,10 +3065,8 @@ msgstr "Transmitida"
 
 #: templates/live/_card.html:25
 #, python-format
-msgid ""
-"on air since <time datetime=\"%(iso)s\" data-local=\"time\">%(when)s</time>"
-msgstr ""
-"no ar desde <time datetime=\"%(iso)s\" data-local=\"time\">%(when)s</time>"
+msgid "on air since <time datetime=\"%(iso)s\" data-local=\"time\">%(when)s</time>"
+msgstr "no ar desde <time datetime=\"%(iso)s\" data-local=\"time\">%(when)s</time>"
 
 #: templates/live/_card.html:27
 msgid "Starts when the host goes live"
@@ -2669,8 +3086,8 @@ msgstr ""
 #: templates/live/_cast.html:4
 msgid "This browser cannot stream. Use a recent Chrome, Edge or Firefox."
 msgstr ""
-"Este navegador não consegue transmitir. Use uma versão recente do Chrome, do "
-"Edge ou do Firefox."
+"Este navegador não consegue transmitir. Use uma versão recente do Chrome, do"
+" Edge ou do Firefox."
 
 #: templates/live/_cast.html:7 templates/live/_cast.html:8
 msgid "Source"
@@ -2689,8 +3106,8 @@ msgid ""
 "With Screen, your voice goes through the microphone; the computer's sound "
 "joins in when the browser offers to share it."
 msgstr ""
-"Na opção Tela, a sua voz vai pelo microfone; o som do computador entra junto "
-"quando o navegador oferecer compartilhá-lo."
+"Na opção Tela, a sua voz vai pelo microfone; o som do computador entra junto"
+" quando o navegador oferecer compartilhá-lo."
 
 #: templates/live/_cast.html:19
 msgid "Your camera or screen appears here before you go on air."
@@ -2937,8 +3354,8 @@ msgid ""
 "Click <strong>Start Streaming</strong>. The preview appears here a few "
 "seconds later."
 msgstr ""
-"Clique em <strong>Iniciar transmissão</strong>. A prévia aparece aqui alguns "
-"segundos depois."
+"Clique em <strong>Iniciar transmissão</strong>. A prévia aparece aqui alguns"
+" segundos depois."
 
 #: templates/live/control.html:91
 msgid "Create a new stream key? The current one stops working."
@@ -3002,8 +3419,8 @@ msgid ""
 "Give it a title and, if you like, a start time. The stream key is on the "
 "next page."
 msgstr ""
-"Dê um título e, se quiser, um horário de início. A chave de transmissão fica "
-"na próxima página."
+"Dê um título e, se quiser, um horário de início. A chave de transmissão fica"
+" na próxima página."
 
 #: templates/live/form.html:39
 msgid "Starts at"
@@ -3068,8 +3485,8 @@ msgid ""
 "Stop streaming or end the live in the control room. The recording becomes a "
 "video in your media."
 msgstr ""
-"Pare a transmissão ou encerre a live na sala de controle. A gravação vira um "
-"vídeo nas suas mídias."
+"Pare a transmissão ou encerre a live na sala de controle. A gravação vira um"
+" vídeo nas suas mídias."
 
 #: templates/live/lives.html:11
 msgid ""

@@ -9,6 +9,7 @@ import uuid
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from apps.rbac.roles import Role
 
@@ -18,18 +19,23 @@ from .managers import UserManager
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    email = models.EmailField("email address", unique=True)
-    display_name = models.CharField(max_length=120, blank=True)
+    email = models.EmailField(_("email address"), unique=True)
+    display_name = models.CharField(max_length=120, blank=True, verbose_name=_("display name"))
     role = models.CharField(
         max_length=16,
         choices=Role.choices,
         default=Role.MEMBER,
-        help_text="Determines what the account may do across the portal.",
+        help_text=_("Determines what the account may do across the portal."),
+        verbose_name=_("role"),
     )
 
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(default=timezone.now)
+    is_active = models.BooleanField(default=True, verbose_name=_("active"))
+    is_staff = models.BooleanField(
+        default=False,
+        verbose_name=_("admin access"),
+        help_text=_("Can sign in to the Admin."),
+    )
+    date_joined = models.DateTimeField(default=timezone.now, verbose_name=_("date joined"))
 
     objects = UserManager()
 
@@ -38,9 +44,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     class Meta:
+        verbose_name = _("user")
+        verbose_name_plural = _("users")
         ordering = ["-date_joined"]
-        verbose_name = "user"
-        verbose_name_plural = "users"
 
     def __str__(self) -> str:
         return self.display_name or self.email

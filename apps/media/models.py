@@ -35,17 +35,19 @@ def _suffix(filename: str) -> str:
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=120, unique=True)
-    slug = models.SlugField(max_length=140, unique=True, blank=True)
-    description = models.TextField(blank=True)
+    name = models.CharField(max_length=120, unique=True, verbose_name=_("name"))
+    slug = models.SlugField(max_length=140, unique=True, blank=True, verbose_name=_("address name"))
+    description = models.TextField(blank=True, verbose_name=_("description"))
     parent = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="children"
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="children",
+        verbose_name=_("parent category"),
     )
-    created_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
 
     class Meta:
+        verbose_name = _("category")
+        verbose_name_plural = _("categories")
         ordering = ["name"]
-        verbose_name_plural = "categories"
 
     def __str__(self) -> str:
         return self.name
@@ -75,51 +77,70 @@ class Media(models.Model):
         PRIVATE = "private", _("Private")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    uid = models.CharField(max_length=16, unique=True, default=new_uid, editable=False)
+    uid = models.CharField(
+        max_length=16, unique=True, default=new_uid, editable=False,
+        verbose_name=_("public id"),
+    )
 
-    title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.VIDEO)
-    state = models.CharField(max_length=16, choices=State.choices, default=State.PENDING)
+    title = models.CharField(max_length=255, verbose_name=_("title"))
+    description = models.TextField(blank=True, verbose_name=_("description"))
+    kind = models.CharField(
+        max_length=16, choices=Kind.choices, default=Kind.VIDEO,
+        verbose_name=_("type"),
+    )
+    state = models.CharField(
+        max_length=16, choices=State.choices, default=State.PENDING,
+        verbose_name=_("processing"),
+    )
     visibility = models.CharField(
-        max_length=16, choices=Visibility.choices, default=Visibility.PUBLIC
+        max_length=16, choices=Visibility.choices, default=Visibility.PUBLIC,
+        verbose_name=_("visibility"),
     )
 
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="media"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="media",
+        verbose_name=_("owner"),
     )
     category = models.ForeignKey(
-        Category, null=True, blank=True, on_delete=models.SET_NULL, related_name="media"
+        Category, null=True, blank=True, on_delete=models.SET_NULL, related_name="media",
+        verbose_name=_("category"),
     )
 
-    file = models.FileField(upload_to=media_upload_path, max_length=500)
-    original_name = models.CharField(max_length=255, blank=True)
-    size_bytes = models.BigIntegerField(default=0)
-    duration_seconds = models.FloatField(default=0)
-    width = models.PositiveIntegerField(default=0)
-    height = models.PositiveIntegerField(default=0)
-    poster = models.ImageField(upload_to=poster_upload_path, max_length=500, blank=True)
-    hls_playlist = models.CharField(max_length=500, blank=True)
+    file = models.FileField(upload_to=media_upload_path, max_length=500, verbose_name=_("file"))
+    original_name = models.CharField(max_length=255, blank=True, verbose_name=_("original name"))
+    size_bytes = models.BigIntegerField(default=0, verbose_name=_("size in bytes"))
+    duration_seconds = models.FloatField(default=0, verbose_name=_("duration in seconds"))
+    width = models.PositiveIntegerField(default=0, verbose_name=_("width"))
+    height = models.PositiveIntegerField(default=0, verbose_name=_("height"))
+    poster = models.ImageField(
+        upload_to=poster_upload_path, max_length=500, blank=True,
+        verbose_name=_("poster"),
+    )
+    hls_playlist = models.CharField(max_length=500, blank=True, verbose_name=_("HLS playlist"))
     #: Sprite sheet of thumbnails for the seek bar, relative to MEDIA_ROOT.
-    storyboard = models.CharField(max_length=500, blank=True)
+    storyboard = models.CharField(max_length=500, blank=True, verbose_name=_("storyboard"))
     #: interval, cols, rows, width, height and count of the storyboard tiles.
-    storyboard_meta = models.JSONField(default=dict, blank=True)
+    storyboard_meta = models.JSONField(
+        default=dict, blank=True,
+        verbose_name=_("storyboard layout"),
+    )
 
-    views_count = models.PositiveIntegerField(default=0)
-    failure_reason = models.TextField(blank=True)
+    views_count = models.PositiveIntegerField(default=0, verbose_name=_("views"))
+    failure_reason = models.TextField(blank=True, verbose_name=_("failure reason"))
 
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
-    published_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("updated at"))
+    published_at = models.DateTimeField(null=True, blank=True, verbose_name=_("published at"))
 
     class Meta:
+        verbose_name = _("media item")
+        verbose_name_plural = _("media items")
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["state", "visibility"]),
             models.Index(fields=["kind", "visibility"]),
             models.Index(fields=["owner", "-created_at"]),
         ]
-        verbose_name_plural = "media"
 
     def __str__(self) -> str:
         return self.title
@@ -208,21 +229,31 @@ def _media_url(relative: str) -> str:
 
 class Playlist(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    uid = models.CharField(max_length=16, unique=True, default=new_uid, editable=False)
-    title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+    uid = models.CharField(
+        max_length=16, unique=True, default=new_uid, editable=False,
+        verbose_name=_("public id"),
+    )
+    title = models.CharField(max_length=255, verbose_name=_("title"))
+    description = models.TextField(blank=True, verbose_name=_("description"))
     visibility = models.CharField(
         max_length=16,
         choices=Media.Visibility.choices,
         default=Media.Visibility.PUBLIC,
+        verbose_name=_("visibility"),
     )
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="playlists"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="playlists",
+        verbose_name=_("owner"),
     )
-    items = models.ManyToManyField(Media, through="PlaylistItem", related_name="playlists")
-    created_at = models.DateTimeField(default=timezone.now)
+    items = models.ManyToManyField(
+        Media, through="PlaylistItem", related_name="playlists",
+        verbose_name=_("items"),
+    )
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
 
     class Meta:
+        verbose_name = _("playlist")
+        verbose_name_plural = _("playlists")
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
@@ -230,11 +261,19 @@ class Playlist(models.Model):
 
 
 class PlaylistItem(models.Model):
-    playlist = models.ForeignKey(Playlist, on_delete=models.CASCADE, related_name="entries")
-    media = models.ForeignKey(Media, on_delete=models.CASCADE, related_name="playlist_entries")
-    position = models.PositiveIntegerField(default=0)
+    playlist = models.ForeignKey(
+        Playlist, on_delete=models.CASCADE, related_name="entries",
+        verbose_name=_("playlist"),
+    )
+    media = models.ForeignKey(
+        Media, on_delete=models.CASCADE, related_name="playlist_entries",
+        verbose_name=_("media item"),
+    )
+    position = models.PositiveIntegerField(default=0, verbose_name=_("position"))
 
     class Meta:
+        verbose_name = _("playlist item")
+        verbose_name_plural = _("playlist items")
         ordering = ["position", "id"]
         constraints = [
             models.UniqueConstraint(
@@ -245,20 +284,27 @@ class PlaylistItem(models.Model):
 
 class Comment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    media = models.ForeignKey(Media, on_delete=models.CASCADE, related_name="comments")
+    media = models.ForeignKey(
+        Media, on_delete=models.CASCADE, related_name="comments",
+        verbose_name=_("media item"),
+    )
     author = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments",
+        verbose_name=_("author"),
     )
     parent = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies"
+        "self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies",
+        verbose_name=_("reply to"),
     )
-    body = models.TextField(max_length=4000)
+    body = models.TextField(max_length=4000, verbose_name=_("text"))
     # seconds into the video, for comments pinned to a moment
-    timestamp = models.FloatField(null=True, blank=True)
-    is_hidden = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=timezone.now)
+    timestamp = models.FloatField(null=True, blank=True, verbose_name=_("moment in the video"))
+    is_hidden = models.BooleanField(default=False, verbose_name=_("hidden"))
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
 
     class Meta:
+        verbose_name = _("comment")
+        verbose_name_plural = _("comments")
         ordering = ["created_at"]
         indexes = [models.Index(fields=["media", "created_at"])]
 
@@ -267,14 +313,22 @@ class Comment(models.Model):
 
 
 class Subtitle(models.Model):
-    media = models.ForeignKey(Media, on_delete=models.CASCADE, related_name="subtitles")
-    language = models.CharField(max_length=16)
-    label = models.CharField(max_length=120, blank=True)
-    file = models.FileField(upload_to="subtitles/%Y/%m/", max_length=500, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
+    media = models.ForeignKey(
+        Media, on_delete=models.CASCADE, related_name="subtitles",
+        verbose_name=_("media item"),
+    )
+    language = models.CharField(max_length=16, verbose_name=_("language"))
+    label = models.CharField(max_length=120, blank=True, verbose_name=_("label"))
+    file = models.FileField(
+        upload_to="subtitles/%Y/%m/", max_length=500, blank=True,
+        verbose_name=_("file"),
+    )
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("updated at"))
 
     class Meta:
+        verbose_name = _("subtitle track")
+        verbose_name_plural = _("subtitle tracks")
         ordering = ["language"]
         constraints = [
             models.UniqueConstraint(
@@ -293,13 +347,18 @@ class Subtitle(models.Model):
 class SubtitleCue(models.Model):
     """One timed line. Stored per row so the browser editor can save a single cue."""
 
-    subtitle = models.ForeignKey(Subtitle, on_delete=models.CASCADE, related_name="cues")
-    position = models.PositiveIntegerField(default=0)
-    start_ms = models.PositiveIntegerField()
-    end_ms = models.PositiveIntegerField()
-    text = models.TextField(blank=True)
+    subtitle = models.ForeignKey(
+        Subtitle, on_delete=models.CASCADE, related_name="cues",
+        verbose_name=_("subtitle track"),
+    )
+    position = models.PositiveIntegerField(default=0, verbose_name=_("position"))
+    start_ms = models.PositiveIntegerField(verbose_name=_("start (ms)"))
+    end_ms = models.PositiveIntegerField(verbose_name=_("end (ms)"))
+    text = models.TextField(blank=True, verbose_name=_("text"))
 
     class Meta:
+        verbose_name = _("cue")
+        verbose_name_plural = _("cues")
         ordering = ["position", "start_ms"]
         indexes = [models.Index(fields=["subtitle", "position"])]
 
@@ -320,12 +379,17 @@ class SubtitleCue(models.Model):
 
 
 class Chapter(models.Model):
-    media = models.ForeignKey(Media, on_delete=models.CASCADE, related_name="chapters")
-    title = models.CharField(max_length=255)
-    start_seconds = models.FloatField()
-    position = models.PositiveIntegerField(default=0)
+    media = models.ForeignKey(
+        Media, on_delete=models.CASCADE, related_name="chapters",
+        verbose_name=_("media item"),
+    )
+    title = models.CharField(max_length=255, verbose_name=_("title"))
+    start_seconds = models.FloatField(verbose_name=_("start (seconds)"))
+    position = models.PositiveIntegerField(default=0, verbose_name=_("position"))
 
     class Meta:
+        verbose_name = _("chapter")
+        verbose_name_plural = _("chapters")
         ordering = ["start_seconds", "position"]
 
     def __str__(self) -> str:

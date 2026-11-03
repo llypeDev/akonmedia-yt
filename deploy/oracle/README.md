@@ -215,8 +215,8 @@ A restauração está no [OPERATIONS.md](../../OPERATIONS.md#restauração).
 |---|---|
 | Alunos numa live | o servidor só repassa o vídeo, sem recodificar; o limite tende a ser a banda, já que cada aluno recebe a taxa do OBS. Não houve teste de carga, mas a conta aponta para algumas centenas |
 | Transmissões pelo navegador | uma por vez |
-| Vídeos enviados | codificados um por vez, em segundo plano; uma aula longa pode levar mais que a própria duração |
-| Disco | uns 150 GB livres para vídeos. Uma hora de aula em 1080p ocupa uns 7 GB (o original e as versões), o que dá umas 20 horas; em 720p, umas 35 |
+| Vídeos enviados | codificados um por vez, em segundo plano. As gravações do OBS, do Zoom e das lives são as mais leves: a versão mais alta é a própria gravação, copiada sem recodificar. Um vídeo de celular em 1080p, com muito movimento, é o caso mais pesado |
+| Disco | uns 150 GB livres para vídeos. Uma hora em 1080p, contando o original e as versões, ocupa de uns 2 GB (aula com slides gravada no OBS ou no Zoom) a uns 10 GB (vídeo de celular com muito movimento): de 15 a 70 horas de vídeo |
 | Tráfego | a Oracle dá 10 TB de saída por mês, umas 7.000 horas-aluno a 3 Mbps |
 
 Acompanhe o disco com `df -h /` e `docker system df`.

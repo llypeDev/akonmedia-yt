@@ -237,3 +237,172 @@ class StoryboardPlanTests(TestCase):
 
     def test_no_duration_no_storyboard(self):
         self.assertEqual(pipeline.plan_storyboard(0), (0.0, 0))
+
+
+# --------------------------------------------------------------------------
+# a lighter ladder: the source copied when it can be, one decode for the rest
+# --------------------------------------------------------------------------
+
+def _probe(**changes) -> pipeline.Probe:
+    """A browser-ready 1080p H.264 source, changed as a test needs."""
+    base = dict(duration=60.0, width=1920, height=1080, codec="h264", has_video=True,
+                has_audio=True, pix_fmt="yuv420p", video_bitrate=4_000_000, rotation=0, video_index=0)
+    base.update(changes)
+    return pipeline.Probe(**base)
+
+
+class PassthroughDecisionTests(TestCase):
+    def test_browser_ready_source_is_copied(self):
+        self.assertTrue(pipeline.can_pass_through(_probe(), 1080, 5000, gap=2.0))
+
+    def test_what_a_browser_cannot_play_as_it_is_gets_encoded(self):
+        for reason, changes in {
+            "HEVC": {"codec": "hevc"},
+            "10-bit": {"pix_fmt": "yuv420p10le"},
+            "4:2:2": {"pix_fmt": "yuv422p"},
+            "filmed sideways": {"rotation": 90},
+            "too heavy to stream": {"video_bitrate": 17_000_000},
+            "bit rate unknown": {"video_bitrate": 0},
+            "not a rung height": {"height": 1088},
+        }.items():
+            with self.subTest(reason):
+                self.assertFalse(pipeline.can_pass_through(_probe(**changes), 1080, 5000, gap=2.0))
+
+    def test_sparse_keyframes_are_encoded_so_segments_stay_short(self):
+        self.assertFalse(pipeline.can_pass_through(_probe(), 1080, 5000, gap=12.0))
+        self.assertFalse(pipeline.can_pass_through(_probe(), 1080, 5000, gap=0.0))
+
+    def test_only_the_top_rung_is_copied_at_the_source_rate(self):
+        rungs = pipeline.plan_ladder(_probe(video_bitrate=6_200_000), gap=2.0)
+        self.assertEqual([(r.height, r.copy) for r in rungs], [(1080, True), (720, False), (480, False)])
+        self.assertEqual(rungs[0].bitrate, 6200)
+        self.assertEqual(rungs[1].bitrate, 2800)
+
+    def test_without_keyframe_information_everything_is_encoded(self):
+        self.assertFalse(any(r.copy for r in pipeline.plan_ladder(_probe())))
+
+
+class KeyframeGapTests(TestCase):
+    def test_longest_stretch_including_the_tail(self):
+        packets = "0.000000,K__\n0.033,___\n2.000000,K__\n4.000,K_\n4.5,__\n"
+        self.assertEqual(pipeline.longest_keyframe_gap(packets, duration=11.0), 7.0)
+
+    def test_order_and_noise_do_not_matter(self):
+        packets = "6.0,K__\nN/A,K__\n0.0,K__\n2.0,___\n3.0,K__\n"
+        self.assertEqual(pipeline.longest_keyframe_gap(packets, duration=6.0), 3.0)
+
+    def test_no_keyframe_means_unknown(self):
+        self.assertEqual(pipeline.longest_keyframe_gap("0.0,___\n", duration=5.0), 0.0)
+
+
+class LadderCommandTests(TestCase):
+    def command(self, rungs):
+        return pipeline.ladder_command("ffmpeg", "in.mp4", "/out", rungs, segment_seconds=6, video_index=0)
+
+    def test_one_read_of_the_source_for_every_rung(self):
+        command = self.command([pipeline.Rung(1080, 5200, copy=True), pipeline.Rung(720, 2800), pipeline.Rung(480, 1400)])
+        self.assertEqual(command.count("-i"), 1)
+        graph = command[command.index("-filter_complex") + 1]
+        self.assertIn("[0:0]split=2[in0][in1]", graph)
+        self.assertIn("scale=-2:720,format=yuv420p[v0]", graph)
+        self.assertIn("scale=-2:480,format=yuv420p[v1]", graph)
+        self.assertEqual(command.count("copy"), 1)
+        self.assertEqual(command.count("libx264"), 2)
+        self.assertEqual(command.count("-crf"), 2)
+        self.assertIn("expr:gte(t,n_forced*6)", command)
+        playlists = [arg for arg in command if arg.endswith("index.m3u8")]
+        self.assertEqual(playlists, ["/out/1080p/index.m3u8", "/out/720p/index.m3u8", "/out/480p/index.m3u8"])
+
+    def test_a_single_encoded_rung_needs_no_split(self):
+        graph = self.command([pipeline.Rung(360, 800)])
+        self.assertEqual(graph[graph.index("-filter_complex") + 1], "[0:0]scale=-2:360,format=yuv420p[v0]")
+
+    def test_a_copied_ladder_has_no_filter_at_all(self):
+        self.assertNotIn("-filter_complex", self.command([pipeline.Rung(360, 800, copy=True)]))
+
+
+class MeasuredBandwidthTests(TestCase):
+    def setUp(self):
+        self.dir = Path(settings.BASE_DIR) / ".test-media" / uuid.uuid4().hex
+        self.dir.mkdir(parents=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def test_peak_and_average_come_from_the_segments(self):
+        (self.dir / "seg_00000.ts").write_bytes(b"x" * 750_000)   # 6 Mbit in 6 s
+        (self.dir / "seg_00001.ts").write_bytes(b"x" * 250_000)   # 2 Mbit in 4 s
+        (self.dir / "index.m3u8").write_text(
+            "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.000000,\nseg_00000.ts\n"
+            "#EXTINF:4.000000,\nseg_00001.ts\n#EXT-X-ENDLIST\n", encoding="utf-8")
+        self.assertEqual(pipeline.measured_bandwidth(self.dir), (1_000_000, 800_000))
+
+    def test_unreadable_playlist_gives_nothing(self):
+        self.assertEqual(pipeline.measured_bandwidth(self.dir), (0, 0))
+
+
+def _frame_hashes(path: Path, frames: int = 8) -> list[str]:
+    result = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(path), "-map", "0:v:0", "-frames:v", str(frames), "-f", "framemd5", "-"],
+        capture_output=True, text=True, check=True, timeout=120,
+    )
+    return [line.rsplit(",", 1)[-1].strip() for line in result.stdout.splitlines() if line and not line.startswith("#")]
+
+
+@requires_ffmpeg
+class LighterLadderTests(TestCase):
+    def setUp(self):
+        self.root = Path(settings.BASE_DIR) / ".test-media" / uuid.uuid4().hex
+        self.root.mkdir(parents=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def clip(self, name, *encoder, seconds=4, size="640x360"):
+        target = self.root / name
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i", f"testsrc=duration={seconds}:size={size}:rate=25",
+             "-f", "lavfi", "-i", f"sine=frequency=440:duration={seconds}", *encoder, "-c:a", "aac", "-shortest", str(target)],
+            capture_output=True, check=True, timeout=120,
+        )
+        return target
+
+    def test_browser_ready_source_is_copied_untouched_and_the_rest_encoded(self):
+        source = self.clip("ready.mp4", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-g", "50", "-b:v", "600k")
+        master = pipeline.to_hls(source, self.root / "hls", info=pipeline.probe(source))
+        self.assertEqual(_frame_hashes(self.root / "hls" / "360p" / "index.m3u8"), _frame_hashes(source),
+                         "the copied rung is the original, frame for frame")
+        text = master.read_text(encoding="utf-8")
+        self.assertIn("AVERAGE-BANDWIDTH=", text)
+        self.assertIn('CODECS="avc1.', text)
+
+    def test_reprocessing_leaves_no_stale_segments(self):
+        source = self.clip("ready.mp4", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-g", "50")
+        stale = self.root / "hls" / "1080p" / "seg_00099.ts"
+        stale.parent.mkdir(parents=True)
+        stale.write_bytes(b"old")
+        pipeline.to_hls(source, self.root / "hls")
+        self.assertFalse(stale.parent.exists(), "the previous ladder is gone")
+        self.assertTrue((self.root / "hls" / "360p" / "index.m3u8").exists())
+
+    def test_ten_bit_source_is_encoded_for_browsers(self):
+        try:
+            source = self.clip("ten.mp4", "-c:v", "libx264", "-pix_fmt", "yuv420p10le")
+        except subprocess.CalledProcessError:
+            self.skipTest("this libx264 cannot write 10-bit video")
+        info = pipeline.probe(source)
+        self.assertEqual(info.pix_fmt, "yuv420p10le")
+        pipeline.to_hls(source, self.root / "hls", info=info)
+        first = sorted((self.root / "hls" / "360p").glob("seg_*.ts"))[0]
+        pix_fmt = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=pix_fmt", "-of", "csv=p=0", str(first)],
+            capture_output=True, text=True, check=True,
+        ).stdout.split()
+        self.assertEqual(set(pix_fmt), {"yuv420p"}, "a ten-bit picture would not play in browsers")
+
+    def test_long_videos_get_their_storyboard_from_keyframes(self):
+        source = self.clip("long.mp4", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-g", "50", seconds=420, size="160x90")
+        meta = pipeline.storyboard(source, self.root / "board.jpg", 420.0)
+        self.assertGreaterEqual(meta["interval"], pipeline.STORYBOARD_KEYFRAMES_FROM)
+        self.assertEqual(meta["count"], pipeline.STORYBOARD_MAX_TILES)
+        self.assertTrue((self.root / "board.jpg").stat().st_size > 0)

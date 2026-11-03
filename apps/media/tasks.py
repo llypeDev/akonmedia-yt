@@ -165,6 +165,7 @@ def _run(media: Media) -> None:
         width=info.width,
         height=info.height,
         timeout=encode_timeout(info.duration),
+        info=info,
     )
     media.hls_playlist = _relative(master)
 

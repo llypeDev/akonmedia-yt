@@ -1,0 +1,20 @@
+<article class="card">
+  <a class="card-thumb" href="{% url 'core:media' media.uid %}">
+    {% if media.poster %}
+      <img src="{{ media.poster.url }}" alt="" loading="lazy">
+    {% else %}
+      <div class="card-placeholder" data-kind="{{ media.kind }}">{{ media.get_kind_display }}</div>
+    {% endif %}
+    {% if media.duration_seconds %}
+      <span class="card-duration">{{ media.duration_label }}</span>
+    {% endif %}
+  </a>
+  <div class="card-body">
+    <h2 class="card-title"><a href="{% url 'core:media' media.uid %}">{{ media.title }}</a></h2>
+    <p class="card-meta">
+      {{ media.owner.get_short_name }}
+      {% if media.category %}· {{ media.category.name }}{% endif %}
+      {% if media.views_count %}· {{ media.views_count }} views{% endif %}
+    </p>
+  </div>
+</article>

@@ -6,8 +6,8 @@ directory is original work and is licensed MIT (see `LICENSE`).
 
 ## Status
 
-Phase 2 of 6 — media core. Upload, storage and the encoding pipeline work end to
-end; the public frontend comes next.
+Phase 3 of 6 — public surface. Upload, encoding, library pages, media pages and
+comments work end to end; search, playlists UI and moderation queues come next.
 
 | Area | State |
 |---|---|
@@ -19,7 +19,9 @@ end; the public frontend comes next.
 | Resumable chunked upload (`/api/v1/uploads/`) | done |
 | ffprobe/ffmpeg pipeline: duration, dimensions, poster, HLS | done |
 | Media REST API with visibility rules | done |
-| Public frontend, player, search | next |
+| API for comments, playlists and categories | done |
+| Public library page, media page with player, comments, search | done |
+| Playlist UI, moderation queues, subtitle editor | next |
 
 ## Requirements
 
@@ -60,10 +62,13 @@ config/
   urls.py               admin, accounts, API, public pages
   celery.py             task discovery
 apps/
-  core/                 landing page and /health/
+  core/                 public pages (library, media, search) and /health/
   rbac/                 role ladder and the only place that interprets it
   users/                account model, admin, session API
+  media/                domain models, REST API, ffmpeg pipeline, tasks
+  uploader/             resumable chunked upload sessions
 templates/              HTML, written for this project only
+static/css/app.css      one hand-written stylesheet, no framework
 ```
 
 ## Design notes

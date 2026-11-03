@@ -1,14 +1,39 @@
 {% extends "base.html" %}
 
+{% block title %}{{ PORTAL_NAME }} — media library{% endblock %}
+
 {% block content %}
-  <div class="badge">Foundation</div>
-  <h1>{{ PORTAL_NAME }} is running.</h1>
-  <p class="lede">
-    Django {{ django_version|default:"" }} project skeleton with email-based accounts,
-    five access levels and a JSON API. Media pipeline lands next.
-  </p>
-  <p>
-    Health check: <code>/health/</code> &nbsp;·&nbsp;
-    Session API: <code>/api/v1/whoami/</code>
-  </p>
+  <section class="intro">
+    <h1>{{ PORTAL_NAME }}</h1>
+    <p class="lede">{{ PORTAL_DESCRIPTION|default:"Publish, organise and deliver video, audio and images from your own hardware." }}</p>
+  </section>
+
+  <nav class="filters">
+    <a class="chip {% if not kind %}active{% endif %}" href="{% url 'core:index' %}">All</a>
+    {% for value, label in kinds %}
+      <a class="chip {% if kind == value %}active{% endif %}" href="{% url 'core:index' %}?kind={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  {% if page_obj.object_list %}
+    <div class="grid">
+      {% for media in page_obj.object_list %}
+        {% include "core/_card.html" %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">Nothing published yet.</p>
+  {% endif %}
+
+  {% if page_obj.has_other_pages %}
+    <nav class="pager">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if kind %}&kind={{ kind }}{% endif %}">Previous</a>
+      {% endif %}
+      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if kind %}&kind={{ kind }}{% endif %}">Next</a>
+      {% endif %}
+    </nav>
+  {% endif %}
 {% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Search — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <section class="intro">
+    <h1>Search</h1>
+    <p class="lede">
+      {% if query %}
+        {{ count }} result{{ count|pluralize }} for “{{ query }}”
+      {% else %}
+        Type something in the field above.
+      {% endif %}
+    </p>
+  </section>
+
+  {% if page_obj.object_list %}
+    <div class="grid">
+      {% for media in page_obj.object_list %}
+        {% include "core/_card.html" %}
+      {% endfor %}
+    </div>
+  {% elif query %}
+    <p class="empty">Nothing matched.</p>
+  {% endif %}
+
+  {% if page_obj.has_other_pages %}
+    <nav class="pager">
+      {% if page_obj.has_previous %}
+        <a href="?q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>
+      {% endif %}
+      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+{% endblock %}

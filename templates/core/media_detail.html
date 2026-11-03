@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}{{ media.title }} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <div class="player-shell">
+    {% if not media.file %}
+      <div class="player-missing">No source file attached to this item.</div>
+    {% elif media.kind == "image" %}
+      <img class="player" src="{{ media.file.url }}" alt="{{ media.title }}">
+    {% elif media.kind == "audio" %}
+      <div class="audio-shell">
+        {% if media.poster %}<img class="audio-poster" src="{{ media.poster.url }}" alt="">{% endif %}
+        <audio class="player-audio" controls preload="metadata" src="{{ media.file.url }}"></audio>
+      </div>
+    {% else %}
+      <video class="player" controls preload="metadata"
+             {% if media.poster %}poster="{{ media.poster.url }}"{% endif %}
+             src="{{ media.file.url }}"></video>
+    {% endif %}
+  </div>
+
+  <div class="detail-grid">
+    <article class="detail-main">
+      <h1>{{ media.title }}</h1>
+      <p class="detail-meta">
+        {{ media.owner.get_short_name }} · {{ media.created_at|date:"j M Y" }}
+        {% if media.views_count %}· {{ media.views_count }} views{% endif %}
+        {% if media.state != "ready" %}<span class="state state-{{ media.state }}">{{ media.get_state_display }}</span>{% endif %}
+      </p>
+
+      {% if media.description %}
+        <div class="prose">{{ media.description|linebreaks }}</div>
+      {% endif %}
+
+      {% if media.chapters.all %}
+        <section class="chapters">
+          <h2>Chapters</h2>
+          <ol>
+            {% for chapter in media.chapters.all %}
+              <li><span class="ts">{{ chapter.start_seconds }}</span> {{ chapter.title }}</li>
+            {% endfor %}
+          </ol>
+        </section>
+      {% endif %}
+    </article>
+
+    <aside class="detail-side">
+      <h2>Comments <span class="count">{{ comments|length }}</span></h2>
+
+      {% if user.is_authenticated %}
+        <form method="post" class="comment-form">
+          {% csrf_token %}
+          <textarea name="body" rows="3" maxlength="4000" placeholder="Say something" required></textarea>
+          <button type="submit" class="button">Post</button>
+        </form>
+      {% else %}
+        <p class="muted"><a href="{% url 'account_login' %}">Sign in</a> to comment.</p>
+      {% endif %}
+
+      <ul class="comments">
+        {% for comment in comments %}
+          <li>
+            <span class="comment-author">{{ comment.author.get_short_name }}</span>
+            <span class="comment-time">{{ comment.created_at|timesince }} ago</span>
+            <p>{{ comment.body|linebreaksbr }}</p>
+          </li>
+        {% empty %}
+          <li class="muted">No comments yet.</li>
+        {% endfor %}
+      </ul>
+    </aside>
+  </div>
+{% endblock %}

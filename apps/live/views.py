@@ -77,6 +77,8 @@ class LiveForm(forms.ModelForm):
         # sends what is typed back as an ISO timestamp (see live.js).
         widget = self.fields["scheduled_for"].widget
         widget.attrs["data-iso-field"] = "scheduled_for_iso"
+        # The calendar (datepicker.js) fades the days that already went by.
+        widget.attrs["data-picker-min"] = "today"
         stored = self.instance.scheduled_for if not self.is_bound else None
         widget.attrs["data-utc"] = stored.isoformat() if stored else ""
 

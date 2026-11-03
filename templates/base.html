@@ -41,7 +41,7 @@
   {% endblock %}
   {% block extra_head %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %}" data-sprite="{% static 'icons/sprite.svg' %}">
   <script>
     /* The player remembers theater mode; apply it before the first paint. */
     try {

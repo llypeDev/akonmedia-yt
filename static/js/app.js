@@ -229,10 +229,135 @@
 
   /* ------------------------------------------------------------- confirms */
 
+  // A form with data-confirm asks first, in a dialog drawn like the rest of
+  // the portal rather than the browser's "this page says" window. The
+  // question in the attribute is the title and anything after it the
+  // explanation; the confirm button repeats the form's own button, in red
+  // when that one is a danger button (or data-confirm-tone="danger").
+  var SPRITE = body.getAttribute("data-sprite") || "";
+
+  function iconSvg(name) {
+    if (!SPRITE) return null;
+    var ns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "icon");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    var use = document.createElementNS(ns, "use");
+    use.setAttribute("href", SPRITE + "#i-" + name);
+    svg.appendChild(use);
+    return svg;
+  }
+
+  function splitQuestion(message) {
+    var match = message.match(/^([\s\S]*?[?？])\s+([\s\S]+)$/);
+    return match ? { title: match[1], text: match[2] } : { title: message, text: "" };
+  }
+
+  function confirmDialog(options) {
+    if (typeof HTMLDialogElement !== "function") {
+      return Promise.resolve(window.confirm(options.message));
+    }
+    return new Promise(function (resolve) {
+      var parts = splitQuestion(options.message);
+      var id = "confirm-" + Date.now();
+      var opener = document.activeElement;
+
+      var dialog = document.createElement("dialog");
+      dialog.className = "confirm-dialog" + (options.danger ? " is-danger" : "");
+      dialog.setAttribute("aria-labelledby", id + "-title");
+
+      var box = document.createElement("form");
+      box.method = "dialog";
+      box.className = "confirm-box";
+
+      var badge = document.createElement("span");
+      badge.className = "confirm-icon";
+      var glyph = iconSvg(options.danger ? "alert" : "info");
+      if (glyph) badge.appendChild(glyph);
+      box.appendChild(badge);
+
+      var copy = document.createElement("div");
+      copy.className = "confirm-copy";
+      var title = document.createElement("h2");
+      title.className = "confirm-title";
+      title.id = id + "-title";
+      title.textContent = parts.title;
+      copy.appendChild(title);
+      if (parts.text) {
+        var text = document.createElement("p");
+        text.className = "confirm-text";
+        text.id = id + "-text";
+        text.textContent = parts.text;
+        copy.appendChild(text);
+        dialog.setAttribute("aria-describedby", text.id);
+      }
+      box.appendChild(copy);
+
+      var actions = document.createElement("div");
+      actions.className = "confirm-actions";
+      var cancel = document.createElement("button");
+      cancel.className = "btn btn-ghost";
+      cancel.value = "cancel";
+      cancel.textContent = gettext("Cancel");
+      var ok = document.createElement("button");
+      ok.className = "btn " + (options.danger ? "btn-danger-solid" : "btn-primary");
+      ok.value = "ok";
+      ok.textContent = options.label || gettext("Confirm");
+      // A destructive action starts on Cancel, so a stray Enter is harmless.
+      (options.danger ? cancel : ok).autofocus = true;
+      actions.appendChild(cancel);
+      actions.appendChild(ok);
+      box.appendChild(actions);
+      dialog.appendChild(box);
+
+      // A click on the dimmed backdrop lands on the dialog itself.
+      dialog.addEventListener("click", function (event) {
+        if (event.target === dialog) dialog.close("cancel");
+      });
+      dialog.addEventListener("close", function () {
+        var confirmed = dialog.returnValue === "ok";
+        dialog.remove();
+        if (opener && typeof opener.focus === "function" && document.contains(opener)) opener.focus();
+        resolve(confirmed);
+      });
+
+      body.appendChild(dialog);
+      dialog.showModal();
+    });
+  }
+
+  function confirmLabel(button) {
+    if (!button) return "";
+    var label = (button.textContent || "").replace(/\s+/g, " ").trim();
+    return (label || button.getAttribute("aria-label") || button.title || "").slice(0, 40);
+  }
+
   document.addEventListener("submit", function (event) {
     var form = event.target;
-    var message = form.getAttribute("data-confirm");
-    if (message && !window.confirm(message)) event.preventDefault();
+    var message = form.getAttribute && form.getAttribute("data-confirm");
+    if (!message) return;
+    if (form.__confirmed) {
+      form.__confirmed = false;
+      return;
+    }
+    // Hold the submission, and keep the form's own handlers from seeing it,
+    // until the person answers.
+    event.preventDefault();
+    event.stopPropagation();
+    var submitter = event.submitter || form.querySelector('[type="submit"], button:not([type])');
+    var danger = form.getAttribute("data-confirm-tone") === "danger" || !!(submitter &&
+      (submitter.classList.contains("btn-danger") || submitter.classList.contains("danger")));
+    confirmDialog({ message: message, danger: danger, label: confirmLabel(submitter) }).then(function (yes) {
+      if (!yes) return;
+      form.__confirmed = true;
+      if (typeof form.requestSubmit === "function") {
+        form.requestSubmit(submitter && submitter.form === form ? submitter : undefined);
+      } else {
+        form.__confirmed = false;
+        form.submit();
+      }
+    });
   }, true);
 
   /* ---------------------------------------------------- description clamp */
@@ -456,5 +581,5 @@
     });
   })();
 
-  window.AkonApp = { toast: toast, csrf: csrf, clock: clock };
+  window.AkonApp = { toast: toast, csrf: csrf, clock: clock, confirm: confirmDialog };
 })();

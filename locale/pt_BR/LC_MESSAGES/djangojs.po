@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: QQplay\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 16:07+0000\n"
+"POT-Creation-Date: 2026-11-03 19:52+0000\n"
 "PO-Revision-Date: 2026-11-03 16:07+0000\n"
 "Last-Translator: QQplay\n"
 "Language-Team: Português (Brasil)\n"
@@ -22,35 +22,44 @@ msgstr "Copiado para a área de transferência"
 msgid "Could not copy — select the text and copy it manually."
 msgstr "Não foi possível copiar — selecione o texto e copie manualmente."
 
-#: static/js/app.js:253
+#. Translators: cancels the automatic jump to the next playlist item.
+#: static/js/app.js:302 static/js/player.js:2369
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: static/js/app.js:306
+msgid "Confirm"
+msgstr "Confirmar"
+
+#: static/js/app.js:378
 msgid "Show more"
 msgstr "Mostrar mais"
 
-#: static/js/app.js:253
+#: static/js/app.js:378
 msgid "Show less"
 msgstr "Mostrar menos"
 
-#: static/js/app.js:299
+#: static/js/app.js:424
 msgid "pending"
 msgstr "na fila"
 
-#: static/js/app.js:300
+#: static/js/app.js:425
 msgid "processing"
 msgstr "processando"
 
-#: static/js/app.js:301
+#: static/js/app.js:426
 msgid "ready"
 msgstr "pronta"
 
-#: static/js/app.js:302
+#: static/js/app.js:427
 msgid "failed"
 msgstr "com falha"
 
-#: static/js/app.js:319
+#: static/js/app.js:444
 msgid "Processing finished — loading the player."
 msgstr "Processamento concluído — carregando o player."
 
-#: static/js/app.js:319
+#: static/js/app.js:444
 msgid "Processing failed."
 msgstr "O processamento falhou."
 
@@ -106,6 +115,50 @@ msgstr "No ar · %(time)s · enviando %(rate)s Mbps"
 #: static/js/cast.js:448
 msgid "Stopping…"
 msgstr "Parando…"
+
+#: static/js/datepicker.js:92
+msgid "Clear date"
+msgstr "Limpar data"
+
+#: static/js/datepicker.js:112 static/js/datepicker.js:201
+msgid "Choose date and time"
+msgstr "Escolher data e horário"
+
+#: static/js/datepicker.js:112 static/js/datepicker.js:201
+msgid "Choose a date"
+msgstr "Escolher uma data"
+
+#: static/js/datepicker.js:118
+msgid "Previous month"
+msgstr "Mês anterior"
+
+#: static/js/datepicker.js:120
+msgid "Next month"
+msgstr "Próximo mês"
+
+#: static/js/datepicker.js:125
+msgid "Time"
+msgstr "Horário"
+
+#: static/js/datepicker.js:126
+msgid "Hour"
+msgstr "Hora"
+
+#: static/js/datepicker.js:128
+msgid "Minutes"
+msgstr "Minutos"
+
+#: static/js/datepicker.js:131
+msgid "Today"
+msgstr "Hoje"
+
+#: static/js/datepicker.js:133
+msgid "Clear"
+msgstr "Limpar"
+
+#: static/js/datepicker.js:134
+msgid "Done"
+msgstr "Pronto"
 
 #. Translators: countdown pieces; d = days, h = hours, min = minutes, s =
 #. seconds.
@@ -435,19 +488,20 @@ msgstr "Progressivo"
 msgid "audio only"
 msgstr "somente áudio"
 
-#. Translators: stats overlay, Level row; %(level)s is e.g. "720p · 2.93 Mbps",
-#. chosen automatically.
+#. Translators: stats overlay, Level row; %(level)s is e.g. "720p · 2.93
+#. Mbps", chosen automatically.
 #: static/js/player.js:2224
 msgid "%(level)s (auto)"
 msgstr "%(level)s (automático)"
 
-#. Translators: stats overlay, Level row; %(level)s is e.g. "720p · 2.93 Mbps",
-#. chosen by the viewer.
+#. Translators: stats overlay, Level row; %(level)s is e.g. "720p · 2.93
+#. Mbps", chosen by the viewer.
 #: static/js/player.js:2226
 msgid "%(level)s (manual)"
 msgstr "%(level)s (manual)"
 
-#. Translators: stats overlay, Buffer row; %(seconds)s is a number like "10.8".
+#. Translators: stats overlay, Buffer row; %(seconds)s is a number like
+#. "10.8".
 #: static/js/player.js:2235
 msgid "%(seconds)s s ahead"
 msgstr "%(seconds)s s à frente"
@@ -480,12 +534,8 @@ msgstr "Visualização padrão"
 msgid "Exit full screen"
 msgstr "Sair da tela cheia"
 
-#. Translators: cancels the automatic jump to the next playlist item.
-#: static/js/player.js:2369
-msgid "Cancel"
-msgstr "Cancelar"
-
-#. Translators: plays the next playlist item without waiting for the countdown.
+#. Translators: plays the next playlist item without waiting for the
+#. countdown.
 #: static/js/player.js:2373
 msgid "Play now"
 msgstr "Reproduzir agora"
@@ -496,13 +546,14 @@ msgstr "Reproduzir agora"
 msgid "Up next"
 msgstr "A seguir"
 
-#. Translators: shown in the "Up next" overlay when the next item has no title.
+#. Translators: shown in the "Up next" overlay when the next item has no
+#. title.
 #: static/js/player.js:2391
 msgid "Next item"
 msgstr "Próximo item"
 
-#. Translators: button that jumps back to where the viewer stopped; %(time)s is
-#. like "4:12".
+#. Translators: button that jumps back to where the viewer stopped; %(time)s
+#. is like "4:12".
 #: static/js/player.js:2446
 msgid "Resume %(time)s"
 msgstr "Continuar em %(time)s"
@@ -585,8 +636,8 @@ msgstr "Envio concluído — entregando o arquivo ao codificador…"
 
 #: static/js/upload.js:311
 msgid ""
-"Large videos can take a while: posters, renditions and previews are generated"
-" now."
+"Large videos can take a while: posters, renditions and previews are "
+"generated now."
 msgstr ""
 "Vídeos grandes podem demorar: pôster, versões e prévias estão sendo gerados "
 "agora."
@@ -635,4 +686,5 @@ msgstr "erro desconhecido"
 msgid ""
 "Press “Upload and publish” again to continue from the last confirmed chunk."
 msgstr ""
-"Aperte “Enviar e publicar” de novo para continuar da última parte confirmada."
+"Aperte “Enviar e publicar” de novo para continuar da última parte "
+"confirmada."

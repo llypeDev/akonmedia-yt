@@ -206,7 +206,7 @@
                 <td>{% if account.is_active %}<span class="badge badge-success">{% translate "Active" %}</span>{% else %}<span class="badge badge-danger">{% translate "Disabled" %}</span>{% endif %}</td>
                 <td class="actions">
                   {% if account.pk != user.pk and not account.is_superuser %}
-                    <form method="post" action="{% url 'core:manage_action' %}" class="inline-form" {% if account.is_active %}data-confirm="{% blocktranslate with name=account.get_short_name %}Deactivate {{ name }}? They will not be able to sign in.{% endblocktranslate %}"{% endif %}>
+                    <form method="post" action="{% url 'core:manage_action' %}" class="inline-form" {% if account.is_active %}data-confirm-tone="danger" data-confirm="{% blocktranslate with name=account.get_short_name %}Deactivate {{ name }}? They will not be able to sign in.{% endblocktranslate %}"{% endif %}>
                       {% csrf_token %}
                       <input type="hidden" name="kind" value="user"><input type="hidden" name="action" value="{% if account.is_active %}deactivate{% else %}activate{% endif %}"><input type="hidden" name="id" value="{{ account.pk }}"><input type="hidden" name="tab" value="users">
                       <button class="btn btn-xs {% if account.is_active %}btn-ghost{% endif %}" type="submit">{% if account.is_active %}{% translate "Deactivate" %}{% else %}{% translate "Activate" %}{% endif %}</button>

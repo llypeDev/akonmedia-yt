@@ -85,7 +85,10 @@ async function main() {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "dark" });
   const page = await context.newPage();
   watchErrors(page, errors);
-  page.on("dialog", (dialog) => dialog.accept());
+  // Every question is asked in the portal's own dialog; a browser window
+  // ("this page says") counts as a failure at the end.
+  const browserDialogs = [];
+  page.on("dialog", (dialog) => { browserDialogs.push(dialog.message()); dialog.accept(); });
 
   console.log(`QQplay smoke test against ${BASE} as ${EMAIL}`);
 
@@ -237,7 +240,19 @@ async function main() {
   expect(await page.locator(".stage-image img").count() === 1, "image upload shows the picture");
   const stillUid = page.url().match(/\/view\/([0-9a-z]+)\//)[1];
   await page.goto(`${BASE}/view/${stillUid}/edit/`);
-  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Excluir mídia" }).click()]);
+  const deleteButton = page.locator("form[data-confirm] button", { hasText: "Excluir mídia" });
+  await deleteButton.click();
+  const modal = page.locator(".confirm-dialog[open]");
+  await modal.waitFor();
+  expect((await modal.locator(".confirm-title").textContent()).includes("E2E still")
+    && (await modal.locator('button[value="ok"]').textContent()).trim() === "Excluir mídia"
+    && await modal.evaluate((node) => node.classList.contains("is-danger")),
+    "deleting asks first in the portal's dialog, naming the item and the action in red");
+  await modal.locator('button[value="cancel"]').click();
+  await modal.waitFor({ state: "detached" });
+  expect(page.url().endsWith("/edit/"), "cancelling the dialog keeps the media");
+  await deleteButton.click();
+  await Promise.all([page.waitForNavigation(), page.locator('.confirm-dialog[open] button[value="ok"]').click()]);
   expect(page.url().endsWith("/studio/") && await page.locator(".row-title", { hasText: "E2E still" }).count() === 0, "media deleted from the edit page");
 
   // ------------------------------------------------------------ embed
@@ -289,6 +304,7 @@ async function main() {
 
   await browser.close();
   if (errors.length) fail(`browser reported errors:\n    ${errors.join("\n    ")}`);
+  expect(browserDialogs.length === 0, `no browser dialog window was used (${browserDialogs.join(" | ") || "none"})`);
   ok("no JavaScript errors in any page");
   console.log(`\nAll ${step} checks passed.`);
 }

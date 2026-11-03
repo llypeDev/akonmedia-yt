@@ -90,6 +90,27 @@ function localInput(date) {
   return local.toISOString().slice(0, 16);
 }
 
+/* Answers "yes" in the portal's confirm dialog (app.js). */
+async function confirmIn(page) {
+  await page.locator('.confirm-dialog[open] button[value="ok"]').click();
+}
+
+/* Picks a day and a time in the portal's calendar (datepicker.js), as a person would. */
+async function pickDateTime(page, when) {
+  await page.click(".dtp-trigger");
+  const panel = page.locator(".dtp-panel:not([hidden])");
+  await panel.waitFor();
+  const day = new Date(when.getFullYear(), when.getMonth(), when.getDate()).getTime();
+  for (let i = 0; i < 2 && await panel.locator(`.dtp-day[data-time="${day}"]`).count() === 0; i++) {
+    await panel.locator('.dtp-nav[data-step="1"]').click();
+  }
+  await panel.locator(`.dtp-day[data-time="${day}"]`).click();
+  await panel.locator(".dtp-hour").selectOption(String(when.getHours()));
+  await panel.locator(".dtp-minute").selectOption(String(when.getMinutes()));
+  await panel.locator('[data-action="done"]').click();
+  await panel.waitFor({ state: "hidden" });
+}
+
 async function playing(page, timeout = 30000) {
   await page.waitForFunction(() => {
     const video = document.querySelector("[data-live-player] video");
@@ -119,13 +140,20 @@ async function main() {
     });
     const host = await hostContext.newPage();
     watchErrors(host, errors);
-    host.on("dialog", (dialog) => dialog.accept());
+    const browserDialogs = [];
+    host.on("dialog", (dialog) => { browserDialogs.push(dialog.message()); dialog.accept(); });
     await signIn(host, HOST);
 
     await host.goto(`${BASE}/studio/lives/new/`);
     await host.fill('input[name="title"]', TITLE);
     await host.fill('textarea[name="description"]', "Teste de ponta a ponta das lives.");
-    await host.fill('input[name="scheduled_for"]', localInput(new Date(Date.now() + 90 * 1000)));
+    // A start a few minutes ahead, on the calendar's five-minute steps.
+    const startsAt = new Date(Math.ceil((Date.now() + 2 * 60 * 1000) / 300000) * 300000);
+    await pickDateTime(host, startsAt);
+    const clock = `${String(startsAt.getHours()).padStart(2, "0")}:${String(startsAt.getMinutes()).padStart(2, "0")}`;
+    expect(await host.inputValue('input[name="scheduled_for"]') === localInput(startsAt)
+      && (await host.textContent(".dtp-value")).includes(clock),
+      `the calendar fills in the start (${(await host.textContent(".dtp-value")).trim()})`);
     await Promise.all([host.waitForNavigation(), host.click('form.form-grid button[type="submit"]')]);
     expect(/\/studio\/lives\/[a-z0-9]+\/$/.test(host.url()), "live created; the control room opens");
     const liveUid = host.url().split("/").filter(Boolean).pop();
@@ -211,7 +239,10 @@ async function main() {
     ok("the encoder reconnects and the same page plays again");
 
     // ------------------------------------------------------------- the end
-    await Promise.all([host.waitForNavigation(), host.click('form[action$="/end/"] button')]);
+    await host.click('form[action$="/end/"] button');
+    expect(await host.locator(".confirm-dialog[open].is-danger").count() === 1,
+      "ending the live asks first, in the portal's dialog");
+    await Promise.all([host.waitForNavigation(), confirmIn(host)]);
     expect((await host.textContent("[data-live-status]")).trim() === "Encerrada", "the host ends the live");
     await new Promise((resolve) => {
       if (encoderProcess.exitCode !== null) return resolve();
@@ -271,8 +302,10 @@ async function main() {
       null, { timeout: 20000 });
     await viewer.waitForSelector('[data-when-status="interrupted"]:not([hidden])', { timeout: 30000 });
     ok("stopping in the browser interrupts the live, as stopping OBS would");
-    await Promise.all([host.waitForNavigation(), host.click('form[action$="/end/"] button')]);
+    await host.click('form[action$="/end/"] button');
+    await Promise.all([host.waitForNavigation(), confirmIn(host)]);
     await viewer.waitForSelector("[data-recording-link]:not([hidden])", { timeout: 180000 });
+    expect(browserDialogs.length === 0, "no browser dialog window was used");
     ok("the recording of the browser stream is published as a video too");
 
     await hostContext.close();

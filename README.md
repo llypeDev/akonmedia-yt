@@ -142,10 +142,11 @@ upload de um vídeo em partes com uma delas derrubada de propósito, espera da
 codificação, reprodução do HLS e troca de qualidade, comentário e resposta,
 criação e reprodução de uma playlist, edição de detalhes, capítulos e miniatura,
 inclusão e edição de legendas, estúdio, busca, temas, troca do idioma da
-interface, upload e exclusão de uma imagem, embed, layouts de celular e um
-gestor mudando um papel. São 42 verificações, e o teste falha diante de qualquer
-erro de JavaScript. Os seletores seguem o idioma padrão da interface, o
-português do Brasil.
+interface, upload e exclusão de uma imagem (com a confirmação cancelada e depois
+aceita na janela do próprio portal), embed, layouts de celular e um gestor
+mudando um papel. São 46 verificações, e o teste falha diante de qualquer erro
+de JavaScript ou janela de confirmação do navegador. Os seletores seguem o
+idioma padrão da interface, o português do Brasil.
 
 ```bash
 npm i -D playwright && npx playwright install chromium   # só uma vez
@@ -156,12 +157,13 @@ node tools/e2e/smoke.mjs
 ```
 
 `tools/e2e/live.mjs` testa as lives contra o servidor de ingestão de verdade,
-com o ffmpeg no papel do OBS: a live é criada, a página espera com a contagem
-regressiva e passa sozinha para a transmissão, espectadores e apresentador
-conversam no chat, uma mensagem é ocultada, o codificador cai e volta, a live é
-encerrada e a gravação vira um vídeo que o mesmo embed passa a exibir. Depois,
+com o ffmpeg no papel do OBS: a live é criada com o horário escolhido no
+calendário do portal, a página espera com a contagem regressiva e passa sozinha
+para a transmissão, espectadores e apresentador conversam no chat, uma mensagem
+é ocultada, o codificador cai e volta, a live é encerrada e a gravação vira um
+vídeo que o mesmo embed passa a exibir. Depois,
 uma segunda live vai ao ar transmitida pelo próprio navegador, com a câmera e o
-microfone falsos do Chromium. São 32 verificações; ele precisa do servidor de
+microfone falsos do Chromium. São 35 verificações; ele precisa do servidor de
 ingestão rodando (veja [Lives](#lives)) e do ffmpeg.
 
 ```bash

@@ -1,10 +1,11 @@
 /* QQplay admin — Django's admin dressed in the portal's design system.
  *
- * Loaded after every stylesheet of Django's, page ones included (see
- * templates/admin/base_site.html).
- * Django draws the admin from CSS variables, so most of the work is mapping
+ * Loaded after every stylesheet of Django's, responsive.css included (see
+ * templates/admin/base_site.html), so a rule here wins any tie at any width.
+ * Django draws the admin from CSS variables, so part of the work is mapping
  * the portal's tokens onto them; the rest reshapes the components (header,
- * sidebar, modules, tables, forms, buttons, login) to match the portal.
+ * side menu, cards, tables, forms, buttons, change list, login) to match the
+ * portal, from a phone to a wide screen.
  *
  * Themes follow Django's own switch: html[data-theme] is "light", "dark" or
  * "auto" (the system's), and the portal's choice is copied into it.
@@ -166,7 +167,31 @@ html[data-theme],
   --q-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
+/* Sizes and icons used below. The icons are Lucide's, drawn as masks so they
+   take the text color of whatever holds them. */
+:root {
+  --q-header-h: 64px;
+  --q-radius: 16px;
+  --q-i-plus: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 5v14M5 12h14'/></svg>");
+  --q-i-pencil: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21.17 6.81a2.83 2.83 0 0 0-4-4L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z'/></svg>");
+  --q-i-x: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M18 6 6 18M6 6l12 12'/></svg>");
+  --q-i-eye: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0'/><circle cx='12' cy='12' r='3'/></svg>");
+  --q-i-search: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg>");
+  --q-i-calendar: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2'/><path d='M16 2v4M8 2v4M3 10h18'/></svg>");
+  --q-i-clock: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/></svg>");
+  --q-i-history: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8'/><path d='M3 3v5h5M12 7v5l4 2'/></svg>");
+  --q-i-external: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/></svg>");
+  --q-i-chevron-left: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m15 18-6-6 6-6'/></svg>");
+  --q-i-chevron-right: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m9 18 6-6-6-6'/></svg>");
+  --q-i-filter: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 6h18M7 12h10M10 18h4'/></svg>");
+}
+
 /* --------------------------------------------------------------- page */
+
+/* Django gives the page frame the window's height, so a sticky header (and
+   the side menu) let go of the top once the page scrolls past one screen:
+   the frame grows with the page instead. */
+#container { height: auto; min-height: 100%; }
 
 html, body { background: var(--q-bg); }
 body {
@@ -184,8 +209,8 @@ a:link, a:visited { color: var(--q-accent); }
 a:focus, a:hover { color: var(--q-accent-strong); }
 :focus-visible { outline: 2px solid var(--q-accent); outline-offset: 2px; }
 h1, h2, h3, h4, h5 { font-family: var(--q-display); letter-spacing: -0.012em; }
-#content > h1, #content h1 { font-size: 26px; font-weight: 600; color: var(--q-text); margin: 6px 0 18px; }
-#content > h2 { font-size: 17px; font-weight: 600; color: var(--q-text-2); }
+#content h1 { font-size: 26px; font-weight: 600; line-height: 1.25; color: var(--q-text); margin: 4px 0 18px; }
+#content > h2 { margin: -10px 0 18px; font-size: 16px; font-weight: 500; color: var(--q-muted); }
 #content { padding: 24px 32px 48px; }
 .help, p.help, form p.help, div.help, form div.help, div.help li { color: var(--q-muted); font-size: 13px; }
 .quiet, a.quiet:link, a.quiet:visited { color: var(--q-muted); }
@@ -199,10 +224,16 @@ code, kbd, pre, samp, tt { font-family: var(--font-family-monospace); }
   top: 0;
   z-index: 40;
   /* #container is a full-height flex column: without this, a long page
-     squeezes the header down to its minimum and the links spill out. */
+     squeezes the header down and the links spill out. */
   flex: none;
-  min-height: 64px;
-  padding: 10px 28px;
+  box-sizing: border-box;
+  height: var(--q-header-h);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 0 28px;
   background: var(--q-glass);
   color: var(--q-text);
   border-bottom: 1px solid var(--q-line);
@@ -210,8 +241,8 @@ code, kbd, pre, samp, tt { font-family: var(--font-family-monospace); }
   -webkit-backdrop-filter: saturate(160%) blur(14px);
   box-shadow: none;
 }
-#branding { display: flex; align-items: center; gap: 12px; }
-#site-name { margin: 0; padding: 0; font-size: 0; }
+#branding { display: flex; align-items: center; gap: 12px; min-width: 0; }
+#site-name { margin: 0; padding: 0; font-size: 0; line-height: 1; }
 .admin-brand {
   display: inline-flex;
   align-items: center;
@@ -241,19 +272,33 @@ code, kbd, pre, samp, tt { font-family: var(--font-family-monospace); }
 #user-tools {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 2px;
+  flex-wrap: nowrap;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
   font-size: 13.5px;
   font-weight: 500;
+  line-height: 1;
   letter-spacing: 0;
+  text-align: right;
   text-transform: none;
+  white-space: nowrap;
   color: var(--q-muted);
 }
 #user-tools strong { color: var(--q-text); font-weight: 600; }
-.admin-user { display: inline-flex; align-items: center; gap: 8px; margin-right: 6px; padding-right: 10px; border-right: 1px solid var(--q-line); }
+.admin-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  margin-right: 8px;
+  padding-right: 12px;
+  border-right: 1px solid var(--q-line);
+}
 .admin-avatar {
   display: inline-grid;
   place-items: center;
+  flex: none;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -262,38 +307,46 @@ code, kbd, pre, samp, tt { font-family: var(--font-family-monospace); }
   font: 700 12px/1 var(--font-family-primary);
 }
 #logout-form { display: inline-flex; margin: 0; }
-#header a:link, #header a:visited, #logout-form button { color: var(--q-text-2); }
-#user-tools a, #logout-form button {
+#header a:link, #header a:visited { color: var(--q-text-2); }
+#user-tools a, #user-tools .admin-link, #logout-form button {
   display: inline-flex;
   align-items: center;
-  height: 32px;
+  gap: 7px;
+  box-sizing: border-box;
+  height: 34px;
+  margin: 0;
   padding: 0 12px;
   border: 0;
   border-radius: 999px;
+  background: none;
+  color: var(--q-text-2);
+  font: 500 13.5px/1 var(--font-family-primary);
   text-decoration: none;
-  font: inherit;
-  font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
+  cursor: pointer;
 }
-#user-tools a:hover, #user-tools a:focus, #logout-form button:hover, #logout-form button:focus {
+#user-tools .q-icon { width: 16px; height: 16px; flex: none; opacity: 0.85; }
+#user-tools a:hover, #user-tools a:focus-visible, #logout-form button:hover, #logout-form button:focus-visible {
   color: var(--q-text);
   background: var(--q-surface-2);
-  border: 0;
   text-decoration: none;
 }
 #logout-form button:hover { color: var(--q-danger); background: var(--q-danger-soft); }
 .theme-toggle {
   display: inline-grid;
   place-items: center;
+  flex: none;
+  box-sizing: border-box;
   width: 36px;
   height: 36px;
-  margin-left: 6px;
+  margin: 0 0 0 6px;
+  padding: 0;
   border: 1px solid var(--q-line);
   border-radius: 999px;
   background: var(--q-surface-2);
   color: var(--q-text-2);
-  vertical-align: middle;
+  cursor: pointer;
 }
 .theme-toggle:hover { background: var(--q-surface-3); color: var(--q-text); }
 #container .theme-toggle svg { width: 18px; height: 18px; color: var(--q-text-2); fill: none; }
@@ -306,18 +359,32 @@ div.breadcrumbs {
   border: 0;
   color: var(--q-muted);
   font-size: 13px;
+  line-height: 1.5;
 }
 div.breadcrumbs a, div.breadcrumbs a:link, div.breadcrumbs a:visited { color: var(--q-text-2); }
 div.breadcrumbs a:hover { color: var(--q-accent); }
 
 /* --------------------------------------------------------- side menu */
 
+/* The menu and its toggle stick under the header, not behind it. */
+.main > .sticky { top: var(--q-header-h); max-height: calc(100vh - var(--q-header-h)); }
 #nav-sidebar {
   /* Django lays the page out around a 275px menu: the padding goes inside. */
   box-sizing: border-box;
   background: var(--q-surface);
+  border-top: 0;
   border-right: 1px solid var(--q-line);
   padding: 16px 12px 24px;
+}
+/* The menu's column is painted all the way down, also where the sticky menu
+   has already scrolled by: no panel that stops halfway down a long page. */
+@media (min-width: 768px) {
+  #main:has(> #nav-sidebar) {
+    background: linear-gradient(90deg, var(--q-surface) 0 22px, var(--q-line) 22px 23px, transparent 23px) no-repeat;
+  }
+  #main.shifted:has(> #nav-sidebar) {
+    background: linear-gradient(90deg, var(--q-surface) 0 22px, var(--q-line) 22px 23px, var(--q-surface) 23px 297px, var(--q-line) 297px 298px, transparent 298px) no-repeat;
+  }
 }
 #nav-filter {
   width: 100%;
@@ -331,7 +398,7 @@ div.breadcrumbs a:hover { color: var(--q-accent); }
   font-size: 13.5px;
 }
 #nav-filter:focus { outline: none; border-color: var(--q-accent); box-shadow: 0 0 0 3px var(--q-accent-soft); }
-#nav-sidebar .module { margin-bottom: 14px; border: 0; background: none; box-shadow: none; }
+#nav-sidebar .module { margin-bottom: 14px; border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
 #nav-sidebar .module caption,
 #nav-sidebar .module th,
 #nav-sidebar .module td { background: none; border: 0; }
@@ -357,6 +424,7 @@ div.breadcrumbs a:hover { color: var(--q-accent); }
 #nav-sidebar .module td a { justify-content: flex-end; padding: 0 8px; font-size: 12.5px; color: var(--q-muted); }
 #nav-sidebar .module th a:hover, #nav-sidebar .module td a:hover { background: var(--q-surface-2); color: var(--q-text); text-decoration: none; }
 #nav-sidebar .module tr { background: none; }
+#nav-sidebar .module tbody tr:hover { background: none; }
 #nav-sidebar .current-app .section:link, #nav-sidebar .current-app .section:visited { color: var(--q-accent); }
 #nav-sidebar .current-model { background: none; }
 #nav-sidebar .current-model th a {
@@ -373,12 +441,84 @@ div.breadcrumbs a:hover { color: var(--q-accent); }
 .toggle-nav-sidebar:hover, .toggle-nav-sidebar:focus { background: var(--q-surface-2); color: var(--q-accent); }
 #nav-sidebar .addlink::before { content: "+"; margin-right: 4px; font-weight: 700; color: var(--q-accent); }
 
+/* ------------------------------------------------------ title and tools */
+
+/* A page with tools (add, history, view on site) puts them on the title's
+   row: Django floats them up there with a negative margin, which overlaps a
+   long title and narrows whatever comes next. */
+#content:has(> #content-main > .object-tools) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 20px;
+  align-items: start;
+}
+#content:has(> #content-main > .object-tools) > *,
+#content:has(> #content-main > .object-tools) > #content-main > * { grid-column: 1 / -1; min-width: 0; }
+#content:has(> #content-main > .object-tools) > #content-main { display: contents; }
+#content:has(> #content-main > .object-tools) > h1 { grid-column: 1; grid-row: 1; }
+#content:has(> #content-main > .object-tools) > #content-main > .object-tools { grid-column: 2; grid-row: 1; }
+#content > br.clear { display: none; }
+
+.object-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  float: none;
+  margin: 0 0 18px;
+  padding: 0;
+  overflow: visible;
+  list-style: none;
+  font-size: inherit;
+}
+.object-tools li { float: none; height: auto; margin: 0; padding: 0; list-style: none; }
+.object-tools a:link, .object-tools a:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  float: none;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--q-line-2);
+  border-radius: 999px;
+  background: var(--q-surface-2);
+  color: var(--q-text);
+  font: 600 13.5px/1 var(--font-family-primary);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+.object-tools a:hover, .object-tools a:focus { background: var(--q-surface-3); color: var(--q-text); text-decoration: none; }
+.object-tools a.addlink:link, .object-tools a.addlink:visited,
+.object-tools a.viewsitelink:link, .object-tools a.viewsitelink:visited,
+.object-tools a.historylink:link, .object-tools a.historylink:visited { background-image: none; padding-right: 16px; }
+.object-tools a.addlink::before, .object-tools a.viewsitelink::before, .object-tools a.historylink::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--q-mask) center / contain no-repeat;
+  mask: var(--q-mask) center / contain no-repeat;
+}
+.object-tools a.addlink { --q-mask: var(--q-i-plus); }
+.object-tools a.viewsitelink { --q-mask: var(--q-i-external); }
+.object-tools a.historylink { --q-mask: var(--q-i-history); }
+.object-tools a.addlink:link, .object-tools a.addlink:visited {
+  border-color: transparent;
+  background: var(--q-grad-btn);
+  color: var(--q-accent-ink);
+  box-shadow: 0 8px 24px -10px rgba(34, 211, 238, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.object-tools a.addlink:hover, .object-tools a.addlink:focus { background: var(--q-grad-btn); color: var(--q-accent-ink); filter: brightness(1.06); }
+
 /* ------------------------------------------------------------ modules */
 
 .module, .inline-group {
   margin-bottom: 22px;
   border: 1px solid var(--q-line);
-  border-radius: 16px;
+  border-radius: var(--q-radius);
   background: var(--q-surface);
   box-shadow: var(--q-shadow);
   overflow: hidden;
@@ -397,19 +537,39 @@ div.breadcrumbs a:hover { color: var(--q-accent); }
 .module caption a.section:hover { color: var(--q-accent); }
 .module table { width: 100%; }
 .module h3 { color: var(--q-text-2); font-size: 14px; }
-#content-related .module h2 { border-bottom: 1px solid var(--q-line); }
 #content-related { background: transparent; }
 #content-related .module { box-shadow: var(--q-shadow); }
+#content-related .module h2 { padding: 14px 18px; border-bottom: 1px solid var(--q-line); font-size: 15px; }
 #recent-actions-module h3 { margin: 14px 18px 6px; color: var(--q-muted); font: 600 11px/1.4 var(--font-family-monospace); letter-spacing: 0.1em; text-transform: uppercase; }
 #recent-actions-module p { margin: 6px 18px 18px; color: var(--q-muted); }
-ul.actionlist { margin: 0 18px 16px; }
-ul.actionlist li { color: var(--q-text-2); }
+ul.actionlist { margin: 0 18px 16px; padding: 0; }
+ul.actionlist li { color: var(--q-text-2); line-height: 1.45; margin-bottom: 8px; }
+ul.actionlist li .mini { color: var(--q-faint); }
 
-/* Dashboard: one card per app, models as rows. */
+/* Dashboard: the apps as cards flowing in columns, recent actions beside. */
+.dashboard #content { width: auto; max-width: 1320px; }
+.dashboard #content.colMS, .dashboard .colMS { margin-right: 0; }
+.dashboard #content:has(> #content-related) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 0 24px;
+  align-items: start;
+}
+.dashboard #content > h1 { grid-column: 1 / -1; }
+.dashboard #content-main { float: none; width: auto; columns: 2 340px; column-gap: 20px; }
+.dashboard #content-main > .module { display: inline-block; box-sizing: border-box; width: 100%; margin: 0 0 20px; break-inside: avoid; }
+.dashboard #content-related {
+  float: none;
+  width: auto;
+  margin: 0;
+  position: sticky;
+  top: calc(var(--q-header-h) + 20px);
+}
 .dashboard .module table th { width: 100%; }
-.dashboard .module table td a { white-space: nowrap; }
-.dashboard .module tr:hover { background: var(--q-surface-2); }
-.dashboard #content { max-width: 1180px; }
+.dashboard .module table td { white-space: nowrap; }
+.dashboard .module table td a { white-space: nowrap; padding-right: 0; }
+.dashboard .module tbody tr:hover { background: var(--q-surface-2); }
+.dashboard .module table th a { font-weight: 600; }
 .module .addlink, .module .changelink, .module .viewlink, .inlineviewlink,
 #nav-sidebar .addlink, #nav-sidebar .changelink { background-image: none; padding-left: 0; }
 .module .addlink::before { content: "+"; margin-right: 5px; font-weight: 700; }
@@ -439,10 +599,6 @@ table thead th .text a:hover { color: var(--q-text); }
 thead th.sorted { background: var(--q-surface-3); }
 thead th.sorted .text a { color: var(--q-text); }
 tr.selected { background: var(--q-accent-soft) !important; }
-#result_list { width: 100%; }
-#result_list td, #result_list th { vertical-align: middle; padding-left: 12px; padding-right: 12px; }
-#result_list tbody th a { font-weight: 600; }
-.action-checkbox-column, td.action-checkbox { width: 36px; }
 
 /* --------------------------------------------------------------- forms */
 
@@ -450,6 +606,7 @@ input:not([type]), input[type=text], input[type=password], input[type=email],
 input[type=url], input[type=number], input[type=tel], input[type=search], textarea, select, .vTextField {
   box-sizing: border-box;
   min-height: 38px;
+  margin: 0;
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid var(--q-line-2);
@@ -469,7 +626,8 @@ textarea:focus, select:focus, .vTextField:focus {
   border-color: var(--q-accent);
   box-shadow: 0 0 0 4px var(--q-accent-soft);
 }
-input[type=checkbox], input[type=radio] { accent-color: var(--q-accent); width: 16px; height: 16px; vertical-align: middle; }
+input[type=checkbox], input[type=radio] { accent-color: var(--q-accent); width: 16px; height: 16px; margin: 0; vertical-align: middle; }
+input[type=file] { color: var(--q-muted); font-size: 13px; }
 input[type=file]::file-selector-button {
   margin-right: 10px;
   height: 32px;
@@ -481,21 +639,178 @@ input[type=file]::file-selector-button {
   font: 600 13px/1 var(--font-family-primary);
   cursor: pointer;
 }
+
+/* Room for what the fields hold: titles, keys, addresses and ids were cut
+   at Django's 20em. They still shrink with the card on a narrow screen. */
+.aligned .vTextField, .aligned .vURLField, .aligned .vUUIDField { width: 34em; }
+.aligned .vLargeTextField, .aligned .vXMLLargeTextField, .colM .aligned .vLargeTextField, .colM .aligned .vXMLLargeTextField { width: 48em; }
+.vForeignKeyRawIdAdminField.vUUIDField, .aligned .vForeignKeyRawIdAdminField.vUUIDField {
+  width: 24em;
+  font-family: var(--font-family-monospace);
+  font-size: 13px;
+}
+.vIntegerField, .vBigIntegerField, .vPositiveIntegerField { width: 10em; }
+.aligned .flex-container { align-items: flex-start; min-width: 0; }
+.aligned .flex-container > input, .aligned .flex-container > textarea, .aligned .flex-container > select { min-width: 0; flex-shrink: 1; }
+.aligned .form-row > div { min-width: 0; max-width: 100%; }
+
 fieldset { border: 0; }
 fieldset.module { padding: 0; }
 .form-row { padding: 14px 18px; border-bottom: 1px solid var(--q-line); }
 .form-row:last-child { border-bottom: 0; }
-.aligned label, form .aligned label { color: var(--q-text-2); font-weight: 500; padding-top: 9px; }
+.aligned label, form .aligned label { color: var(--q-text-2); font-size: 13.5px; font-weight: 500; padding-top: 9px; }
+.aligned .vCheckboxLabel, form .aligned .vCheckboxLabel { width: auto; min-width: 0; }
 .aligned label + p, .aligned .checkbox-row + div.help, .aligned label + div.readonly { padding-top: 9px; }
+.aligned .checkbox-row label, form .aligned .checkbox-row label, .aligned .vCheckboxLabel { padding-top: 0; }
+.aligned .checkbox-row { align-items: center; gap: 8px; }
 form .required label, label.required { color: var(--q-text); font-weight: 600; }
 form .required label::after, label.required::after { content: " *"; color: var(--q-danger); }
-div.readonly { color: var(--q-text-2); }
+.aligned label:not(.vCheckboxLabel)::after { color: var(--q-faint); }
+div.readonly { color: var(--q-text-2); overflow-wrap: anywhere; }
 .file-upload { color: var(--q-muted); font-size: 13px; }
 .file-upload a { word-break: break-all; }
 fieldset .fieldBox { color: var(--q-text-2); }
 fieldset.collapse summary, fieldset details summary { color: var(--q-accent); }
 .inline-related h3 { background: var(--q-surface-2); color: var(--q-text-2); border-bottom: 1px solid var(--q-line); padding: 10px 18px; }
-.inline-group .tabular tr.add-row td { background: var(--q-surface-2); }
+.inline-group .tabular tr.add-row td, .inline-group div.add-row { background: var(--q-surface-2); padding: 10px 14px; border: 0; }
+.inline-group .tabular fieldset.module { margin: 0; border: 0; border-radius: 0; box-shadow: none; overflow-x: auto; }
+.inline-group .tabular td { vertical-align: middle; }
+/* The name of each saved row sits on its own line at the top of the row,
+   over the fields (Django places it there and keeps room for it). */
+.inline-group .tabular tr td.original { width: 0; padding: 0; vertical-align: top; }
+.inline-group .tabular td.original p {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: auto;
+  margin: 0;
+  padding: 10px 14px 0;
+  overflow: hidden;
+  color: var(--q-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.inline-group .tabular tr.has_original td { padding-top: 34px; }
+.inline-group .tabular tr.has_original td.original { padding-top: 0; }
+
+/* Date and time: the shortcuts become small pill buttons with the portal's
+   icons instead of Django's blue links and drawings. */
+p.datetime { line-height: 1; color: var(--q-muted); font-size: 12.5px; font-weight: 600; }
+p.datetime br { display: block; content: ""; margin-top: 8px; }
+.datetime input, .form-row .datetime input.vDateField, .form-row .datetime input.vTimeField { margin: 0 0 0 8px; vertical-align: middle; }
+.vDateField { width: 9.5em; }
+.vTimeField { width: 7.5em; }
+/* font-size 0 hides the " | " Django writes between the two shortcuts. */
+.datetimeshortcuts, .datetime .datetimeshortcuts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  font-size: 0;
+  vertical-align: middle;
+}
+.datetimeshortcuts a:link, .datetimeshortcuts a:visited {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--q-line-2);
+  border-radius: 999px;
+  background: var(--q-surface-2);
+  color: var(--q-text-2);
+  font: 600 12.5px/1 var(--font-family-primary);
+  text-decoration: none;
+}
+.datetimeshortcuts a:has(.date-icon), .datetimeshortcuts a:has(.clock-icon) { padding: 0; }
+.datetimeshortcuts a:hover, .datetimeshortcuts a:focus { border-color: var(--q-accent-ring); background: var(--q-accent-soft); color: var(--q-accent); }
+.datetimeshortcuts .date-icon, .datetimeshortcuts .clock-icon {
+  top: 0;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--q-mask) center / contain no-repeat;
+  mask: var(--q-mask) center / contain no-repeat;
+}
+.datetimeshortcuts a:focus .date-icon, .datetimeshortcuts a:hover .date-icon,
+.datetimeshortcuts a:focus .clock-icon, .datetimeshortcuts a:hover .clock-icon { background: currentColor; }
+.datetimeshortcuts .date-icon { --q-mask: var(--q-i-calendar); }
+.datetimeshortcuts .clock-icon { --q-mask: var(--q-i-clock); }
+.timezonewarning { color: var(--q-warning); font-size: 12px; }
+
+/* The buttons next to a related field: edit, add, remove, view, look up. */
+.related-widget-wrapper { align-items: center; gap: 6px; }
+.related-widget-wrapper-link, a.related-lookup {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  border: 1px solid var(--q-line-2);
+  border-radius: 10px;
+  background: var(--q-surface-2);
+  color: var(--q-text-2);
+  vertical-align: middle;
+  opacity: 0.45;
+  filter: none;
+}
+a.related-lookup { margin-left: 6px; background-image: none; opacity: 1; }
+.related-widget-wrapper-link:link { opacity: 1; filter: none; }
+.related-widget-wrapper-link img { display: none; }
+.related-widget-wrapper-link::before, a.related-lookup::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--q-mask) center / contain no-repeat;
+  mask: var(--q-mask) center / contain no-repeat;
+}
+.change-related { --q-mask: var(--q-i-pencil); }
+.add-related { --q-mask: var(--q-i-plus); }
+.delete-related { --q-mask: var(--q-i-x); }
+.view-related { --q-mask: var(--q-i-eye); }
+a.related-lookup { --q-mask: var(--q-i-search); }
+.related-widget-wrapper-link:link:hover, a.related-lookup:hover {
+  border-color: var(--q-accent-ring);
+  background: var(--q-accent-soft);
+  color: var(--q-accent);
+}
+.delete-related:link:hover { border-color: rgba(255, 92, 122, 0.4); background: var(--q-danger-soft); color: var(--q-danger); }
+.aligned .related-lookup + strong, .related-lookup + strong { margin-left: 8px; color: var(--q-text-2); font-weight: 500; }
+
+/* Two-list picker for groups and permissions. */
+.selector { gap: 0 12px; min-width: 0; }
+.related-widget-wrapper:has(> .selector) { flex: 1 1 auto; min-width: 0; }
+.selector-available, .selector-chosen { min-width: 0; }
+.selector select { min-width: 0; }
+.selector .selector-available h2, .selector .selector-chosen h2, .selector-chosen-title, .selector-available-title {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--q-line);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: var(--q-surface-2);
+  color: var(--q-text);
+  font: 600 13.5px/1.3 var(--font-family-primary);
+  text-transform: none;
+}
+.selector-available-title label, .selector-chosen-title label { color: var(--q-text); font-weight: 600; padding: 0; }
+.selector-chosen .selector-chosen-title, .selector-chosen h2 { background: var(--q-accent-soft); }
+.selector .help, .selector-available-title .helptext, .selector-chosen-title .helptext { color: var(--q-muted); font-size: 12px; font-weight: 400; }
+.selector .selector-filter { display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 10px; border: 1px solid var(--q-line); border-bottom: 0; background: var(--q-surface); color: var(--q-muted); }
+.selector .selector-filter input { flex: 1; width: auto; min-width: 0; min-height: 34px; }
+.selector .selector-filter label { padding: 0; }
+.selector select { box-sizing: border-box; width: 100%; margin: 0; border-radius: 0 0 10px 10px; border-color: var(--q-line); font-size: 13px; }
+.selector-chooseall, .selector-clearall { margin-top: 8px; color: var(--q-muted); font-size: 12.5px; }
+.selector ul.selector-chooser { border-radius: 999px; background: var(--q-surface-2); border: 1px solid var(--q-line); }
 
 .errornote {
   padding: 12px 16px;
@@ -505,9 +820,12 @@ fieldset.collapse summary, fieldset details summary { color: var(--q-accent); }
   color: var(--q-danger);
   font-size: 14px;
 }
-ul.errorlist { color: var(--q-danger); }
+ul.errorlist { margin: 0 0 8px; padding: 0; background: none; color: var(--q-danger); }
+ul.errorlist li { margin-bottom: 4px; font-weight: 500; }
+.errors input[type=file] { padding: 3px; border: 1px solid var(--q-danger); border-radius: 999px; }
 ul.errorlist li { font-size: 13px; }
 .errors input, .errors select, .errors textarea, td ul.errorlist + input, ul.errorlist + input { border-color: var(--q-danger); }
+.form-row.errors { background: var(--q-danger-soft); }
 
 /* ------------------------------------------------------------- buttons */
 
@@ -515,6 +833,7 @@ ul.errorlist li { font-size: 13px; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   height: 40px;
   padding: 0 18px;
   border: 1px solid var(--q-line-2);
@@ -523,6 +842,7 @@ ul.errorlist li { font-size: 13px; }
   color: var(--q-text);
   font: 600 14px/1 var(--font-family-primary);
   letter-spacing: -0.005em;
+  text-transform: none;
   cursor: pointer;
   transition: background 140ms, filter 140ms, box-shadow 140ms, transform 140ms;
 }
@@ -533,9 +853,10 @@ ul.errorlist li { font-size: 13px; }
 }
 .button:active, input[type=submit]:active, input[type=button]:active { transform: translateY(1px); }
 .button.default, input[type=submit].default, .submit-row input.default {
-  border: 0;
+  border-color: transparent;
   background: var(--q-grad-btn);
   color: var(--q-accent-ink);
+  text-transform: none;
   box-shadow: 0 8px 24px -10px rgba(34, 211, 238, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .button.default:hover, input[type=submit].default:hover, .submit-row input.default:hover,
@@ -552,14 +873,16 @@ ul.errorlist li { font-size: 13px; }
   margin: 18px 0;
   padding: 14px 16px;
   border: 1px solid var(--q-line);
-  border-radius: 16px;
+  border-radius: var(--q-radius);
   background: var(--q-surface);
   box-shadow: var(--q-shadow);
 }
-.submit-row input { margin: 0; }
+.submit-row input, .submit-row a { margin: 0; }
 .submit-row a.deletelink, a.deletelink, .deletelink-box a {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   height: 40px;
   padding: 0 18px;
   margin-left: auto;
@@ -568,12 +891,15 @@ ul.errorlist li { font-size: 13px; }
   background: var(--q-danger-soft);
   color: var(--q-danger) !important;
   font-weight: 600;
+  line-height: 1;
   text-decoration: none;
 }
 .submit-row a.deletelink:hover, a.deletelink:hover { background: var(--q-danger); color: #fff !important; }
 .submit-row a.closelink, a.closelink {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   height: 40px;
   padding: 0 18px;
   border: 1px solid var(--q-line-2);
@@ -581,6 +907,7 @@ ul.errorlist li { font-size: 13px; }
   background: var(--q-surface-2);
   color: var(--q-text) !important;
   font-weight: 600;
+  line-height: 1;
 }
 .delete-confirmation form input[type="submit"], .delete-confirmation input[type=submit] {
   height: 40px;
@@ -595,61 +922,150 @@ ul.errorlist li { font-size: 13px; }
 .delete-confirmation form .cancel-link {
   display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
   height: 40px;
   padding: 0 18px;
   border: 1px solid var(--q-line-2);
   border-radius: 999px;
   background: var(--q-surface-2);
   color: var(--q-text);
+  line-height: 1;
 }
+.delete-confirmation form div { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .delete-confirmation ul { color: var(--q-text-2); line-height: 1.7; }
-
-.object-tools { margin-top: -54px; }
-.object-tools li { margin-left: 8px; }
-.object-tools a:link, .object-tools a:visited {
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 16px;
-  border: 1px solid var(--q-line-2);
-  border-radius: 999px;
-  background: var(--q-surface-2);
-  color: var(--q-text);
-  font: 600 13.5px/1 var(--font-family-primary);
-  letter-spacing: 0;
-  text-transform: none;
-}
-.object-tools a:hover, .object-tools a:focus { background: var(--q-surface-3); color: var(--q-text); }
-.object-tools a.addlink:link, .object-tools a.addlink:visited {
-  border: 0;
-  background: var(--q-grad-btn);
-  color: var(--q-accent-ink);
-  box-shadow: 0 8px 24px -10px rgba(34, 211, 238, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-.object-tools a.addlink::before { content: "+"; margin-right: 6px; font-size: 16px; font-weight: 700; }
-.object-tools a.addlink:hover { filter: brightness(1.06); }
 
 /* ---------------------------------------------------------- change list */
 
-#changelist .changelist-form-container { gap: 22px; }
-/* The gap above already separates the filters: no extra margin, and the list
-   column may shrink (its table scrolls inside) instead of pushing the page
-   wider than the screen. */
-#changelist .changelist-form-container > div { min-width: 0; }
-#changelist #changelist-filter { margin-left: 0; }
-#changelist #result_list thead th { white-space: normal; }
-#changelist #toolbar, #changelist .actions, #changelist .results, #changelist .paginator { box-sizing: border-box; }
+/* The list and its filters are separate cards: the frame Django's "module"
+   class gives #changelist would draw a second border around both. */
+#changelist, #changelist.module {
+  gap: 20px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+#changelist .changelist-form-container { min-width: 0; }
+#changelist #changelist-filter { margin: 0; }
+#changelist #toolbar, #changelist .actions, #changelist .results, #changelist .paginator { box-sizing: border-box; width: auto; }
+
+/* Search */
 #changelist #toolbar {
-  margin-bottom: 14px;
+  margin: 0 0 14px;
   padding: 12px 14px;
   border: 1px solid var(--q-line);
   border-radius: 14px;
   background: var(--q-surface);
+  box-shadow: var(--q-shadow);
   color: var(--q-muted);
 }
-#changelist #toolbar form input[type="text"], #changelist-search input[type="text"] { min-width: 280px; border-radius: 999px; padding-left: 16px; }
-#changelist #toolbar form input[type="submit"], #changelist .actions .button, #changelist .actions button {
-  height: 38px;
+#changelist #changelist-search > div {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  max-width: none;
+}
+#changelist #changelist-search label {
+  position: absolute;
+  top: 0;
+  left: 14px;
+  display: grid;
+  place-items: center;
+  height: 40px;
+  line-height: 1;
+  pointer-events: none;
+}
+#changelist-search label img { display: none; }
+#changelist #changelist-search label::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: var(--q-muted);
+  -webkit-mask: var(--q-i-search) center / contain no-repeat;
+  mask: var(--q-i-search) center / contain no-repeat;
+}
+#changelist #toolbar #searchbar {
+  flex: 1 1 260px;
+  width: auto;
+  min-width: 0;
+  max-width: 560px;
+  height: 40px;
+  margin: 0;
+  padding: 0 16px 0 40px;
+  border: 1px solid var(--q-line-2);
+  border-radius: 999px;
+  background: var(--q-surface-2);
+  font-size: 14px;
+}
+#changelist #toolbar #searchbar:focus { border-color: var(--q-accent); background: var(--q-surface); }
+#changelist #toolbar form input[type="submit"] {
+  flex: none;
+  height: 40px;
+  margin: 0;
+  padding: 0 18px;
+  border: 1px solid var(--q-line-2);
+  border-radius: 999px;
+  background: var(--q-surface-2);
+  box-shadow: none;
+  color: var(--q-text);
+  font: 600 13.5px/1 var(--font-family-primary);
+  cursor: pointer;
+}
+#changelist #toolbar form input[type="submit"]:hover { background: var(--q-surface-3); }
+#changelist #changelist-search .quiet { flex: 1 1 auto; width: auto; margin: 0; font-size: 13px; }
+#changelist #changelist-search .quiet a { margin-left: 6px; }
+
+/* Date drill-down */
+#changelist .toplinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--q-line);
+  border-radius: 14px;
+  background: var(--q-surface);
+  font-weight: 500;
+}
+#changelist .toplinks a:link, #changelist .toplinks a:visited, #changelist .toplinks span {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--q-text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+#changelist .toplinks a:hover { background: var(--q-surface-2); color: var(--q-text); text-decoration: none; }
+#changelist .toplinks .date-back:link, #changelist .toplinks .date-back:visited { color: var(--q-muted); font-weight: 500; }
+
+/* Actions, then the table, joined into one card */
+#changelist .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--q-line);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+  background: var(--q-surface);
+  color: var(--q-muted);
+  line-height: 1.3;
+}
+#changelist .actions label { display: inline-flex; align-items: center; gap: 8px; color: var(--q-text-2); font-size: 13.5px; }
+#changelist .actions select { width: auto; min-width: 220px; min-height: 36px; margin: 0; background-color: var(--q-surface-2); }
+#changelist .actions .button, #changelist .actions button {
+  min-width: 0;
+  height: 36px;
+  margin: 0;
   padding: 0 16px;
   border: 1px solid var(--q-line-2);
   border-radius: 999px;
@@ -659,53 +1075,68 @@ ul.errorlist li { font-size: 13px; }
   font: 600 13.5px/1 var(--font-family-primary);
   cursor: pointer;
 }
-#changelist #toolbar form input[type="submit"]:hover, #changelist .actions .button:hover { background: var(--q-surface-3); }
-#changelist .actions .button, #changelist .actions button { height: 34px; }
-#result_list td.nowrap { white-space: normal; min-width: 132px; }
-#changelist-search img { opacity: 0.6; }
-#changelist .actions {
-  padding: 10px 14px;
-  margin-bottom: 0;
-  border: 1px solid var(--q-line);
-  border-bottom: 0;
-  border-radius: 14px 14px 0 0;
-  background: var(--q-surface);
-  color: var(--q-muted);
-}
-#changelist .actions label { color: var(--q-text-2); }
-#changelist .actions select { min-width: 220px; }
+#changelist .actions .button:hover, #changelist .actions button:hover { background: var(--q-surface-3); }
+#changelist .actions span.all, #changelist .actions span.clear, #changelist .actions span.question,
+#changelist .actions span.action-counter { margin: 0; font-size: 12.5px; color: var(--q-muted); }
+#changelist .actions span.question a, #changelist .actions span.clear a { font-weight: 600; }
 #changelist .results {
   border: 1px solid var(--q-line);
-  border-radius: 0 0 14px 14px;
-  background: var(--q-surface);
-  overflow: auto;
+  border-radius: 14px;
+  /* A table wider than the card scrolls inside it, and a shadow on the side
+     it scrolls to says there is more: the local layers cover the shadows at
+     the ends. */
+  background:
+    linear-gradient(90deg, var(--q-surface) 40%, transparent) left / 48px 100% no-repeat local,
+    linear-gradient(270deg, var(--q-surface) 40%, transparent) right / 48px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.28), transparent) left / 16px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.28), transparent) right / 16px 100% no-repeat scroll,
+    var(--q-surface);
+  box-shadow: var(--q-shadow);
+  overflow-x: auto;
 }
-#changelist .actions + .results, #changelist form > .results:first-child { border-radius: 14px; }
-#changelist .actions ~ .results { border-radius: 0 0 14px 14px; }
+#changelist .actions + .results { border-radius: 0 0 14px 14px; }
+#changelist #result_list { width: 100%; }
+#changelist #result_list thead th { white-space: normal; vertical-align: middle; font-size: 10.5px; letter-spacing: 0.05em; }
+#changelist #result_list td, #changelist #result_list th { vertical-align: middle; padding-left: 10px; padding-right: 10px; }
+#changelist #result_list tbody th { min-width: 160px; }
+#changelist #result_list tbody th a { font-weight: 600; }
+#changelist #result_list td.nowrap { white-space: normal; min-width: 112px; }
+#changelist #result_list .action-checkbox-column, #changelist #result_list td.action-checkbox { width: 40px; padding-right: 0; text-align: center; }
+#changelist #result_list img[src*="icon-"] { vertical-align: middle; }
 #changelist .paginator {
-  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
   padding: 10px 14px;
   border: 1px solid var(--q-line);
   border-radius: 12px;
   background: var(--q-surface);
   color: var(--q-muted);
+  font-size: 13px;
+  line-height: 1.3;
 }
+#changelist .paginator input[type=submit] { height: 34px; margin-left: auto; }
 .paginator a:link, .paginator a:visited {
   display: inline-grid;
   place-items: center;
   min-width: 30px;
   height: 30px;
   padding: 0 8px;
+  box-sizing: border-box;
   border-radius: 8px;
   background: var(--q-surface-2);
   color: var(--q-text);
 }
-.paginator a:hover { background: var(--q-accent-soft); color: var(--q-accent); }
+.paginator a:hover { background: var(--q-accent-soft); color: var(--q-accent); text-decoration: none; }
 .paginator .this-page {
   display: inline-grid;
   place-items: center;
   min-width: 30px;
   height: 30px;
+  padding: 0 8px;
+  box-sizing: border-box;
   border-radius: 8px;
   background: var(--q-grad-btn);
   color: var(--q-accent-ink);
@@ -713,16 +1144,24 @@ ul.errorlist li { font-size: 13px; }
 .paginator a.showall:link, .paginator a.showall:visited { background: none; color: var(--q-accent); }
 #changelist .xfull, .xfull { color: var(--q-muted); }
 .change-list .hiddenfields { display: none; }
+#changelist .changelist-form-container > p:not([class]), #changelist-form > p:not([class]) { color: var(--q-muted); }
 
+/* Filters: a column beside the list on a wide screen, chips above it when
+   there is no room (see the container query further down). */
 #changelist-filter {
-  flex: 0 0 250px;
+  flex: 0 0 210px;
+  box-sizing: border-box;
   border: 1px solid var(--q-line);
-  border-radius: 16px;
+  border-radius: var(--q-radius);
   background: var(--q-surface);
   box-shadow: var(--q-shadow);
   overflow: hidden;
 }
 #changelist-filter h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
   padding: 14px 16px;
   background: transparent;
   color: var(--q-text);
@@ -731,6 +1170,14 @@ ul.errorlist li { font-size: 13px; }
   text-transform: none;
   border-bottom: 1px solid var(--q-line);
 }
+#changelist-filter h2::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: var(--q-muted);
+  -webkit-mask: var(--q-i-filter) center / contain no-repeat;
+  mask: var(--q-i-filter) center / contain no-repeat;
+}
 #changelist-filter h3, #changelist-filter details summary {
   margin: 0;
   padding: 14px 16px 6px;
@@ -738,8 +1185,9 @@ ul.errorlist li { font-size: 13px; }
   font: 600 11px/1.4 var(--font-family-monospace);
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  cursor: pointer;
 }
-#changelist-filter details summary::before { color: var(--q-faint); }
+#changelist-filter details summary::before { color: var(--q-faint); margin-right: 6px; }
 #changelist-filter ul { margin: 0 8px 6px; padding: 0; border: 0; }
 #changelist-filter li { list-style: none; margin: 1px 0; padding: 0; }
 #changelist-filter li a:link, #changelist-filter li a:visited, #changelist-filter a {
@@ -751,6 +1199,13 @@ ul.errorlist li { font-size: 13px; }
 }
 #changelist-filter li a:hover { background: var(--q-surface-2); color: var(--q-text); text-decoration: none; }
 #changelist-filter li.selected { border: 0; border-left: 0; padding: 0; margin-left: 0; }
+#changelist-filter li.selected a:link, #changelist-filter li.selected a:visited {
+  background: var(--q-accent-soft);
+  color: var(--q-text);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--q-accent);
+}
+#changelist-filter #changelist-filter-extra-actions { margin: 0; padding: 8px; border-bottom: 1px solid var(--q-line); }
 #changelist-filter #changelist-filter-extra-actions h3 {
   padding: 0;
   font: 500 13.5px/1.4 var(--font-family-primary);
@@ -758,23 +1213,46 @@ ul.errorlist li { font-size: 13px; }
   text-transform: none;
 }
 #changelist-filter #changelist-filter-extra-actions a::before { content: none; }
-#changelist-filter li.selected a:link, #changelist-filter li.selected a:visited {
-  background: var(--q-accent-soft);
-  color: var(--q-text);
-  font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--q-accent);
-}
-#changelist-filter #changelist-filter-extra-actions { padding: 10px 16px; border-bottom: 1px solid var(--q-line); }
-#changelist-filter-clear a { color: var(--q-danger) !important; }
+#changelist-filter #changelist-filter-extra-actions a { padding: 6px 10px; }
+#changelist-filter-clear a, #changelist-filter #changelist-filter-extra-actions a[href*="?"]:not(.viewlink):not(.hidelink) { color: var(--q-danger); }
 .xfull a, #changelist-filter .hidelink { color: var(--q-muted); }
-
 #changelist .xfull, .changelist-filter-clear { font-size: 13px; }
-p.paginator, .changelist-footer { color: var(--q-muted); }
-ul.toplinks, .date-hierarchy { margin: 0 0 12px; padding: 8px 12px; border: 1px solid var(--q-line); border-radius: 12px; background: var(--q-surface); }
-ul.toplinks li { margin-right: 4px; }
-ul.toplinks a:link, ul.toplinks a:visited { display: inline-block; padding: 4px 10px; border-radius: 999px; color: var(--q-text-2); font-weight: 600; }
-ul.toplinks a:hover { background: var(--q-surface-2); color: var(--q-text); }
-ul.toplinks .date-back a { color: var(--q-muted); }
+
+/* The list decides by the room it has, not by the screen: with the side menu
+   open there is much less of it. */
+.change-list #content { container: q-list / inline-size; }
+@container q-list (max-width: 1060px) {
+  #changelist { flex-direction: column; align-items: stretch; gap: 14px; }
+  #changelist .changelist-form-container { width: 100%; }
+  #changelist #changelist-filter {
+    order: -1;
+    flex: none;
+    width: auto;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    padding-bottom: 8px;
+  }
+  #changelist-filter > h2, #changelist-filter > #changelist-filter-extra-actions { grid-column: 1 / -1; }
+  #changelist-filter #changelist-filter-extra-actions { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; }
+  #changelist-filter details summary { padding: 12px 16px 8px; }
+  #changelist-filter ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 14px 6px; }
+  #changelist-filter li { margin: 0; }
+  #changelist-filter li a:link, #changelist-filter li a:visited, #changelist-filter li a {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid var(--q-line-2);
+    border-radius: 999px;
+    font-size: 13px;
+  }
+  #changelist-filter li.selected a:link, #changelist-filter li.selected a:visited {
+    border-color: var(--q-accent-ring);
+    box-shadow: none;
+    color: var(--q-text);
+  }
+}
 
 /* --------------------------------------------------------------- notes */
 
@@ -791,21 +1269,12 @@ ul.messagelist li {
   background-position: 16px 50%;
   color: var(--q-text);
   font-size: 14px;
+  line-height: 1.45;
 }
-ul.messagelist li.warning { background-color: var(--q-warning-soft); }
-ul.messagelist li.error { background-color: var(--q-danger-soft); }
+ul.messagelist li.warning { background-color: var(--q-warning-soft); background-position: 16px 50%; }
+ul.messagelist li.error { background-color: var(--q-danger-soft); background-position: 16px 50%; }
 
-.selector .selector-available h2, .selector .selector-chosen h2, .selector-chosen-title, .selector-available-title {
-  padding: 10px 12px;
-  border: 1px solid var(--q-line);
-  border-radius: 10px 10px 0 0;
-  background: var(--q-surface-2);
-  color: var(--q-text);
-  font: 600 13.5px/1.3 var(--font-family-primary);
-}
-.selector-chosen .selector-chosen-title, .selector-chosen h2 { background: var(--q-accent-soft); color: var(--q-text); }
-.selector .selector-filter { border-color: var(--q-line); background: var(--q-surface); color: var(--q-muted); }
-.selector select { border-radius: 0 0 10px 10px; }
+/* ------------------------------------------------- calendar and clock */
 
 .calendarbox, .clockbox {
   border: 1px solid var(--q-line-2);
@@ -814,12 +1283,48 @@ ul.messagelist li.error { background-color: var(--q-danger-soft); }
   box-shadow: var(--q-shadow-lg);
   overflow: hidden;
 }
-.calendar caption, .calendarbox h2 { background: var(--q-surface-2); color: var(--q-text); font-weight: 600; }
-.calendar td a:hover, .timelist a:hover { background: var(--q-accent-soft); color: var(--q-text); }
-.calendar td.selected a { background: var(--q-accent); color: var(--q-accent-ink); }
+.calendarbox, .clockbox { color: var(--q-text); font-size: 13px; }
+.calendar table { background: var(--q-surface); }
+.calendar caption, .calendarbox h2, .clockbox h2 { background: var(--q-surface-2); color: var(--q-text); font-weight: 600; font-size: 13.5px; text-transform: none; }
+.clockbox h2 { padding: 12px 16px; }
+.timelist { margin: 0; padding: 6px; }
+.timelist li { list-style: none; }
+.calendar th { background: none; color: var(--q-muted); font: 600 11px/1 var(--font-family-monospace); border: 0; }
+.calendar td { border: 0; }
+.calendar td a, .timelist a { border-radius: 8px; color: var(--q-text-2); }
+.calendar td a:hover, .timelist a:hover, .calendar td a:focus, .timelist a:focus { background: var(--q-accent-soft); color: var(--q-text); }
 .calendar td.today a { font-weight: 700; color: var(--q-accent); }
-.calendar-cancel, .calendarbox .calendar-cancel { background: var(--q-surface-2); }
+.calendar td.selected a, .calendar td.today.selected a { background: var(--q-accent); color: var(--q-accent-ink); font-weight: 700; }
+.calendar td.nonday { background: none; }
+.calendar-shortcuts { border-top: 1px solid var(--q-line); }
+.calendar-cancel, .calendarbox .calendar-cancel { background: var(--q-surface-2); border-top: 1px solid var(--q-line); }
 .calendar-cancel a { color: var(--q-text-2) !important; }
+.calendar caption { padding: 12px 48px; }
+.calendarbox .calendarnav-previous, .calendarbox .calendarnav-next {
+  top: 9px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: none;
+  color: var(--q-text-2);
+  text-indent: 0;
+  font-size: 0;
+}
+.calendarbox .calendarnav-previous { left: 10px; }
+.calendarbox .calendarnav-next { right: 10px; }
+.calendarbox .calendarnav-previous::before, .calendarbox .calendarnav-next::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--q-mask) center / contain no-repeat;
+  mask: var(--q-mask) center / contain no-repeat;
+}
+.calendarbox .calendarnav-previous { --q-mask: var(--q-i-chevron-left); }
+.calendarbox .calendarnav-next { --q-mask: var(--q-i-chevron-right); }
+.calendarbox .calendarnav-previous:hover, .calendarbox .calendarnav-next:hover { background: var(--q-accent-soft); color: var(--q-accent); }
 
 /* --------------------------------------------------------------- login */
 
@@ -834,8 +1339,12 @@ body.login {
   padding: 24px 16px;
 }
 .login #container {
+  position: relative;
   width: min(420px, 100%);
+  max-width: none;
   min-width: 0;
+  height: auto;
+  min-height: 0;
   margin: 0;
   border: 1px solid var(--q-line);
   border-radius: 22px;
@@ -845,7 +1354,7 @@ body.login {
 }
 .login #header {
   position: static;
-  display: flex;
+  height: auto;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -858,9 +1367,10 @@ body.login {
 .login #branding { flex-direction: column; gap: 14px; }
 .login .admin-logo { height: 38px; }
 .login #content { padding: 12px 28px 28px; }
-.login #content-main { width: 100%; }
+.login #content-main { float: none; width: 100%; }
 .login .form-row { padding: 8px 0; border: 0; }
-.login .form-row label { display: block; margin-bottom: 6px; padding: 0; color: var(--q-text-2); font-weight: 600; font-size: 13.5px; }
+.login .form-row + .form-row { margin-top: 0; }
+.login .form-row label { display: block; margin: 0 0 6px; padding: 0; color: var(--q-text-2); font-weight: 600; font-size: 13.5px; line-height: 1.3; }
 .login .form-row #id_username, .login .form-row #id_password { width: 100%; height: 44px; padding: 10px 14px; }
 .login .submit-row { padding: 14px 0 0; margin: 0; border: 0; background: none; box-shadow: none; }
 .login .submit-row input, .login .submit-row input[type=submit] {
@@ -869,13 +1379,13 @@ body.login {
   border: 0;
   background: var(--q-grad-btn);
   color: var(--q-accent-ink);
+  text-transform: none;
   box-shadow: 0 8px 24px -10px rgba(34, 211, 238, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .login .submit-row input:hover { background: var(--q-grad-btn); color: var(--q-accent-ink); filter: brightness(1.06); }
 .login .password-reset-link { text-align: center; margin-top: 12px; }
 .login .errornote { margin: 0 0 12px; }
 .login .theme-toggle { position: absolute; top: 14px; right: 14px; margin: 0; }
-.login #container { position: relative; }
 .login #header::after {
   content: "";
   display: block;
@@ -886,27 +1396,119 @@ body.login {
   background: var(--q-grad);
 }
 
+/* ------------------------------------------------------------ popups */
+
+.popup #content { padding-top: 20px; }
+
 /* ---------------------------------------------------------- small screens */
 
 @media (max-width: 1024px) {
-  #header { padding: 10px 16px; }
-  #content { padding: 18px 16px 40px; }
-  div.breadcrumbs { padding: 12px 16px 0; }
-  ul.messagelist, #main ul.messagelist { padding-left: 16px; padding-right: 16px; }
-  .object-tools { margin-top: 0; }
+  #header { padding: 0 16px; }
+  #content { padding: 18px 20px 40px; }
+  div.breadcrumbs { padding: 12px 20px 0; }
+  ul.messagelist, #main ul.messagelist { padding-left: 20px; padding-right: 20px; }
+  .dashboard #content:has(> #content-related) { grid-template-columns: minmax(0, 1fr) 260px; gap: 0 18px; }
+  .dashboard #content-main { columns: 1; }
+  .dashboard #content.colMS, .dashboard .colMS { margin-right: 0; }
+  .dashboard #content-related { margin-right: 0; }
+  .aligned .related-lookup, .aligned .datetimeshortcuts, .aligned .related-lookup + strong { align-self: center; }
+  .datetimeshortcuts { margin-left: 8px; }
+  .datetime input { width: auto; max-width: none; }
+  .form-row .datetime input.vDateField, .form-row .datetime input.vTimeField { width: 9.5em; }
+  .form-row .datetime input.vTimeField { width: 7.5em; }
+  label { font-size: 13.5px; }
+  .form-row input:not([type]), .form-row input[type=text], .form-row input[type=password], .form-row input[type=email],
+  .form-row input[type=url], .form-row input[type=tel], .form-row input[type=number], .form-row textarea,
+  .form-row select, .form-row .vTextField { min-height: 38px; padding: 8px 12px; font-size: 15px; }
+  .form-row select { height: auto; padding-right: 32px; }
+  .form-row select[multiple] { padding: 6px; }
 }
+
 @media (max-width: 767px) {
   #header {
     position: static;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
     height: auto;
-    padding: 12px 16px;
+    min-height: 60px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 14px;
   }
-  #user-tools { justify-content: flex-start; width: 100%; margin: 0; padding: 0; }
-  #user-tools a, #logout-form button { height: 30px; padding: 0 10px; }
-  .admin-user { padding-right: 8px; }
-  #changelist #toolbar form input[type="text"] { min-width: 0; }
-  #changelist-filter { flex: none; }
+  #user-tools { margin-left: auto; gap: 4px; }
+  /* Icons only: the names are still read out and shown on hover. */
+  .admin-link-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  #user-tools a, #user-tools .admin-link, #logout-form button {
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--q-line);
+    background: var(--q-surface-2);
+  }
+  #user-tools .q-icon { width: 17px; height: 17px; }
+  .admin-user { margin-right: 4px; padding-right: 8px; }
+  .admin-user strong { display: none; }
+  .theme-toggle { margin-left: 0; }
+  div.breadcrumbs { padding: 12px 14px 0; }
+  #content { padding: 14px 14px 36px; }
+  #content h1 { font-size: 22px; margin-bottom: 14px; }
+  ul.messagelist, #main ul.messagelist { padding-left: 14px; padding-right: 14px; }
+
+  /* Title, then its tools, under each other. */
+  #content:has(> #content-main > .object-tools) { grid-template-columns: minmax(0, 1fr); }
+  #content:has(> #content-main > .object-tools) > #content-main > .object-tools { grid-column: 1; grid-row: auto; justify-content: flex-start; margin-bottom: 16px; }
+
+  /* Dashboard: one column, recent actions last. */
+  .dashboard #content:has(> #content-related) { display: block; }
+  .dashboard #content-related { position: static; margin-top: 4px; }
+  #content-related .module { margin-bottom: 0; }
+
+  /* Forms: label above the field, the field as wide as the card. */
+  .form-row { padding: 12px 14px; }
+  .aligned label, form .aligned label { width: 100%; min-width: 0; padding: 0 0 8px; }
+  .aligned label + p, .aligned .checkbox-row + div.help, .aligned label + div.readonly { padding: 0; margin-left: 0; }
+  .aligned .checkbox-row label, form .aligned .checkbox-row label { width: auto; padding: 0; }
+  .aligned .form-row > div { width: auto; max-width: 100%; }
+  .aligned .flex-container { align-items: stretch; }
+  .aligned .flex-container.checkbox-row { align-items: center; }
+  .aligned .vTextField, .aligned .vURLField, .aligned .vUUIDField, .aligned .vLargeTextField, .aligned .vXMLLargeTextField,
+  .colM .aligned .vLargeTextField, .aligned .vForeignKeyRawIdAdminField.vUUIDField { width: 100%; }
+  .related-widget-wrapper { flex-wrap: nowrap; }
+  .related-widget-wrapper:has(> .selector) { flex-wrap: wrap; }
+  .related-widget-wrapper > select { flex: 1 1 0; min-width: 0; }
+  p.datetime { line-height: 1.2; }
+  .submit-row { flex-direction: column; align-items: stretch; padding: 12px; }
+  .submit-row input, .submit-row a, .submit-row a.deletelink, .submit-row a.closelink { width: 100%; margin: 0; }
+  .delete-confirmation form div { flex-direction: column; align-items: stretch; }
+  .delete-confirmation form input[type="submit"], .delete-confirmation form .cancel-link { justify-content: center; width: 100%; }
+  .inline-group[data-inline-type="stacked"] .inline-related { border-color: var(--q-line); border-radius: 12px; margin: 12px; }
+
+  /* Change list */
+  #changelist #toolbar { padding: 10px; }
+  #changelist #toolbar #searchbar { flex: 1 1 0; }
+  #changelist .actions { padding: 10px 12px; }
+  #changelist .actions label { flex: 1 1 0; min-width: 0; }
+  #changelist .actions select { flex: 1 1 auto; width: auto; min-width: 0; }
+  #changelist .actions span { flex: 1 0 100%; }
+  #changelist #result_list tbody th { min-width: 150px; }
+  #changelist-filter { margin-top: 0; }
+
+  /* The calendar opens in the middle of the screen over a dimmed page. */
+  .calendarbox, .clockbox { overflow: visible; border: 0; }
+  .calendarbox > div:first-child, .calendarbox .calendar, .clockbox h2 { border-radius: 14px 14px 0 0; }
+
+  .login #container { margin: 0; }
+  .login #content { padding: 12px 20px 24px; }
+  .login .form-row { padding: 6px 0; }
+}
+
+@media (max-width: 400px) {
+  .admin-badge { display: none; }
 }

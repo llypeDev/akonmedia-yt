@@ -7,13 +7,16 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.templatetags.static import static
 from django.urls import include, path, re_path
+from django.utils.text import format_lazy
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_control
+from django.views.i18n import JavaScriptCatalog
 
 from apps.media.serving import serve_media
 
-admin.site.site_header = f"{settings.PORTAL_NAME} administration"
+admin.site.site_header = format_lazy(_("{portal} administration"), portal=settings.PORTAL_NAME)
 admin.site.site_title = settings.PORTAL_NAME
-admin.site.index_title = "Operations"
+admin.site.index_title = _("Operations")
 
 
 @cache_control(max_age=86400, public=True)
@@ -46,6 +49,9 @@ urlpatterns = [
     path("api/v1/", include("apps.uploader.urls")),
     path("favicon.ico", favicon),
     path("robots.txt", robots),
+    # Language switcher (set_language) and the catalog the scripts translate with.
+    path("i18n/", include("django.conf.urls.i18n")),
+    path("jsi18n/", JavaScriptCatalog.as_view(packages=["apps.core"]), name="javascript-catalog"),
     path("", include("apps.core.urls")),
 ]
 

@@ -41,6 +41,38 @@
   function noop() {}
 
   // ------------------------------------------------------------------
+  // translations
+  // ------------------------------------------------------------------
+  //
+  // Django's JavaScript catalog (JavaScriptCatalog) defines window.gettext,
+  // window.ngettext and window.interpolate. They are looked up on every call,
+  // so a catalog that loads after this file still applies; without one, every
+  // string stays as written. Keep gettext() arguments as plain string literals:
+  // `manage.py makemessages -d djangojs` only extracts literals.
+
+  function gettext(text) {
+    return typeof window.gettext === "function" ? window.gettext(text) : text;
+  }
+
+  function ngettext(singular, plural, count) {
+    if (typeof window.ngettext === "function") return window.ngettext(singular, plural, count);
+    return count === 1 ? singular : plural;
+  }
+
+  function interpolate(fmt, obj, named) {
+    if (typeof window.interpolate === "function") return window.interpolate(fmt, obj, named);
+    if (named) {
+      return fmt.replace(/%\(\w+\)s/g, function (match) {
+        return String(obj[match.slice(2, -2)]);
+      });
+    }
+    var index = 0;
+    return fmt.replace(/%s/g, function () {
+      return String(obj[index++]);
+    });
+  }
+
+  // ------------------------------------------------------------------
   // icons: 24×24, stroke style, currentColor
   // ------------------------------------------------------------------
 
@@ -145,7 +177,17 @@
   }
 
   function rateLabel(rate) {
-    return rate === 1 ? "Normal" : rate + "×";
+    // Translators: playback speed 1×, in the player's settings menu.
+    return rate === 1 ? gettext("Normal") : rate + "×";
+  }
+
+  function autoLabel(height) {
+    if (height) {
+      // Translators: automatic quality selection; %(quality)s is the rendition in use, e.g. "720p".
+      return interpolate(gettext("Auto (%(quality)s)"), { quality: height + "p" }, true);
+    }
+    // Translators: automatic quality selection in the player's settings menu.
+    return gettext("Auto");
   }
 
   function bitrate(bps) {
@@ -334,10 +376,17 @@
     if (o.nextUrl) root.classList.add("pl-has-next");
     if (!root.hasAttribute("tabindex")) root.setAttribute("tabindex", "-1");
     if (!root.hasAttribute("role")) root.setAttribute("role", "region");
-    root.setAttribute(
-      "aria-label",
-      (o.kind === "audio" ? "Audio player" : "Video player") + (o.title ? ": " + o.title : "")
-    );
+    var playerLabel;
+    if (o.title) {
+      playerLabel = interpolate(
+        o.kind === "audio" ? gettext("Audio player: %(title)s") : gettext("Video player: %(title)s"),
+        { title: o.title },
+        true
+      );
+    } else {
+      playerLabel = o.kind === "audio" ? gettext("Audio player") : gettext("Video player");
+    }
+    root.setAttribute("aria-label", playerLabel);
 
     video.classList.add("player-media");
     video.setAttribute("playsinline", "");
@@ -423,7 +472,7 @@
 
     this.bigPlay = h("button", "pl-bigplay", {
       type: "button",
-      "aria-label": "Play",
+      "aria-label": gettext("Play"),
       html: icon("play"),
     });
     on(this.bigPlay, "click", function (event) {
@@ -441,9 +490,16 @@
         href: o.brandUrl,
         target: "_blank",
         rel: "noopener",
-        "aria-label": "Open on " + (o.brandLabel || "the site") + " (new tab)",
+        "aria-label": interpolate(
+          // Translators: embed watermark link; %(site)s is the portal name.
+          gettext("Open on %(site)s (new tab)"),
+          // Translators: used in "Open on %(site)s (new tab)" when the portal has no name.
+          { site: o.brandLabel || gettext("the site") },
+          true
+        ),
       }, [
-        h("span", "pl-brand-label", { text: o.brandLabel || "Watch" }),
+        // Translators: label of the embed watermark link when the portal has no name.
+        h("span", "pl-brand-label", { text: o.brandLabel || gettext("Watch") }),
         h("span", "pl-brand-icon", { html: icon("external") }),
       ]);
       root.appendChild(this.brand);
@@ -464,7 +520,8 @@
     this.progress = h("div", "pl-progress", {
       role: "slider",
       tabindex: "0",
-      "aria-label": "Seek",
+      // Translators: accessible name of the player's seek bar.
+      "aria-label": gettext("Seek"),
       "aria-valuemin": "0",
       "aria-valuemax": "0",
       "aria-valuenow": "0",
@@ -497,14 +554,15 @@
     var right = h("div", "pl-group pl-right");
 
     if (o.prevUrl) {
-      this.prevBtn = this.button("pl-prev", "Previous", "prev", "Previous");
+      // Translators: previous item in a playlist.
+      this.prevBtn = this.button("pl-prev", gettext("Previous"), "prev");
       on(this.prevBtn, "click", function () {
         window.location.href = o.prevUrl;
       });
       left.appendChild(this.prevBtn);
     }
 
-    this.playBtn = this.button("pl-play", "Play", "play", "Play (k)");
+    this.playBtn = this.button("pl-play", gettext("Play"), "play", gettext("Play") + " (k)");
     on(this.playBtn, "click", function (event) {
       self.userToggle();
       self.focusRoot(event);
@@ -512,14 +570,15 @@
     left.appendChild(this.playBtn);
 
     if (o.nextUrl) {
-      this.nextBtn = this.button("pl-next", "Next", "next", "Next");
+      // Translators: next item in a playlist.
+      this.nextBtn = this.button("pl-next", gettext("Next"), "next");
       on(this.nextBtn, "click", function () {
         self.goNext();
       });
       left.appendChild(this.nextBtn);
     }
 
-    this.muteBtn = this.button("pl-mute", "Mute", "volHigh", "Mute (m)");
+    this.muteBtn = this.button("pl-mute", gettext("Mute"), "volHigh", gettext("Mute") + " (m)");
     on(this.muteBtn, "click", function (event) {
       self.toggleMute();
       self.focusRoot(event);
@@ -530,7 +589,7 @@
       max: "1",
       step: "0.01",
       value: "1",
-      "aria-label": "Volume",
+      "aria-label": gettext("Volume"),
     });
     on(this.volume, "input", function () {
       var value = parseFloat(self.volume.value) || 0;
@@ -551,7 +610,7 @@
     this.chapterEl = h("span", "pl-chapter", { hidden: true });
     left.appendChild(this.chapterEl);
 
-    this.ccBtn = this.button("pl-cc", "Subtitles", "cc", "Subtitles (c)");
+    this.ccBtn = this.button("pl-cc", gettext("Subtitles"), "cc", gettext("Subtitles") + " (c)");
     this.ccBtn.setAttribute("aria-pressed", "false");
     this.ccBtn.hidden = true;
     on(this.ccBtn, "click", function (event) {
@@ -560,7 +619,7 @@
     });
     right.appendChild(this.ccBtn);
 
-    this.gearBtn = this.button("pl-gear", "Settings", "gear", "Settings");
+    this.gearBtn = this.button("pl-gear", gettext("Settings"), "gear");
     this.gearBtn.setAttribute("aria-haspopup", "menu");
     this.gearBtn.setAttribute("aria-expanded", "false");
     this.badge = h("span", "pl-badge", { hidden: true });
@@ -572,7 +631,7 @@
     right.appendChild(this.gearBtn);
 
     if (this.canPip()) {
-      this.pipBtn = this.button("pl-pip", "Picture-in-picture", "pip", "Picture-in-picture");
+      this.pipBtn = this.button("pl-pip", gettext("Picture-in-picture"), "pip");
       on(this.pipBtn, "click", function (event) {
         self.togglePip();
         self.focusRoot(event);
@@ -581,7 +640,7 @@
     }
 
     if (!o.embed) {
-      this.theaterBtn = this.button("pl-theater", "Theater mode", "theater", "Theater mode (t)");
+      this.theaterBtn = this.button("pl-theater", gettext("Theater mode"), "theater", gettext("Theater mode") + " (t)");
       this.theaterBtn.setAttribute("aria-pressed", "false");
       on(this.theaterBtn, "click", function (event) {
         self.setTheater(!document.body.classList.contains("is-theater"), true);
@@ -591,7 +650,7 @@
     }
 
     if (this.canFullscreen()) {
-      this.fsBtn = this.button("pl-fs-btn", "Full screen", "fullscreen", "Full screen (f)");
+      this.fsBtn = this.button("pl-fs-btn", gettext("Full screen"), "fullscreen", gettext("Full screen") + " (f)");
       on(this.fsBtn, "click", function (event) {
         self.toggleFullscreen();
         self.focusRoot(event);
@@ -604,7 +663,7 @@
     controls.appendChild(bar);
     root.appendChild(controls);
 
-    this.menu = h("div", "pl-menu", { role: "menu", "aria-label": "Settings", hidden: true });
+    this.menu = h("div", "pl-menu", { role: "menu", "aria-label": gettext("Settings"), hidden: true });
     root.appendChild(this.menu);
 
     this.bindProgress();
@@ -728,7 +787,7 @@
     if (this.menuOpen) this.renderMenu("main");
 
     if (!this.opts.src) {
-      this.showError("This stream could not be loaded.");
+      this.showError(gettext("This stream could not be loaded."));
       return;
     }
     once(video, "loadedmetadata", function () {
@@ -750,7 +809,7 @@
     if (!this.hls) return;
     this.hls.currentLevel = index;
     var level = this.levels()[index];
-    this.flash(index < 0 ? "Auto" : level ? level.height + "p" : "Auto", "quality");
+    this.flash(index < 0 || !level ? autoLabel(0) : level.height + "p", "quality");
     this.renderBadge();
   };
 
@@ -759,10 +818,10 @@
     var levels = this.levels();
     if (this.hls.autoLevelEnabled) {
       var playing = levels[this.playingLevel];
-      return "Auto" + (playing && playing.height ? " (" + playing.height + "p)" : "");
+      return autoLabel(playing && playing.height);
     }
     var chosen = levels[this.hls.currentLevel];
-    return chosen && chosen.height ? chosen.height + "p" : "Auto";
+    return chosen && chosen.height ? chosen.height + "p" : autoLabel(0);
   };
 
   Player.prototype.renderBadge = function () {
@@ -858,11 +917,11 @@
       self.reportMediaError();
     });
     on(video, "enterpictureinpicture", function () {
-      self.setButton(self.pipBtn, "Exit picture-in-picture", "pip");
+      self.setButton(self.pipBtn, gettext("Exit picture-in-picture"), "pip");
       if (self.pipBtn) self.pipBtn.setAttribute("aria-pressed", "true");
     });
     on(video, "leavepictureinpicture", function () {
-      self.setButton(self.pipBtn, "Picture-in-picture", "pip");
+      self.setButton(self.pipBtn, gettext("Picture-in-picture"), "pip");
       if (self.pipBtn) self.pipBtn.setAttribute("aria-pressed", "false");
     });
     on(window, "pagehide", function () {
@@ -1046,9 +1105,10 @@
   Player.prototype.showUnmute = function () {
     var self = this;
     if (this.unmuteBtn) return;
-    this.unmuteBtn = h("button", "pl-unmute", { type: "button", "aria-label": "Unmute" }, [
+    this.unmuteBtn = h("button", "pl-unmute", { type: "button", "aria-label": gettext("Unmute") }, [
       h("span", "pl-unmute-icon", { html: icon("volMute") }),
-      h("span", null, { text: "Tap to unmute" }),
+      // Translators: pill shown after a muted autoplay; also used on desktop.
+      h("span", null, { text: gettext("Tap to unmute") }),
     ]);
     on(this.unmuteBtn, "click", function (event) {
       event.stopPropagation();
@@ -1087,12 +1147,25 @@
 
   Player.prototype.skip = function (delta) {
     this.seek(this.video.currentTime + delta);
-    this.flash((delta > 0 ? "+" : "−") + Math.abs(delta) + "s", delta > 0 ? "forward" : "back");
+    this.flash(
+      interpolate(
+        // Translators: on-screen flash after skipping, e.g. "+10s" or "−5s"; %(sign)s is + or −, %(seconds)s the amount.
+        gettext("%(sign)s%(seconds)ss"),
+        { sign: delta > 0 ? "+" : "−", seconds: Math.abs(delta) },
+        true
+      ),
+      delta > 0 ? "forward" : "back"
+    );
   };
 
   Player.prototype.frameStep = function (direction) {
     this.seek(this.video.currentTime + direction / 30);
-    this.flash(direction > 0 ? "Frame ›" : "‹ Frame");
+    var label = direction > 0
+      // Translators: on-screen flash after stepping one video frame forward; keep the arrow.
+      ? gettext("Frame ›")
+      // Translators: on-screen flash after stepping one video frame back; keep the arrow.
+      : gettext("‹ Frame");
+    this.flash(label);
   };
 
   Player.prototype.updatePlayState = function () {
@@ -1101,13 +1174,13 @@
     var paused = video.paused || video.ended;
     root.classList.toggle("pl-paused", paused);
     root.classList.toggle("pl-playing", !paused);
-    var label = video.ended ? "Replay" : paused ? "Play" : "Pause";
+    var label = video.ended ? gettext("Replay") : paused ? gettext("Play") : gettext("Pause");
     var iconName = video.ended ? "replay" : paused ? "play" : "pause";
     this.setButton(this.playBtn, label, iconName, label + " (k)");
     if (this.bigPlay && this.bigPlay.__icon !== iconName) {
       this.bigPlay.__icon = iconName;
       this.bigPlay.innerHTML = icon(video.ended ? "replay" : "play");
-      this.bigPlay.setAttribute("aria-label", video.ended ? "Replay" : "Play");
+      this.bigPlay.setAttribute("aria-label", video.ended ? gettext("Replay") : gettext("Play"));
     }
   };
 
@@ -1153,7 +1226,8 @@
     } else {
       video.muted = true;
     }
-    this.flash(video.muted ? "Muted" : Math.round(video.volume * 100) + "%",
+    // Translators: on-screen flash when the sound is switched off.
+    this.flash(video.muted ? gettext("Muted") : Math.round(video.volume * 100) + "%",
       video.muted ? "volMute" : "volHigh");
   };
 
@@ -1170,8 +1244,8 @@
     var video = this.video;
     var level = video.muted ? 0 : video.volume;
     var iconName = level === 0 ? "volMute" : level < 0.5 ? "volLow" : "volHigh";
-    this.setButton(this.muteBtn, level === 0 ? "Unmute" : "Mute", iconName,
-      (level === 0 ? "Unmute" : "Mute") + " (m)");
+    var muteLabel = level === 0 ? gettext("Unmute") : gettext("Mute");
+    this.setButton(this.muteBtn, muteLabel, iconName, muteLabel + " (m)");
     if (this.volume) {
       this.volume.value = String(level);
       this.volume.style.setProperty("--pl-v", Math.round(level * 100) + "%");
@@ -1214,7 +1288,11 @@
         this.durEl.textContent = d ? clock(d) : "--:--";
         this.progress.setAttribute("aria-valuemax", String(Math.round(d)));
         this.progress.setAttribute("aria-valuenow", String(Math.round(t)));
-        this.progress.setAttribute("aria-valuetext", clock(t) + (d ? " of " + clock(d) : ""));
+        this.progress.setAttribute(
+          "aria-valuetext",
+          // Translators: spoken value of the seek bar, e.g. "1:05 of 8:15".
+          d ? interpolate(gettext("%(current)s of %(total)s"), { current: clock(t), total: clock(d) }, true) : clock(t)
+        );
         this.renderChapter(t);
       }
     }
@@ -1530,13 +1608,13 @@
     if (!this.trackList.length) return;
     if (this.activeTrack) {
       this.selectTrack(null, true);
-      this.flash("Subtitles off", "cc");
+      this.flash(gettext("Subtitles off"), "cc");
     } else {
       var track = this.lastTrack && this.trackList.indexOf(this.lastTrack) >= 0
         ? this.lastTrack
         : this.trackList[0];
       this.selectTrack(track, true);
-      this.flash(track.label || track.language || "Subtitles on", "cc");
+      this.flash(track.label || track.language || gettext("Subtitles on"), "cc");
     }
   };
 
@@ -1557,8 +1635,9 @@
   };
 
   Player.prototype.trackLabel = function (track) {
-    if (!track) return "Off";
-    return track.label || (track.language ? track.language.toUpperCase() : "Subtitles");
+    // Translators: subtitles switched off, in the player's settings menu.
+    if (!track) return gettext("Off");
+    return track.label || (track.language ? track.language.toUpperCase() : gettext("Subtitles"));
   };
 
   // ----------------------------------------------------------------- menu
@@ -1698,7 +1777,7 @@
     };
 
     if (page === "speed") {
-      back("Playback speed");
+      back(gettext("Playback speed"));
       SPEEDS.forEach(function (rate) {
         menu.appendChild(self.menuItem({
           label: rateLabel(rate),
@@ -1710,10 +1789,11 @@
         }));
       });
     } else if (page === "quality") {
-      back("Quality");
+      // Translators: video quality (rendition), in the player's settings menu.
+      back(gettext("Quality"));
       menu.appendChild(self.menuItem({
-        label: "Auto" + (this.hls && this.hls.autoLevelEnabled && this.levels()[this.playingLevel]
-          ? " (" + this.levels()[this.playingLevel].height + "p)" : ""),
+        label: autoLabel(this.hls && this.hls.autoLevelEnabled && this.levels()[this.playingLevel]
+          ? this.levels()[this.playingLevel].height : 0),
         checked: !!(this.hls && this.hls.autoLevelEnabled),
         action: function () {
           self.setLevel(-1);
@@ -1746,9 +1826,9 @@
         }));
       });
     } else if (page === "cc") {
-      back("Subtitles");
+      back(gettext("Subtitles"));
       menu.appendChild(self.menuItem({
-        label: "Off",
+        label: self.trackLabel(null),
         checked: !this.activeTrack,
         action: function () {
           self.selectTrack(null, true);
@@ -1768,7 +1848,7 @@
     } else {
       menu.appendChild(self.menuItem({
         icon: "speed",
-        label: "Playback speed",
+        label: gettext("Playback speed"),
         value: rateLabel(video.playbackRate),
         action: function () {
           self.renderMenu("speed", true);
@@ -1777,7 +1857,7 @@
       if (this.levels().length > 1) {
         menu.appendChild(self.menuItem({
           icon: "quality",
-          label: "Quality",
+          label: gettext("Quality"),
           value: this.qualityLabel(),
           action: function () {
             self.renderMenu("quality", true);
@@ -1787,7 +1867,7 @@
       if (this.trackList.length) {
         menu.appendChild(self.menuItem({
           icon: "cc",
-          label: "Subtitles",
+          label: gettext("Subtitles"),
           value: this.trackLabel(this.activeTrack),
           action: function () {
             self.renderMenu("cc", true);
@@ -1796,7 +1876,8 @@
       }
       menu.appendChild(self.menuItem({
         icon: "stats",
-        label: "Stats for nerds",
+        // Translators: technical overlay with stream statistics (resolution, bitrate, buffer…).
+        label: gettext("Stats for nerds"),
         toggle: true,
         checked: this.statsOn,
         className: "pl-mi-stats",
@@ -1837,23 +1918,44 @@
 
   Player.prototype.buildStats = function () {
     var self = this;
-    var rows = ["Engine", "Viewport", "Resolution", "Level", "Codecs", "Bandwidth", "Buffer", "Frames", "Speed", "Volume", "Position"];
+    // Internal key, then the label people read.
+    var rows = [
+      // Translators: stats overlay row: how the stream is played (HLS via hls.js, native HLS, progressive file).
+      ["Engine", gettext("Engine")],
+      // Translators: stats overlay row: size of the player on screen.
+      ["Viewport", gettext("Viewport")],
+      ["Resolution", gettext("Resolution")],
+      // Translators: stats overlay row: the HLS rendition being played and its bitrate.
+      ["Level", gettext("Level")],
+      ["Codecs", gettext("Codecs")],
+      // Translators: stats overlay row: estimated download speed.
+      ["Bandwidth", gettext("Bandwidth")],
+      // Translators: stats overlay row: how much media is downloaded ahead of the playhead.
+      ["Buffer", gettext("Buffer")],
+      // Translators: stats overlay row: dropped and total video frames.
+      ["Frames", gettext("Frames")],
+      // Translators: stats overlay row: playback speed.
+      ["Speed", gettext("Speed")],
+      ["Volume", gettext("Volume")],
+      // Translators: stats overlay row: current time / duration.
+      ["Position", gettext("Position")],
+    ];
     var list = h("dl", "pl-stats-list");
     this.statCells = {};
-    rows.forEach(function (name) {
+    rows.forEach(function (row) {
       var value = h("dd", null, { text: "–" });
-      self.statCells[name] = value;
-      list.appendChild(h("dt", null, { text: name }));
+      self.statCells[row[0]] = value;
+      list.appendChild(h("dt", null, { text: row[1] }));
       list.appendChild(value);
     });
     this.bufferMeter = h("i");
-    var close = h("button", "pl-stats-close", { type: "button", "aria-label": "Close stats", html: icon("close") });
+    var close = h("button", "pl-stats-close", { type: "button", "aria-label": gettext("Close stats"), html: icon("close") });
     on(close, "click", function (event) {
       event.stopPropagation();
       self.toggleStats(false);
     });
     this.statsBox = h("div", "pl-stats", { role: "status", hidden: true }, [
-      h("div", "pl-stats-head", { text: "Stats for nerds" }),
+      h("div", "pl-stats-head", { text: gettext("Stats for nerds") }),
       close,
       list,
       h("div", "pl-meter", { "aria-hidden": "true" }, [this.bufferMeter]),
@@ -1869,28 +1971,51 @@
     };
     var dpr = Math.round((window.devicePixelRatio || 1) * 100) / 100;
 
-    var engine = this.engine === "hls.js" ? "HLS · hls.js" : this.engine === "native" ? "HLS · native" : "Progressive";
+    var engine = "HLS · hls.js";
+    if (this.engine === "native") {
+      // Translators: stats overlay, Engine row: the browser plays HLS by itself.
+      engine = gettext("HLS · native");
+    } else if (this.engine !== "hls.js") {
+      // Translators: stats overlay, Engine row: the original file, downloaded progressively.
+      engine = gettext("Progressive");
+    }
     set("Engine", engine);
     set("Viewport", this.root.clientWidth + "×" + this.root.clientHeight + " @" + dpr + "x");
     set("Resolution", video.videoWidth ? video.videoWidth + "×" + video.videoHeight
-      : this.opts.kind === "audio" ? "audio only" : "–");
+      // Translators: stats overlay, Resolution row for sound-only media.
+      : this.opts.kind === "audio" ? gettext("audio only") : "–");
 
     var level = this.hls ? this.levels()[this.playingLevel] : null;
-    set("Level", level
-      ? (level.height ? level.height + "p · " : "") + bitrate(level.bitrate) + (this.hls.autoLevelEnabled ? " (auto)" : " (manual)")
-      : "–");
+    var levelText = "–";
+    if (level) {
+      levelText = (level.height ? level.height + "p · " : "") + bitrate(level.bitrate);
+      levelText = this.hls.autoLevelEnabled
+        // Translators: stats overlay, Level row; %(level)s is e.g. "720p · 2.93 Mbps", chosen automatically.
+        ? interpolate(gettext("%(level)s (auto)"), { level: levelText }, true)
+        // Translators: stats overlay, Level row; %(level)s is e.g. "720p · 2.93 Mbps", chosen by the viewer.
+        : interpolate(gettext("%(level)s (manual)"), { level: levelText }, true);
+    }
+    set("Level", levelText);
     var codecs = level ? [level.videoCodec, level.audioCodec].filter(Boolean).join(" / ") : "";
     set("Codecs", codecs || this.bufferCodecs || "–");
     set("Bandwidth", this.hls ? bitrate(this.hls.bandwidthEstimate) : "–");
 
     var ahead = this.bufferAhead();
-    set("Buffer", ahead.toFixed(1) + " s ahead");
+    // Translators: stats overlay, Buffer row; %(seconds)s is a number like "10.8".
+    set("Buffer", interpolate(gettext("%(seconds)s s ahead"), { seconds: ahead.toFixed(1) }, true));
     this.bufferMeter.style.width = clamp((ahead / 30) * 100, 0, 100).toFixed(1) + "%";
 
     var quality = typeof video.getVideoPlaybackQuality === "function" ? video.getVideoPlaybackQuality() : null;
-    set("Frames", quality ? quality.droppedVideoFrames + " dropped / " + quality.totalVideoFrames : "–");
+    var framesText = "–";
+    if (quality) {
+      // Translators: stats overlay, Frames row: dropped frames out of the total decoded so far.
+      framesText = interpolate(ngettext("%(dropped)s dropped / %(total)s", "%(dropped)s dropped / %(total)s",
+        quality.droppedVideoFrames), { dropped: quality.droppedVideoFrames, total: quality.totalVideoFrames }, true);
+    }
+    set("Frames", framesText);
     set("Speed", video.playbackRate + "×");
-    set("Volume", video.muted ? "muted" : Math.round(video.volume * 100) + "%");
+    // Translators: stats overlay, Volume row when the sound is off.
+    set("Volume", video.muted ? gettext("muted") : Math.round(video.volume * 100) + "%");
     set("Position", clock(video.currentTime) + " / " + clock(this.duration()));
   };
 
@@ -1914,8 +2039,9 @@
     document.body.classList.toggle("is-theater", turnOn);
     if (this.theaterBtn) {
       this.theaterBtn.setAttribute("aria-pressed", turnOn ? "true" : "false");
-      this.setButton(this.theaterBtn, turnOn ? "Default view" : "Theater mode",
-        turnOn ? "theaterOff" : "theater", (turnOn ? "Default view" : "Theater mode") + " (t)");
+      // Translators: leaves theater mode and returns to the normal page layout.
+      var theaterLabel = turnOn ? gettext("Default view") : gettext("Theater mode");
+      this.setButton(this.theaterBtn, theaterLabel, turnOn ? "theaterOff" : "theater", theaterLabel + " (t)");
     }
     if (persist) save("theater", turnOn);
     dispatch(this.root, "player:theater", { on: turnOn, player: this });
@@ -1956,8 +2082,8 @@
   Player.prototype.onFullscreenChange = function () {
     var active = fullscreenElement() === this.root;
     this.root.classList.toggle("pl-fs", active);
-    this.setButton(this.fsBtn, active ? "Exit full screen" : "Full screen",
-      active ? "fullscreenOff" : "fullscreen", (active ? "Exit full screen" : "Full screen") + " (f)");
+    var fullscreenLabel = active ? gettext("Exit full screen") : gettext("Full screen");
+    this.setButton(this.fsBtn, fullscreenLabel, active ? "fullscreenOff" : "fullscreen", fullscreenLabel + " (f)");
     if (active && this.opts.kind === "video" && screen.orientation && screen.orientation.lock &&
         this.video.videoWidth > this.video.videoHeight && window.matchMedia &&
         window.matchMedia("(pointer: coarse)").matches) {
@@ -1999,10 +2125,12 @@
     var count = h("span", "pl-ring-count", { text: String(UPNEXT_SECONDS) });
     ring.appendChild(count);
 
-    var cancel = h("button", "pl-pill", { type: "button", text: "Cancel" });
+    // Translators: cancels the automatic jump to the next playlist item.
+    var cancel = h("button", "pl-pill", { type: "button", text: gettext("Cancel") });
     var playNow = h("button", "pl-pill pl-pill-primary", { type: "button" }, [
       h("span", "pl-pill-icon", { html: icon("next") }),
-      h("span", null, { text: "Play now" }),
+      // Translators: plays the next playlist item without waiting for the countdown.
+      h("span", null, { text: gettext("Play now") }),
     ]);
     on(cancel, "click", function (event) {
       event.stopPropagation();
@@ -2013,11 +2141,14 @@
       self.goNext();
     });
 
-    this.upnext = h("div", "pl-upnext", { role: "dialog", "aria-label": "Up next" }, [
+    // Translators: overlay at the end of a playlist item, before the next one starts.
+    var upNextLabel = gettext("Up next");
+    this.upnext = h("div", "pl-upnext", { role: "dialog", "aria-label": upNextLabel }, [
       h("div", "pl-upnext-card", null, [
         ring,
-        h("div", "pl-upnext-label", { text: "Up next" }),
-        h("div", "pl-upnext-title", { text: o.nextTitle || "Next item" }),
+        h("div", "pl-upnext-label", { text: upNextLabel }),
+        // Translators: shown in the "Up next" overlay when the next item has no title.
+        h("div", "pl-upnext-title", { text: o.nextTitle || gettext("Next item") }),
         h("div", "pl-upnext-actions", null, [cancel, playNow]),
       ]),
     ]);
@@ -2069,8 +2200,12 @@
 
   Player.prototype.showResume = function (t) {
     var self = this;
-    var resume = h("button", "pl-pill pl-pill-primary pl-pill-sm", { type: "button", text: "Resume " + clock(t) });
-    var dismiss = h("button", "pl-toast-close", { type: "button", "aria-label": "Dismiss", html: icon("close") });
+    var resume = h("button", "pl-pill pl-pill-primary pl-pill-sm", {
+      type: "button",
+      // Translators: button that jumps back to where the viewer stopped; %(time)s is like "4:12".
+      text: interpolate(gettext("Resume %(time)s"), { time: clock(t) }, true),
+    });
+    var dismiss = h("button", "pl-toast-close", { type: "button", "aria-label": gettext("Dismiss"), html: icon("close") });
     on(resume, "click", function (event) {
       event.stopPropagation();
       self.hideResume();
@@ -2082,7 +2217,7 @@
       self.hideResume();
     });
     this.resumeToast = h("div", "pl-toast", { role: "status" }, [
-      h("span", "pl-toast-text", { text: "Continue where you left off?" }),
+      h("span", "pl-toast-text", { text: gettext("Continue where you left off?") }),
       resume,
       dismiss,
     ]);
@@ -2137,12 +2272,12 @@
   Player.prototype.reportMediaError = function () {
     var error = this.video.error;
     var messages = {
-      1: "Playback was aborted.",
-      2: "A network error interrupted the download.",
-      3: "The file could not be decoded.",
-      4: "The file is missing or its format is not supported by this browser.",
+      1: gettext("Playback was aborted."),
+      2: gettext("A network error interrupted the download."),
+      3: gettext("The file could not be decoded."),
+      4: gettext("The file is missing or its format is not supported by this browser."),
     };
-    this.showError((error && messages[error.code]) || "This media could not be played.");
+    this.showError((error && messages[error.code]) || gettext("This media could not be played."));
   };
 
   Player.prototype.showError = function (message) {
@@ -2151,7 +2286,7 @@
     if (this.errorBox) this.errorBox.remove();
     this.errorBox = h("div", "pl-error", { role: "alert" }, [
       h("span", "pl-error-icon", { html: icon("alert") }),
-      h("strong", null, { text: "Playback failed" }),
+      h("strong", null, { text: gettext("Playback failed") }),
       h("span", "pl-error-text", { text: message }),
     ]);
     this.root.appendChild(this.errorBox);

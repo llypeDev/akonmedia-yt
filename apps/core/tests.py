@@ -68,7 +68,7 @@ class LibraryPageTests(TestCase):
     def test_detail_without_a_file_explains_itself(self):
         response = self.client.get(f"/view/{self.public.uid}/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No source file attached")
+        self.assertContains(response, "Nenhum arquivo de origem anexado")
 
     def test_private_media_is_a_404_for_visitors(self):
         response = self.client.get(f"/view/{self.private.uid}/")
@@ -109,7 +109,7 @@ class SearchPageTests(TestCase):
     def test_empty_query_returns_nothing(self):
         response = self.client.get("/search/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Type something")
+        self.assertContains(response, "Digite algo")
 
 
 class CommentPageTests(TestCase):

@@ -1,4 +1,4 @@
-{% load akon %}{% url 'core:media' media.uid as media_url %}
+{% load akon i18n %}{% url 'core:media' media.uid as media_url %}
 <article class="media-card">
   <a class="thumb thumb-{{ media.kind }}" href="{{ media_url }}{% if list_uid %}?list={{ list_uid }}{% endif %}" tabindex="-1" aria-hidden="true">
     {% if media.thumbnail_url %}
@@ -22,9 +22,9 @@
         <p class="media-meta"><a href="{% url 'core:channel' media.owner_id %}">{{ media.owner.get_short_name }}</a>{% if media.category %} <span class="meta-sep">·</span> {{ media.category.name }}{% endif %}</p>
       {% endif %}
       <p class="media-meta meta-row">
-        <span>{{ media.views_count|compact }} view{{ media.views_count|pluralize }}</span>
+        <span>{% blocktranslate count counter=media.views_count with shown=media.views_count|compact %}{{ shown }} view{% plural %}{{ shown }} views{% endblocktranslate %}</span>
         <span class="meta-sep">·</span>
-        <span>{{ media.created_at|timesince }} ago</span>
+        <span>{% blocktranslate with since=media.created_at|timesince %}{{ since }} ago{% endblocktranslate %}</span>
       </p>
     </div>
   </div>

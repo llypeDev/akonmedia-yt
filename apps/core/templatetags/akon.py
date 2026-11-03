@@ -12,8 +12,10 @@ import re
 
 from django import template
 from django.templatetags.static import static
+from django.utils.formats import get_format, number_format
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
+from django.utils.translation import pgettext
 
 register = template.Library()
 
@@ -34,18 +36,32 @@ def icon(name: str, css: str = "", label: str = ""):
     )
 
 
+def _decimal(value: float, places: int) -> str:
+    """A number in the active locale's notation, without a pointless ",0"."""
+    text = number_format(round(value, places), places)
+    if places:
+        tail = f"{get_format('DECIMAL_SEPARATOR')}{'0' * places}"
+        if text.endswith(tail):
+            text = text[: -len(tail)]
+    return text
+
+
 @register.filter
 def compact(value) -> str:
-    """Short human numbers: 950, 1.2K, 34K, 1.5M."""
+    """Short human numbers: 950, 1.2K, 34K, 1.5M (1,2 mil and 1,5 mi in Portuguese)."""
     try:
         number = float(value or 0)
     except (TypeError, ValueError):
         return str(value)
-    for limit, suffix in ((1e9, "B"), (1e6, "M"), (1e3, "K")):
+    scales = (
+        (1e9, pgettext("compact number, billions", "%(number)sB")),
+        (1e6, pgettext("compact number, millions", "%(number)sM")),
+        (1e3, pgettext("compact number, thousands", "%(number)sK")),
+    )
+    for limit, pattern in scales:
         if abs(number) >= limit:
             scaled = number / limit
-            text = f"{scaled:.1f}" if scaled < 10 else f"{scaled:.0f}"
-            return text.rstrip("0").rstrip(".") + suffix
+            return pattern % {"number": _decimal(scaled, 1 if scaled < 10 else 0)}
     return f"{int(number)}"
 
 
@@ -70,9 +86,9 @@ def _runtime(value) -> tuple[str, str]:
         return f"{int(seconds)}", "s"
     if seconds < 3600:
         minutes = seconds / 60
-        return (f"{minutes:.1f}" if minutes < 10 else f"{minutes:.0f}"), "min"
+        return number_format(minutes, 1 if minutes < 10 else 0), "min"
     hours = seconds / 3600
-    return (f"{hours:.1f}" if hours < 100 else f"{hours:.0f}"), "h"
+    return number_format(hours, 1 if hours < 100 else 0), "h"
 
 
 @register.filter

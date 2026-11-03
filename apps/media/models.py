@@ -11,6 +11,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
 
@@ -57,21 +58,21 @@ class Category(models.Model):
 
 class Media(models.Model):
     class Kind(models.TextChoices):
-        VIDEO = "video", "Video"
-        AUDIO = "audio", "Audio"
-        IMAGE = "image", "Image"
-        DOCUMENT = "document", "Document"
+        VIDEO = "video", _("Video")
+        AUDIO = "audio", _("Audio")
+        IMAGE = "image", _("Image")
+        DOCUMENT = "document", _("Document")
 
     class State(models.TextChoices):
-        PENDING = "pending", "Pending"
-        PROCESSING = "processing", "Processing"
-        READY = "ready", "Ready"
-        FAILED = "failed", "Failed"
+        PENDING = "pending", _("Pending")
+        PROCESSING = "processing", _("Processing")
+        READY = "ready", _("Ready")
+        FAILED = "failed", _("Failed")
 
     class Visibility(models.TextChoices):
-        PUBLIC = "public", "Public"
-        UNLISTED = "unlisted", "Unlisted"
-        PRIVATE = "private", "Private"
+        PUBLIC = "public", _("Public")
+        UNLISTED = "unlisted", _("Unlisted")
+        PRIVATE = "private", _("Private")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     uid = models.CharField(max_length=16, unique=True, default=new_uid, editable=False)

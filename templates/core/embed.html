@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load static i18n %}{% get_current_language as LANGUAGE_CODE %}<!doctype html>
 <html lang="{{ LANGUAGE_CODE|default:'en' }}">
 <head>
   <meta charset="utf-8">
@@ -65,9 +65,10 @@
       </div>
     </div>
   {% else %}
-    <div class="missing"><p>This media is not available for embedding.<br><a href="{{ page_url }}" target="_blank" rel="noopener">Open it on {{ PORTAL_NAME }}</a></p></div>
+    <div class="missing"><p>{% translate "This media is not available for embedding." %}<br><a href="{{ page_url }}" target="_blank" rel="noopener">{% blocktranslate %}Open it on {{ PORTAL_NAME }}{% endblocktranslate %}</a></p></div>
   {% endif %}
 
+  <script src="{% url 'javascript-catalog' %}"></script>
   <script src="{% static 'vendor/hls.min.js' %}"></script>
   <script src="{% static 'js/player.js' %}"></script>
 </body>

@@ -1,28 +1,28 @@
 {% extends "base.html" %}
-{% load akon %}
+{% load akon i18n %}
 
-{% block title %}Playlists — {{ PORTAL_NAME }}{% endblock %}
+{% block title %}{% translate "Playlists" %} — {{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
   <header class="page-head">
     <div>
-      <span class="eyebrow">{% icon "list-video" "icon-xs" %}Playlists</span>
-      <h1>Collections</h1>
-      <p class="lede">Ordered collections of media you can share, embed and play back to back.</p>
+      <span class="eyebrow">{% icon "list-video" "icon-xs" %}{% translate "Playlists" %}</span>
+      <h1>{% translate "Collections" %}</h1>
+      <p class="lede">{% translate "Ordered collections of media you can share, embed and play back to back." %}</p>
     </div>
     {% if user.is_authenticated %}
       <details class="dropdown" data-dropdown data-autofocus>
-        <summary class="btn btn-primary">{% icon "plus" "icon-sm" %}New playlist</summary>
+        <summary class="btn btn-primary">{% icon "plus" "icon-sm" %}{% translate "New playlist" %}</summary>
         <div class="dropdown-menu" style="width:min(340px, 86vw)">
           <form class="menu-form" method="post" action="{% url 'core:playlists' %}">
             {% csrf_token %}
-            <div class="menu-label" style="padding-left:0">Create a playlist</div>
-            <input class="input" type="text" name="title" maxlength="255" placeholder="New playlist title" required aria-label="Title">
-            <textarea class="textarea" name="description" rows="2" maxlength="2000" placeholder="Description (optional)" aria-label="Description"></textarea>
-            <select class="select" name="visibility" aria-label="Visibility">
+            <div class="menu-label" style="padding-left:0">{% translate "Create a playlist" %}</div>
+            <input class="input" type="text" name="title" maxlength="255" placeholder="{% translate 'New playlist title' %}" required aria-label="{% translate 'Title' %}">
+            <textarea class="textarea" name="description" rows="2" maxlength="2000" placeholder="{% translate 'Description (optional)' %}" aria-label="{% translate 'Description' %}"></textarea>
+            <select class="select" name="visibility" aria-label="{% translate 'Visibility' %}">
               {% for value, label in visibilities %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
             </select>
-            <button type="submit" class="btn btn-primary">{% icon "plus" "icon-sm" %}Create</button>
+            <button type="submit" class="btn btn-primary">{% icon "plus" "icon-sm" %}{% translate "Create" %}</button>
           </form>
         </div>
       </details>
@@ -31,7 +31,7 @@
 
   {% if user.is_authenticated %}
     <section class="section">
-      <div class="section-head"><h2>{% icon "user" %}Your playlists</h2></div>
+      <div class="section-head"><h2>{% icon "user" %}{% translate "Your playlists" %}</h2></div>
       {% if my_playlists %}
         <div class="grid grid-tight">
           {% for playlist in my_playlists %}{% include "core/_playlist_card.html" with editable=True %}{% endfor %}
@@ -39,15 +39,15 @@
       {% else %}
         <div class="empty-state compact">
           <div class="empty-icon">{% icon "list-plus" %}</div>
-          <h3>No playlists yet</h3>
-          <p>Create one here, or use “Save” under any video to start a collection.</p>
+          <h3>{% translate "No playlists yet" %}</h3>
+          <p>{% translate "Create one here, or use “Save” under any video to start a collection." %}</p>
         </div>
       {% endif %}
     </section>
   {% endif %}
 
   <section class="section">
-    <div class="section-head"><h2>{% icon "globe" %}{% if user.is_authenticated %}From the community{% else %}Public playlists{% endif %}</h2></div>
+    <div class="section-head"><h2>{% icon "globe" %}{% if user.is_authenticated %}{% translate "From the community" %}{% else %}{% translate "Public playlists" %}{% endif %}</h2></div>
     {% if playlists %}
       <div class="grid grid-tight">
         {% for playlist in playlists %}{% include "core/_playlist_card.html" %}{% endfor %}
@@ -55,8 +55,8 @@
     {% else %}
       <div class="empty-state compact">
         <div class="empty-icon">{% icon "list-video" %}</div>
-        <h3>No public playlists yet</h3>
-        <p>When someone publishes a playlist it shows up here.</p>
+        <h3>{% translate "No public playlists yet" %}</h3>
+        <p>{% translate "When someone publishes a playlist it shows up here." %}</p>
       </div>
     {% endif %}
   </section>

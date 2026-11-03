@@ -7,6 +7,16 @@
 (function () {
   "use strict";
 
+  // Translations come from Django's JavaScript catalog (/jsi18n/), loaded
+  // before this file; the fallbacks keep everything working without it.
+  var gettext = window.gettext || function (text) { return text; };
+  var ngettext = window.ngettext || function (singular, plural, count) { return count === 1 ? singular : plural; };
+  var interpolate = window.interpolate || function (fmt, obj, named) {
+    if (named) return fmt.replace(/%\(\w+\)s/g, function (m) { return String(obj[m.slice(2, -2)]); });
+    var i = 0;
+    return fmt.replace(/%s/g, function () { return String(obj[i++]); });
+  };
+
   var root = document.documentElement;
   var body = document.body;
   var WIDE = 1280;
@@ -208,12 +218,12 @@
       text = button.getAttribute("data-copy-time") + (at ? "?t=" + at : "");
     }
     copyText(text || "").then(function () {
-      var label = button.getAttribute("data-copied") || "Copied to clipboard";
+      var label = button.getAttribute("data-copied") || gettext("Copied to clipboard");
       toast(label, "success");
       button.classList.add("is-on");
       setTimeout(function () { button.classList.remove("is-on"); }, 1200);
     }, function () {
-      toast("Could not copy — select the text and copy it manually.", "error");
+      toast(gettext("Could not copy — select the text and copy it manually."), "error");
     });
   });
 
@@ -240,7 +250,7 @@
     toggle.hidden = false;
     toggle.addEventListener("click", function () {
       var open = box.classList.toggle("clamp");
-      toggle.textContent = open ? "Show more" : "Show less";
+      toggle.textContent = open ? gettext("Show more") : gettext("Show less");
     });
   });
 
@@ -285,6 +295,13 @@
 
   /* -------------------------------------------- live processing status */
 
+  var STATE_LABELS = {
+    pending: gettext("pending"),
+    processing: gettext("processing"),
+    ready: gettext("ready"),
+    failed: gettext("failed"),
+  };
+
   document.querySelectorAll("[data-poll-url]").forEach(function (node) {
     var url = node.getAttribute("data-poll-url");
     var current = node.getAttribute("data-poll-state");
@@ -297,9 +314,9 @@
         .then(function (response) { return response.ok ? response.json() : null; })
         .then(function (data) {
           if (!data) return schedule();
-          if (label) label.textContent = data.state;
+          if (label) label.textContent = STATE_LABELS[data.state] || data.state;
           if (data.state !== current && (data.state === "ready" || data.state === "failed")) {
-            toast(data.state === "ready" ? "Processing finished — loading the player." : "Processing failed.", data.state === "ready" ? "success" : "error");
+            toast(data.state === "ready" ? gettext("Processing finished — loading the player.") : gettext("Processing failed."), data.state === "ready" ? "success" : "error");
             setTimeout(function () { window.location.reload(); }, 900);
             return;
           }

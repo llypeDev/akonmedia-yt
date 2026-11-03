@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from apps.media import pipeline
@@ -112,24 +113,24 @@ def manage_action(request):
             from apps.media.tasks import process_media
 
             process_media.delay(str(media.pk))
-            messages.success(request, f"Re-queued “{media.title}”.")
+            messages.success(request, _("Re-queued “%(title)s”.") % {"title": media.title})
         elif action == "delete":
             media.delete()
-            messages.success(request, "Media removed.")
+            messages.success(request, _("Media removed."))
 
     elif kind == "comment":
         comment = get_object_or_404(Comment, pk=target)
         if action == "unhide":
             comment.is_hidden = False
             comment.save(update_fields=["is_hidden"])
-            messages.success(request, "Comment restored.")
+            messages.success(request, _("Comment restored."))
         elif action == "hide":
             comment.is_hidden = True
             comment.save(update_fields=["is_hidden"])
-            messages.success(request, "Comment hidden.")
+            messages.success(request, _("Comment hidden."))
         elif action == "delete":
             comment.delete()
-            messages.success(request, "Comment deleted.")
+            messages.success(request, _("Comment deleted."))
 
     elif kind == "user":
         _change_user(request, target, action)
@@ -143,7 +144,7 @@ def _change_user(request, target, action) -> None:
         raise PermissionDenied("Managing accounts requires manager access")
     account = get_object_or_404(User, pk=target)
     if account.pk == request.user.pk:
-        messages.error(request, "You cannot change your own account here.")
+        messages.error(request, _("You cannot change your own account here."))
         return
     if policy.rank_of(account) > policy.rank_of(request.user):
         raise PermissionDenied("That account outranks yours")
@@ -154,10 +155,15 @@ def _change_user(request, target, action) -> None:
             raise PermissionDenied("You cannot grant that role")
         account.role = role
         account.save(update_fields=["role"])
-        messages.success(request, f"{account} is now {account.get_role_display().lower()}.")
+        messages.success(
+            request,
+            _("%(account)s is now %(role)s.")
+            % {"account": account, "role": account.get_role_display().lower()},
+        )
     elif action in {"deactivate", "activate"}:
         account.is_active = action == "activate"
         account.save(update_fields=["is_active"])
-        messages.success(
-            request, f"{account} was {'re-activated' if account.is_active else 'deactivated'}."
-        )
+        if account.is_active:
+            messages.success(request, _("%(account)s was re-activated.") % {"account": account})
+        else:
+            messages.success(request, _("%(account)s was deactivated.") % {"account": account})

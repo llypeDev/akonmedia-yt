@@ -3,6 +3,8 @@ from django.contrib import messages
 from django.db import transaction
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
 from django.views.decorators.http import require_POST
 
 from apps.media import access
@@ -39,10 +41,10 @@ def subtitle_upload(request, uid: str):
         return redirect("core:media_edit" if back else "core:media", uid=media.uid)
 
     if upload is None:
-        messages.error(request, "Choose a .srt or .vtt file.")
+        messages.error(request, _("Choose a .srt or .vtt file."))
         return bounce()
     if upload.size > MAX_SUBTITLE_BYTES:
-        messages.error(request, "Subtitle files must be 2 MB or smaller.")
+        messages.error(request, _("Subtitle files must be 2 MB or smaller."))
         return bounce()
 
     raw = upload.read()
@@ -53,7 +55,7 @@ def subtitle_upload(request, uid: str):
 
     cues = subs.parse(text)
     if not cues:
-        messages.error(request, "No cues could be read from that file.")
+        messages.error(request, _("No cues could be read from that file."))
         return bounce()
 
     with transaction.atomic():
@@ -81,7 +83,10 @@ def subtitle_upload(request, uid: str):
             ]
         )
 
-    messages.success(request, f"{len(cues)} cues imported.")
+    messages.success(
+        request,
+        ngettext("%(count)d cue imported.", "%(count)d cues imported.", len(cues)) % {"count": len(cues)},
+    )
     return redirect("core:subtitle_editor", uid=media.uid, language=subtitle.language)
 
 
@@ -113,15 +118,21 @@ def _save(request, media: Media, subtitle: Subtitle):
     for index, (start, end, text) in enumerate(zip(starts, ends, texts)):
         if not start.strip() and not end.strip() and not text.strip():
             continue  # a blank row added in the editor and never filled in
-        try:
-            start_ms = subs.parse_timestamp(start)
-            end_ms = subs.parse_timestamp(end)
-        except (subs.SubtitleFormatError, ValueError) as exc:
-            messages.error(request, f"Cue {index + 1}: {exc}")
-            return redirect("core:subtitle_editor", uid=media.uid, language=subtitle.language)
+        parsed = []
+        for raw in (start, end):
+            try:
+                parsed.append(subs.parse_timestamp(raw))
+            except (subs.SubtitleFormatError, ValueError):
+                messages.error(
+                    request,
+                    _("Cue %(number)d: the time “%(value)s” is not valid; use HH:MM:SS.mmm.")
+                    % {"number": index + 1, "value": raw.strip()},
+                )
+                return redirect("core:subtitle_editor", uid=media.uid, language=subtitle.language)
+        start_ms, end_ms = parsed
 
         if end_ms < start_ms:
-            messages.error(request, f"Cue {index + 1} ends before it starts.")
+            messages.error(request, _("Cue %(number)d ends before it starts.") % {"number": index + 1})
             return redirect("core:subtitle_editor", uid=media.uid, language=subtitle.language)
 
         rebuilt.append(
@@ -146,7 +157,10 @@ def _save(request, media: Media, subtitle: Subtitle):
         subtitle.cues.all().delete()
         SubtitleCue.objects.bulk_create(rebuilt)
 
-    messages.success(request, f"Saved {len(rebuilt)} cues.")
+    messages.success(
+        request,
+        ngettext("Saved %(count)d cue.", "Saved %(count)d cues.", len(rebuilt)) % {"count": len(rebuilt)},
+    )
     return redirect("core:subtitle_editor", uid=media.uid, language=subtitle.language)
 
 
@@ -154,7 +168,7 @@ def _save(request, media: Media, subtitle: Subtitle):
 def subtitle_delete(request, uid: str, language: str):
     media = _media_for(request.user, uid)
     Subtitle.objects.filter(media=media, language=language).delete()
-    messages.success(request, "Subtitle track removed.")
+    messages.success(request, _("Subtitle track removed."))
     return redirect("core:media", uid=media.uid)
 
 

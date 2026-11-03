@@ -11,6 +11,8 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy, ngettext
 from django.views.decorators.http import require_POST
 
 from apps.media import access, pipeline
@@ -29,7 +31,7 @@ class MediaDetailsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = Category.objects.order_by("name")
-        self.fields["category"].empty_label = "No category"
+        self.fields["category"].empty_label = gettext_lazy("No category")
         self.fields["title"].widget.attrs.update({"maxlength": 255, "autocomplete": "off"})
 
 
@@ -123,9 +125,9 @@ def media_edit(request, uid: str):
             form = MediaDetailsForm(request.POST, instance=media)
             if form.is_valid():
                 form.save()
-                messages.success(request, "Details saved.")
+                messages.success(request, _("Details saved."))
                 return redirect("core:media_edit", uid=media.uid)
-            messages.error(request, "Please fix the highlighted fields.")
+            messages.error(request, _("Please fix the highlighted fields."))
         elif action == "poster":
             _replace_poster(request, media)
             return redirect(f"{reverse('core:media_edit', args=[media.uid])}#thumbnail")
@@ -149,10 +151,10 @@ def media_edit(request, uid: str):
 def _replace_poster(request, media: Media) -> None:
     upload = request.FILES.get("poster")
     if upload is None:
-        messages.error(request, "Choose an image for the thumbnail.")
+        messages.error(request, _("Choose an image for the thumbnail."))
         return
     if upload.size > MAX_POSTER_BYTES:
-        messages.error(request, "Thumbnails must be 10 MB or smaller.")
+        messages.error(request, _("Thumbnails must be 10 MB or smaller."))
         return
 
     from pathlib import Path
@@ -167,7 +169,7 @@ def _replace_poster(request, media: Media) -> None:
     try:
         pipeline.image_poster(upload, target)
     except pipeline.PipelineError:
-        messages.error(request, "That file is not an image we can read.")
+        messages.error(request, _("That file is not an image we can read."))
         return
 
     previous = media.poster.name if media.poster else ""
@@ -177,14 +179,14 @@ def _replace_poster(request, media: Media) -> None:
     # so that re-processing still has something to fall back on.
     if previous and previous.rsplit("/", 1)[-1].startswith("poster-"):
         media.poster.storage.delete(previous)
-    messages.success(request, "Thumbnail updated.")
+    messages.success(request, _("Thumbnail updated."))
 
 
 def _save_chapters(request, media: Media) -> None:
     starts = request.POST.getlist("chapter_start")
     titles = request.POST.getlist("chapter_title")
     if len(starts) != len(titles):
-        messages.error(request, "Chapter fields are out of sync.")
+        messages.error(request, _("Chapter fields are out of sync."))
         return
 
     rows = []
@@ -194,10 +196,15 @@ def _save_chapters(request, media: Media) -> None:
             continue  # an empty row the browser left behind
         seconds = parse_clock(raw_start)
         if seconds is None or not title:
-            messages.error(request, f"Chapter {number} needs a start time (like 1:30) and a title.")
+            messages.error(
+                request,
+                _("Chapter %(number)d needs a start time (like 1:30) and a title.") % {"number": number},
+            )
             return
         if media.duration_seconds and seconds > media.duration_seconds:
-            messages.error(request, f"Chapter {number} starts after the end of the media.")
+            messages.error(
+                request, _("Chapter %(number)d starts after the end of the media.") % {"number": number}
+            )
             return
         rows.append((seconds, title[:255]))
 
@@ -207,7 +214,10 @@ def _save_chapters(request, media: Media) -> None:
         Chapter(media=media, start_seconds=seconds, title=title, position=index)
         for index, (seconds, title) in enumerate(rows)
     )
-    messages.success(request, f"Saved {len(rows)} chapter{'s' if len(rows) != 1 else ''}.")
+    messages.success(
+        request,
+        ngettext("Saved %(count)d chapter.", "Saved %(count)d chapters.", len(rows)) % {"count": len(rows)},
+    )
 
 
 @login_required
@@ -216,7 +226,7 @@ def media_reprocess(request, uid: str):
     """Run the encoder again, e.g. after a failure caused by a missing tool."""
     media = _editable_media(request, uid)
     if media.state == Media.State.PROCESSING:
-        messages.info(request, "This item is already being processed.")
+        messages.info(request, _("This item is already being processed."))
         return redirect("core:media", uid=media.uid)
     media.state = Media.State.PENDING
     media.failure_reason = ""
@@ -224,7 +234,7 @@ def media_reprocess(request, uid: str):
     from apps.media.tasks import process_media
 
     process_media.delay(str(media.pk))
-    messages.success(request, "Processing restarted.")
+    messages.success(request, _("Processing restarted."))
     return redirect("core:media", uid=media.uid)
 
 
@@ -235,7 +245,7 @@ def media_delete(request, uid: str):
     title = media.title
     owner_is_me = media.owner_id == request.user.id
     media.delete()
-    messages.success(request, f"“{title}” was deleted.")
+    messages.success(request, _("“%(title)s” was deleted.") % {"title": title})
     return redirect("core:studio" if owner_is_me else "core:manage")
 
 
@@ -246,7 +256,7 @@ def account(request):
         name = (request.POST.get("display_name") or "").strip()[:120]
         user.display_name = name
         user.save(update_fields=["display_name"])
-        messages.success(request, "Profile updated.")
+        messages.success(request, _("Profile updated."))
         return redirect("core:account")
 
     stats = Media.objects.filter(owner=user).aggregate(items=Count("id"), views=Sum("views_count"))

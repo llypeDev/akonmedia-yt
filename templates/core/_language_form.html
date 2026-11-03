@@ -1,0 +1,15 @@
+{% load i18n akon %}{% get_current_language as current_language %}{% get_available_languages as available_languages %}{% get_language_info_list for available_languages as languages %}
+<form class="lang-switch lang-switch-{{ variant|default:'footer' }}" action="{% url 'set_language' %}" method="post">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <label class="lang-label">
+    {% icon "globe" "icon-sm" %}
+    <span class="sr-only">{% translate "Language" %}</span>
+    <select class="select" name="language" onchange="this.form.submit()" aria-label="{% translate 'Language' %}">
+      {% for language in languages %}
+        <option value="{{ language.code }}" lang="{{ language.code }}" {% if language.code == current_language %}selected{% endif %}>{{ language.name_local|capfirst }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <noscript><button class="btn btn-xs" type="submit">{% translate "Change" %}</button></noscript>
+</form>

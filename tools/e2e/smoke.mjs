@@ -4,9 +4,10 @@
 // in chunks (with a dropped connection on purpose), wait for encoding, play the
 // adaptive stream and switch quality, comment and reply, build a playlist and
 // play it, edit details/chapters/thumbnail, add and edit subtitles, use the
-// studio, search, theme and navigation, upload and delete an image, check the
-// embed and phone layouts, and finally — if a manager account is given —
-// change the new account's role from the manage page.
+// studio, search, language switcher, theme and navigation, upload and delete an
+// image, check the embed and phone layouts, and finally — if a manager account
+// is given — change the new account's role from the manage page. Text selectors
+// follow the default interface language, Brazilian Portuguese.
 //
 //   npm i -D playwright && npx playwright install chromium   (once)
 //   BASE_URL=http://127.0.0.1:8000 node tools/e2e/smoke.mjs
@@ -134,7 +135,7 @@ async function main() {
   await page.waitForFunction(() => document.querySelector(".player video").currentTime > 1, null, { timeout: 20_000 });
   ok("video plays");
   await page.click(".pl-gear");
-  await page.locator(".pl-menu .pl-mi", { hasText: "Quality" }).click();
+  await page.locator(".pl-menu .pl-mi", { hasText: "Qualidade" }).click();
   // Exact label: "Auto (480p)" also contains the text while auto picks that rung.
   await page.locator(".pl-menu .pl-mi", { has: page.locator(".pl-mi-label", { hasText: /^480p$/ }) }).click();
   await page.waitForFunction(() => {
@@ -165,19 +166,19 @@ async function main() {
   expect(await page.locator(".replies .comment-text", { hasText: "Replying to myself." }).count() === 1, "reply appears in the thread");
 
   // ------------------------------------------------------------ playlists
-  await page.locator("summary", { hasText: "Save" }).click();
+  await page.locator("summary", { hasText: "Salvar" }).click();
   await page.fill('input[name="new_title"]', "E2E playlist");
-  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Create" }).click()]);
-  expect(await page.locator(".toast", { hasText: "Added to" }).count() === 1, "saved into a new playlist from the player page");
+  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Criar" }).click()]);
+  expect(await page.locator(".toast", { hasText: "Adicionada a" }).count() === 1, "saved into a new playlist from the player page");
   await page.goto(`${BASE}/playlists/`);
   await page.locator(".playlist-card", { hasText: "E2E playlist" }).locator("a.media-title, .media-title a").first().click();
-  await Promise.all([page.waitForNavigation(), page.locator("a", { hasText: "Play all" }).click()]);
+  await Promise.all([page.waitForNavigation(), page.locator("a", { hasText: "Reproduzir tudo" }).click()]);
   expect(page.url().includes("?list=") && await page.locator(".side-card").count() === 1, "playlist plays with its queue beside the player");
 
   // ------------------------------------------------------------ edit details, chapters, thumbnail
   await page.goto(`${BASE}/view/${uid}/edit/`);
   await page.fill("#id_title", "E2E clip (edited)");
-  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Save details" }).click()]);
+  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Salvar detalhes" }).click()]);
   expect(await page.inputValue("#id_title") === "E2E clip (edited)", "details saved");
   await page.click("[data-row-add]");
   await page.click("[data-row-add]");
@@ -185,11 +186,11 @@ async function main() {
   const titles = page.locator('input[name="chapter_title"]');
   await starts.nth(0).fill("0:00"); await titles.nth(0).fill("Intro");
   await starts.nth(1).fill("0:08"); await titles.nth(1).fill("Middle");
-  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Save chapters" }).click()]);
-  expect(await page.locator(".toast", { hasText: "Saved 2 chapters" }).count() === 1, "chapters saved");
+  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Salvar capítulos" }).click()]);
+  expect(await page.locator(".toast", { hasText: "2 capítulos salvos" }).count() === 1, "chapters saved");
   await page.setInputFiles('input[name="poster"]', files.image);
-  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Replace thumbnail" }).click()]);
-  expect(await page.locator(".toast", { hasText: "Thumbnail updated" }).count() === 1, "custom thumbnail uploaded");
+  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Trocar miniatura" }).click()]);
+  expect(await page.locator(".toast", { hasText: "Miniatura atualizada" }).count() === 1, "custom thumbnail uploaded");
 
   // ------------------------------------------------------------ subtitles
   await page.goto(`${BASE}/view/${uid}/`);
@@ -197,11 +198,11 @@ async function main() {
   await page.fill('input[name="language"]', "en");
   await page.fill('input[name="label"]', "English");
   await page.setInputFiles('input[name="file"][accept*=".srt"]', files.vtt);
-  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Upload track" }).click()]);
+  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Enviar faixa" }).click()]);
   expect(page.url().includes("/subtitles/en/"), "subtitle upload opens the cue editor");
   await page.click("[data-row-add]");
   await page.locator('textarea[name="cue_text"]').last().fill("Added in the editor");
-  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Save cues" }).click()]);
+  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Salvar falas" }).click()]);
   const vtt = await (await page.request.get(`${BASE}/view/${uid}/subtitles/en/track.vtt`)).text();
   expect(vtt.startsWith("WEBVTT") && vtt.includes("Added in the editor"), "edited cue is served as WebVTT");
 
@@ -213,6 +214,12 @@ async function main() {
   await page.keyboard.type("edited");
   await Promise.all([page.waitForNavigation(), page.keyboard.press("Enter")]);
   expect(await page.locator(".media-title", { hasText: "E2E clip (edited)" }).count() >= 1, "“/” focuses search and finds the upload");
+  expect(await page.getAttribute("html", "lang") === "pt-br", "interface is in Portuguese by default");
+  await Promise.all([page.waitForNavigation(), page.locator(".site-footer select[name=language]").selectOption("en")]);
+  expect(await page.getAttribute("html", "lang") === "en" && await page.locator(".nav-link", { hasText: "Home" }).count() >= 1,
+    "language switcher changes the interface to English");
+  await Promise.all([page.waitForNavigation(), page.locator(".site-footer select[name=language]").selectOption("pt-br")]);
+  expect(await page.locator(".nav-link", { hasText: "Início" }).count() >= 1, "and back to Portuguese");
   const before = await page.getAttribute("html", "data-theme");
   await page.click('[data-action="toggle-theme"]');
   expect(await page.getAttribute("html", "data-theme") !== before, "theme toggles between dark and light");
@@ -230,7 +237,7 @@ async function main() {
   expect(await page.locator(".stage-image img").count() === 1, "image upload shows the picture");
   const stillUid = page.url().match(/\/view\/([0-9a-z]+)\//)[1];
   await page.goto(`${BASE}/view/${stillUid}/edit/`);
-  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Delete media" }).click()]);
+  await Promise.all([page.waitForNavigation(), page.locator("button", { hasText: "Excluir mídia" }).click()]);
   expect(page.url().endsWith("/studio/") && await page.locator(".row-title", { hasText: "E2E still" }).count() === 0, "media deleted from the edit page");
 
   // ------------------------------------------------------------ embed
@@ -277,7 +284,7 @@ async function main() {
   // ------------------------------------------------------------ sign out
   await page.goto(`${BASE}/`);
   await page.click(".user-chip");
-  await Promise.all([page.waitForNavigation(), page.locator(".menu-item", { hasText: "Sign out" }).click()]);
+  await Promise.all([page.waitForNavigation(), page.locator(".menu-item", { hasText: "Sair" }).click()]);
   expect(await page.locator(".user-chip").count() === 0, "sign out ends the session");
 
   await browser.close();

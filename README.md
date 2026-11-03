@@ -42,6 +42,7 @@ rebuilt end to end. What remains is the cut-over itself.
 | Curation: encoding queue, failures with retry, comment moderation, account roles | done |
 | Subtitle upload (SRT/VTT), cue editor synced to a preview, WebVTT and SRT download | done |
 | Dark and light themes, phone layout, branded error pages | done |
+| Interface in Brazilian Portuguese (default) and English, with a language switcher | done |
 | Backup and restore runbook | `OPERATIONS.md` |
 
 ## Requirements
@@ -100,7 +101,8 @@ python manage.py seed_demo --quick   # shorter clips
 Generates six videos (1080p and 720p, so you see the whole ladder), three audio
 pieces, three images and a PDF with ffmpeg and Pillow, runs them through the
 real pipeline, and adds chapters, English and Portuguese subtitles, threaded
-comments and three playlists. It creates four accounts with a known password
+comments and three playlists. The demo content is written in Portuguese, like
+the default interface. It creates four accounts with a known password
 (`demo-pass-123`), so it refuses to run with `DEBUG` off unless you pass
 `--force`.
 
@@ -118,9 +120,10 @@ The pipeline tests run only where ffmpeg is installed.
 upload a video in chunks while one chunk is deliberately dropped, wait for
 encoding, play the HLS stream and switch quality, comment and reply, build a
 playlist and play it, edit details, chapters and thumbnail, add and edit
-subtitles, studio, search, themes, upload and delete an image, embed, phone
-layouts, and a manager changing a role — 39 checks, and it fails on any
-JavaScript error.
+subtitles, studio, search, themes, switching the interface language, upload and
+delete an image, embed, phone layouts, and a manager changing a role — 42
+checks, and it fails on any JavaScript error. Its selectors follow the default
+interface language, Brazilian Portuguese.
 
 ```bash
 npm i -D playwright && npx playwright install chromium   # once
@@ -137,6 +140,7 @@ config/
   settings/base.py      everything read from the environment
   settings/dev.py       permissive local defaults
   settings/prod.py      fails loudly if a secret is missing
+  formats/              per-language date formats (en, pt_BR)
   urls.py               admin, accounts, API, public pages, favicon, robots
   context.py            values every template needs
   celery.py             task discovery
@@ -149,6 +153,7 @@ apps/
                         byte-range serving, demo seeder
   uploader/             resumable chunked upload sessions and their purge
 templates/              HTML, written for this project only (allauth included)
+locale/pt_BR/           Brazilian Portuguese catalogs (.po sources, compiled .mo)
 static/css/app.css      the design system: tokens, themes, layout, components
 static/css/player.css   the player's look
 static/js/              app.js (interface), player.js, upload.js
@@ -225,6 +230,31 @@ changing capitalisation.
 **Settings fail closed.** `config/settings/prod.py` raises at import time when
 `SECRET_KEY` or `ALLOWED_HOSTS` is missing, rather than booting with a
 development default in production.
+
+## Languages
+
+The interface is in Brazilian Portuguese by default and also available in
+English. Every visitor gets `LANGUAGE_CODE` (`pt-br` unless the environment says
+otherwise); the switcher in the footer and in the account menu stores another
+choice in Django's language cookie. The browser's `Accept-Language` header is
+ignored on purpose, so the interface never changes language behind someone's
+back.
+
+Templates, Python and the three scripts are all translatable: the scripts read
+their strings from Django's JavaScript catalog (`/jsi18n/`). Numbers and dates
+follow the language too ("9,4 mil", "20 de out. de 2026"); the compact date
+styles live in `config/formats/`. Where django-allauth's own Portuguese catalog
+leaves English behind, `apps/users/translations.py` names the message so the
+project catalog can correct it. The compiled `.mo` files are committed, so
+running the portal needs nothing extra. After changing or adding text,
+regenerate the catalogs (this needs GNU gettext, e.g. `apt install gettext`),
+translate the new entries in `locale/pt_BR/LC_MESSAGES/*.po`, and compile:
+
+```bash
+python manage.py makemessages -l pt_BR --ignore=.venv --ignore="static/vendor/*"
+python manage.py makemessages -d djangojs -l pt_BR --ignore=.venv --ignore="static/vendor/*"
+python manage.py compilemessages -l pt_BR --ignore=.venv
+```
 
 ## Regenerating the brand kit
 

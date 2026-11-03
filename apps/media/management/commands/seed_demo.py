@@ -23,6 +23,7 @@ from django.conf import settings
 from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
+from django.utils.text import slugify
 
 from apps.media import pipeline
 from apps.media.models import (
@@ -46,107 +47,110 @@ PEOPLE = [
     ("kai@example.com", "Kai Moreno", Role.MANAGER),
 ]
 
+# The demo library speaks the portal's default language, Brazilian Portuguese.
+ART, BROADCAST, SOUND, STILLS, DOCS = "Arte generativa", "Transmissão", "Laboratório de som", "Imagens", "Documentos"
+
 CATEGORIES = [
-    ("Generative art", "Patterns grown by rules rather than drawn by hand."),
-    ("Broadcast", "Test cards, signals and the craft of getting pictures on air."),
-    ("Sound lab", "Tones, textures and field recordings."),
-    ("Stills", "Pictures and posters."),
-    ("Docs", "Specifications and handbooks."),
+    (ART, "Padrões que nascem de regras, não de traços à mão."),
+    (BROADCAST, "Cartelas de teste, sinais e o ofício de pôr imagem no ar."),
+    (SOUND, "Tons, texturas e gravações de campo."),
+    (STILLS, "Fotos e pôsteres."),
+    (DOCS, "Especificações e manuais."),
 ]
 
 CHORD = "0.08*sin(2*PI*{a}*t)+0.06*sin(2*PI*{b}*t)+0.05*sin(2*PI*{c}*t)"
 
 VIDEOS = [
     {
-        "title": "Aurora flow — generative gradients in 1080p",
+        "title": "Fluxo aurora — gradientes generativos em 1080p",
         "owner": "studio@example.com",
-        "category": "Generative art",
+        "category": ART,
         "source": "gradients=s=1920x1080:r=30:c0=0x05070c:c1=0x2ee6a6:c2=0x22d3ee:c3=0x7c6cff:nb_colors=4:speed=0.02",
         "audio": CHORD.format(a=220, b=277.18, c=329.63),
-        "description": "Four colour stops drifting across a 1080p canvas — the brand palette in motion.\n\nEncoded into a three-rung HLS ladder (1080p / 720p / 480p). Open the gear menu to switch rungs, or press I for stats.",
-        "chapters": [(0, "Fade in"), (0.35, "Mint meets cyan"), (0.7, "Violet drift")],
+        "description": "Quatro cores deslizando por uma tela 1080p — a paleta da marca em movimento.\n\nCodificado em uma escada HLS de três degraus (1080p / 720p / 480p). Abra o menu da engrenagem para trocar de qualidade ou aperte I para ver as estatísticas.",
+        "chapters": [(0, "Entrada"), (0.35, "Menta encontra ciano"), (0.7, "Deriva violeta")],
         "views": 1840,
         "subtitles": True,
     },
     {
-        "title": "Mandelbrot deep zoom",
+        "title": "Mergulho no conjunto de Mandelbrot",
         "owner": "ana@example.com",
-        "category": "Generative art",
+        "category": ART,
         "source": "mandelbrot=s=1280x720:r=30",
         "audio": CHORD.format(a=196, b=246.94, c=293.66),
-        "description": "The classic set, rendered frame by frame by ffmpeg's mandelbrot source.",
-        "chapters": [(0, "Seahorse valley"), (0.5, "Into the spiral")],
+        "description": "O conjunto clássico, desenhado quadro a quadro pela fonte mandelbrot do ffmpeg.",
+        "chapters": [(0, "Vale do cavalo-marinho"), (0.5, "Rumo à espiral")],
         "views": 932,
     },
     {
-        "title": "Game of Life — mould and growth",
+        "title": "Jogo da Vida — mofo e crescimento",
         "owner": "leo@example.com",
-        "category": "Generative art",
+        "category": ART,
         "source": "life=s=320x180:mold=10:r=24:ratio=0.12:death_color=#05070c:life_color=#2ee6a6:mold_color=#7c6cff,scale=1280:720:flags=neighbor",
         "audio": CHORD.format(a=174.61, b=220, c=261.63),
-        "description": "Conway's rules with a decay trail: dead cells fade from mint to violet before they disappear.",
+        "description": "As regras de Conway com rastro de decomposição: células mortas passam de menta a violeta antes de sumir.",
         "views": 412,
     },
     {
-        "title": "Rule 30 — a cellular automaton scrolling by",
+        "title": "Regra 30 — um autômato celular em movimento",
         "owner": "studio@example.com",
-        "category": "Generative art",
+        "category": ART,
         "source": "cellauto=rule=30:s=320x180:r=24:scroll=1:start_full=0,scale=1280:720:flags=neighbor,lutrgb=r='val*0.18':g='val*0.83':b='val*0.93'",
         "audio": CHORD.format(a=146.83, b=185, c=220),
-        "description": "One rule, one row of cells, endless complexity.",
+        "description": "Uma regra, uma linha de células, complexidade sem fim.",
         "views": 267,
     },
     {
-        "title": "SMPTE HD colour bars with 1 kHz line-up tone",
+        "title": "Barras de cor SMPTE HD com tom de referência de 1 kHz",
         "owner": "kai@example.com",
-        "category": "Broadcast",
+        "category": BROADCAST,
         "source": "smptehdbars=s=1920x1080:r=25",
         "audio": "0.25*sin(2*PI*1000*t)",
-        "description": "The reference every broadcast engineer knows. Useful to check colour handling across renditions.",
+        "description": "A referência que todo engenheiro de transmissão conhece. Útil para conferir as cores em todas as qualidades.",
         "views": 3120,
     },
     {
-        "title": "Signal generator — moving test pattern",
+        "title": "Gerador de sinal — padrão de teste em movimento",
         "owner": "kai@example.com",
-        "category": "Broadcast",
+        "category": BROADCAST,
         "source": "testsrc2=s=1280x720:r=30",
         "audio": "0.2*sin(2*PI*440*t)*(0.5+0.5*sin(2*PI*0.5*t))",
-        "description": "ffmpeg's testsrc2: a timecode, a moving gradient and a sweep. Handy for checking seeking — try the storyboard previews on the seek bar.",
+        "description": "O testsrc2 do ffmpeg: timecode, gradiente em movimento e varredura. Ótimo para testar a busca — experimente as prévias na barra de progresso.",
         "views": 655,
     },
 ]
 
 AUDIO = [
     {
-        "title": "Ambient pad in A major",
+        "title": "Pad ambiente em lá maior",
         "owner": "ana@example.com",
-        "category": "Sound lab",
+        "category": SOUND,
         "expr": "(0.12*sin(2*PI*220*t)+0.09*sin(2*PI*277.18*t)+0.08*sin(2*PI*329.63*t)+0.04*sin(2*PI*440*t))*(0.6+0.4*sin(2*PI*0.2*t))",
-        "description": "A slow, breathing chord. The poster is the waveform, drawn at upload.",
+        "description": "Um acorde lento, que respira. O pôster é a forma de onda, desenhada no envio.",
         "views": 389,
     },
     {
-        "title": "Rain on the studio roof (pink noise study)",
+        "title": "Chuva no telhado do estúdio (estudo de ruído rosa)",
         "owner": "leo@example.com",
-        "category": "Sound lab",
+        "category": SOUND,
         "noise": True,
-        "description": "Pink noise shaped by a slow tremolo — a stand-in for a field recording.",
+        "description": "Ruído rosa moldado por um tremolo lento — no lugar de uma gravação de campo.",
         "views": 211,
     },
     {
-        "title": "Sine sweep 40 Hz → 4 kHz",
+        "title": "Varredura senoidal de 40 Hz a 4 kHz",
         "owner": "kai@example.com",
-        "category": "Sound lab",
+        "category": SOUND,
         "expr": "0.3*sin(2*PI*(40*t+(4000-40)*t*t/(2*DUR)))",
-        "description": "A linear chirp for checking speakers and headphones.",
+        "description": "Uma varredura linear para testar caixas de som e fones.",
         "views": 98,
     },
 ]
 
 IMAGES = [
-    ("Aurora field", "ana@example.com", "aurora", 510),
-    ("Neon horizon grid", "studio@example.com", "horizon", 742),
-    ("Orbit study", "leo@example.com", "orbits", 133),
+    ("Campo aurora", "ana@example.com", "aurora", 510),
+    ("Horizonte neon", "studio@example.com", "horizon", 742),
+    ("Estudo de órbitas", "leo@example.com", "orbits", 133),
 ]
 
 SUBTITLES_EN = [
@@ -163,9 +167,9 @@ SUBTITLES_PT = [
 ]
 
 COMMENTS = [
-    ("leo@example.com", "The 1080p rung looks spotless even on a slow connection — switch to Auto and watch it climb.", None),
-    ("ana@example.com", "Love the moment at 0:06 when violet takes over.", 6.0),
-    ("kai@example.com", "Stats overlay (press I) shows the bandwidth estimate live. Very handy for testing.", None),
+    ("leo@example.com", "O degrau de 1080p fica impecável mesmo com conexão lenta — deixe no Auto e veja a qualidade subir.", None),
+    ("ana@example.com", "Adoro o momento em 0:06, quando o violeta toma conta.", 6.0),
+    ("kai@example.com", "O painel de estatísticas (aperte I) mostra a estimativa de banda ao vivo. Muito útil para testes.", None),
 ]
 
 
@@ -199,8 +203,8 @@ class Command(BaseCommand):
             for spec in AUDIO:
                 made.append(self._audio(work, spec, users, categories))
             for title, owner, style, views in IMAGES:
-                made.append(self._image(work, title, users[owner], categories["Stills"], style, views))
-            made.append(self._document(work, users["studio@example.com"], categories["Docs"]))
+                made.append(self._image(work, title, users[owner], categories[STILLS], style, views))
+            made.append(self._document(work, users["studio@example.com"], categories[DOCS]))
         finally:
             shutil.rmtree(work, ignore_errors=True)
 
@@ -271,7 +275,7 @@ class Command(BaseCommand):
             raise CommandError(result.stderr.strip()[-400:])
 
     def _video(self, work, spec, users, categories):
-        target = work / (spec["title"].split(" —")[0].lower().replace(" ", "-").replace("'", "")[:40] + ".mp4")
+        target = work / (slugify(spec["title"].split(" —")[0])[:40] + ".mp4")
         duration = self.seconds
         fade_out = max(0.5, duration - 1.2)
         self._ffmpeg(
@@ -303,7 +307,7 @@ class Command(BaseCommand):
         return media
 
     def _audio(self, work, spec, users, categories):
-        target = work / (spec["title"].split(" (")[0].lower().replace(" ", "-")[:36] + ".mp3")
+        target = work / (slugify(spec["title"].split(" (")[0])[:36] + ".mp3")
         duration = self.seconds * 2
         if spec.get("noise"):
             source = [
@@ -370,7 +374,7 @@ class Command(BaseCommand):
         image.save(target, "JPEG", quality=90)
         return self._publish(target, title=title, owner=owner, kind=Media.Kind.IMAGE,
                              category=category, views=views,
-                             description="Generated with Pillow for the demo library.")
+                             description="Gerada com Pillow para a biblioteca de demonstração.")
 
     def _document(self, work, owner, category):
         from PIL import Image, ImageDraw, ImageFont
@@ -384,39 +388,39 @@ class Command(BaseCommand):
             heading = body = ImageFont.load_default()
         draw.rectangle([0, 0, 1240, 18], fill=(34, 211, 238))
         draw.text((100, 140), "AkonMedia", font=heading, fill=(5, 7, 12))
-        draw.text((100, 230), "Platform overview", font=body, fill=(90, 106, 129))
+        draw.text((100, 230), "Visão geral da plataforma", font=body, fill=(90, 106, 129))
         lines = [
-            "1. Upload in resumable chunks.",
-            "2. ffmpeg builds an adaptive HLS ladder.",
-            "3. Viewers get the best rendition for their link.",
-            "4. Curators keep the library tidy.",
+            "1. Envio em partes, com retomada.",
+            "2. O ffmpeg monta uma escada HLS adaptativa.",
+            "3. Cada pessoa recebe a melhor qualidade para a sua conexão.",
+            "4. Os curadores mantêm a biblioteca em ordem.",
         ]
         for index, line in enumerate(lines):
             draw.text((100, 360 + index * 70), line, font=body, fill=(30, 41, 59))
         for i in range(6):
             draw.rectangle([100 + i * 170, 760, 240 + i * 170, 900], fill=[(46, 230, 166), (34, 211, 238), (124, 108, 255)][i % 3])
-        target = work / "platform-overview.pdf"
+        target = work / "visao-geral-da-plataforma.pdf"
         page.save(target, "PDF", resolution=150)
-        return self._publish(target, title="Platform overview (PDF)", owner=owner,
+        return self._publish(target, title="Visão geral da plataforma (PDF)", owner=owner,
                              kind=Media.Kind.DOCUMENT, category=category, views=57,
-                             description="A one-page handbook, previewed in the browser.")
+                             description="Um manual de uma página, visualizado no navegador.")
 
     # ------------------------------------------------------------- community
 
     def _playlists(self, users, made):
         by_title = {media.title: media for media in made if media.state == Media.State.READY}
         plans = [
-            ("Generative art showcase", "studio@example.com", Media.Visibility.PUBLIC,
-             [title for title in by_title if by_title[title].category and by_title[title].category.name == "Generative art"]),
-            ("Sound lab sessions", "ana@example.com", Media.Visibility.PUBLIC,
+            ("Vitrine de arte generativa", "studio@example.com", Media.Visibility.PUBLIC,
+             [title for title in by_title if by_title[title].category and by_title[title].category.name == ART]),
+            ("Sessões do laboratório de som", "ana@example.com", Media.Visibility.PUBLIC,
              [title for title in by_title if by_title[title].kind == Media.Kind.AUDIO]),
-            ("Broadcast reference kit", "kai@example.com", Media.Visibility.UNLISTED,
-             [title for title in by_title if by_title[title].category and by_title[title].category.name == "Broadcast"]),
+            ("Kit de referência de transmissão", "kai@example.com", Media.Visibility.UNLISTED,
+             [title for title in by_title if by_title[title].category and by_title[title].category.name == BROADCAST]),
         ]
         for title, owner, visibility, items in plans:
             playlist, created = Playlist.objects.get_or_create(
                 title=title, owner=users[owner],
-                defaults={"visibility": visibility, "description": f"Curated by {users[owner].display_name}."},
+                defaults={"visibility": visibility, "description": f"Curadoria de {users[owner].display_name}."},
             )
             if created:
                 for position, media_title in enumerate(items):
@@ -424,7 +428,7 @@ class Command(BaseCommand):
                                                        defaults={"position": position})
 
     def _comments(self, users, made):
-        target = next((media for media in made if media.title.startswith("Aurora flow")), None)
+        target = next((media for media in made if media.title.startswith("Fluxo aurora")), None)
         if target is None or target.comments.exists() or target.state != Media.State.READY:
             return
         first = None
@@ -432,4 +436,4 @@ class Command(BaseCommand):
             comment = Comment.objects.create(media=target, author=users[email], body=body, timestamp=moment)
             first = first or comment
         Comment.objects.create(media=target, author=users["studio@example.com"], parent=first,
-                               body="Thanks! The ladder is planned from the source height, so nothing is upscaled.")
+                               body="Valeu! A escada é planejada a partir da altura do original, então nada é ampliado.")

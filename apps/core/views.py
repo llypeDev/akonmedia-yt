@@ -12,6 +12,8 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -28,8 +30,18 @@ SORTS = {
     "oldest": ("created_at",),
     "title": ("title",),
 }
-SORT_LABELS = [("latest", "Latest"), ("popular", "Most viewed"), ("oldest", "Oldest"), ("title", "A–Z")]
-KIND_TITLES = {"video": "Videos", "audio": "Audio", "image": "Images", "document": "Documents"}
+SORT_LABELS = [
+    ("latest", gettext_lazy("Latest")),
+    ("popular", gettext_lazy("Most viewed")),
+    ("oldest", gettext_lazy("Oldest")),
+    ("title", gettext_lazy("A–Z")),
+]
+KIND_TITLES = {
+    "video": gettext_lazy("Videos"),
+    "audio": gettext_lazy("Audio"),
+    "image": gettext_lazy("Images"),
+    "document": gettext_lazy("Documents"),
+}
 
 
 def visible_media(user):
@@ -345,7 +357,7 @@ def _add_comment(request, media: Media):
     if not body:
         return redirect(target)
     if media.state != Media.State.READY:
-        messages.error(request, "Comments open once the media is published.")
+        messages.error(request, _("Comments open once the media is published."))
         return redirect(target)
 
     parent = _parse_uuid_pk(
@@ -385,12 +397,12 @@ def comment_action(request, comment_id):
 
     if action == "delete" and (comment.author_id == user.id or may_moderate):
         comment.delete()
-        messages.success(request, "Comment deleted.")
+        messages.success(request, _("Comment deleted."))
     elif action in {"hide", "unhide"} and may_moderate:
         comment.is_hidden = action == "hide"
         comment.save(update_fields=["is_hidden"])
         messages.success(
-            request, "Comment hidden." if comment.is_hidden else "Comment restored."
+            request, _("Comment hidden.") if comment.is_hidden else _("Comment restored.")
         )
     else:
         raise PermissionDenied("You cannot do that to this comment.")
@@ -423,15 +435,15 @@ def add_to_playlist(request, uid: str):
     existing = playlist.entries.filter(media=media)
     if request.POST.get("action") == "remove":
         existing.delete()
-        messages.success(request, f"Removed from “{playlist.title}”.")
+        messages.success(request, _("Removed from “%(title)s”.") % {"title": playlist.title})
     elif existing.exists():
-        messages.info(request, f"Already in “{playlist.title}”.")
+        messages.info(request, _("Already in “%(title)s”.") % {"title": playlist.title})
     else:
         last = playlist.entries.order_by("-position").values_list("position", flat=True).first()
         PlaylistItem.objects.create(
             playlist=playlist, media=media, position=0 if last is None else last + 1
         )
-        messages.success(request, f"Added to “{playlist.title}”.")
+        messages.success(request, _("Added to “%(title)s”.") % {"title": playlist.title})
     return redirect(_safe_next(request, fallback))
 
 

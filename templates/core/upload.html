@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% load static akon %}
+{% load static akon i18n %}
 
-{% block title %}Upload — {{ PORTAL_NAME }}{% endblock %}
+{% block title %}{% translate "Upload" %} — {{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
   <header class="page-head">
     <div>
-      <span class="eyebrow">{% icon "upload" "icon-xs" %}Upload</span>
-      <h1>Publish something new</h1>
-      <p class="lede">Video, audio, images and PDFs. Large files are sent in resumable chunks, so a dropped connection resumes instead of starting over.</p>
+      <span class="eyebrow">{% icon "upload" "icon-xs" %}{% translate "Upload" %}</span>
+      <h1>{% translate "Publish something new" %}</h1>
+      <p class="lede">{% translate "Video, audio, images and PDFs. Large files are sent in resumable chunks, so a dropped connection resumes instead of starting over." %}</p>
     </div>
-    <a class="btn" href="{% url 'core:studio' %}">{% icon "dashboard" "icon-sm" %}Studio</a>
+    <a class="btn" href="{% url 'core:studio' %}">{% icon "dashboard" "icon-sm" %}{% translate "Studio" %}</a>
   </header>
 
-  <noscript><div class="resume-note">{% icon "alert" %}Uploading needs JavaScript: files are sent in chunks by the browser.</div></noscript>
+  <noscript><div class="resume-note">{% icon "alert" %}{% translate "Uploading needs JavaScript: files are sent in chunks by the browser." %}</div></noscript>
 
   <form class="split upload-form" id="upload-form" method="post" enctype="multipart/form-data" action="#" novalidate data-sprite="{% static 'icons/sprite.svg' %}">
     {% csrf_token %}
@@ -21,8 +21,8 @@
       <label class="dropzone" id="dropzone" for="file-input">
         <input type="file" id="file-input" name="file" accept="video/*,audio/*,image/*,application/pdf,.mkv,.mov,.flac,.m4a">
         <span class="dropzone-icon">{% icon "upload" %}</span>
-        <strong>Drop a file to upload</strong>
-        <span class="muted">or click to browse your computer</span>
+        <strong>{% translate "Drop a file to upload" %}</strong>
+        <span class="muted">{% translate "or click to browse your computer" %}</span>
         <span class="formats" aria-hidden="true">
           <span class="badge">{% icon "film" %}MP4 · MOV · MKV · WEBM</span>
           <span class="badge">{% icon "music" %}MP3 · WAV · FLAC · M4A</span>
@@ -37,78 +37,78 @@
           <div class="name" id="file-name"></div>
           <div class="meta" id="file-meta"></div>
         </div>
-        <button type="button" class="btn btn-sm btn-ghost" id="file-change">Change</button>
+        <button type="button" class="btn btn-sm btn-ghost" id="file-change">{% translate "Change" %}</button>
       </div>
 
       <div class="resume-note" id="resume-note" hidden>
         {% icon "refresh" %}
-        <span class="grow">An unfinished upload of this file was found — <strong id="resume-progress">0%</strong> already on the server. It will continue from there.</span>
-        <button type="button" class="btn btn-xs" id="resume-discard">Start over</button>
+        <span class="grow">{% blocktranslate trimmed %}An unfinished upload of this file was found — <strong id="resume-progress">0%</strong> already on the server. It will continue from there.{% endblocktranslate %}</span>
+        <button type="button" class="btn btn-xs" id="resume-discard">{% translate "Start over" %}</button>
       </div>
 
       <section class="panel progress-panel" id="progress-panel" hidden aria-live="polite">
         <div class="progress-top">
           <div>
-            <div class="eyebrow" id="progress-phase">Uploading</div>
+            <div class="eyebrow" id="progress-phase">{% translate "Uploading" %}</div>
             <div class="progress-label" id="status" role="status"></div>
           </div>
           <div class="progress-pct" id="progress-pct">0%</div>
         </div>
         <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
         <dl class="telemetry">
-          <div><dt>Sent</dt><dd id="t-sent">0 B</dd></div>
-          <div><dt>Speed</dt><dd id="t-speed">—</dd></div>
-          <div><dt>Remaining</dt><dd id="t-eta">—</dd></div>
-          <div><dt>Chunk</dt><dd id="t-chunk">0 / 0</dd></div>
+          <div><dt>{% translate "Sent" %}</dt><dd id="t-sent">0 B</dd></div>
+          <div><dt>{% translate "Speed" %}</dt><dd id="t-speed">—</dd></div>
+          <div><dt>{% translate "Remaining" %}</dt><dd id="t-eta">—</dd></div>
+          <div><dt>{% translate "Chunk" %}</dt><dd id="t-chunk">0 / 0</dd></div>
         </dl>
         <div class="row-between">
           <span class="upload-status" id="detail"></span>
-          <button type="button" class="btn btn-sm btn-ghost" id="cancel-button" hidden>{% icon "x" "icon-sm" %}Cancel</button>
+          <button type="button" class="btn btn-sm btn-ghost" id="cancel-button" hidden>{% icon "x" "icon-sm" %}{% translate "Cancel" %}</button>
         </div>
       </section>
     </div>
 
     <div class="stack">
       <section class="panel">
-        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "pencil" %}</span>Details</h2></div>
+        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "pencil" %}</span>{% translate "Details" %}</h2></div>
         <div class="form-grid">
           <label class="field">
-            <span class="field-label">Title <span class="hint">defaults to the file name</span></span>
-            <input type="text" id="title-input" name="title" maxlength="255" placeholder="Give it a name" autocomplete="off">
+            <span class="field-label">{% translate "Title" %} <span class="hint">{% translate "defaults to the file name" %}</span></span>
+            <input type="text" id="title-input" name="title" maxlength="255" placeholder="{% translate "Give it a name" %}" autocomplete="off">
           </label>
           <label class="field">
-            <span class="field-label">Description</span>
-            <textarea id="description-input" name="description" rows="4" maxlength="10000" placeholder="What is it about? Mention moments like 1:23 in comments later."></textarea>
+            <span class="field-label">{% translate "Description" %}</span>
+            <textarea id="description-input" name="description" rows="4" maxlength="10000" placeholder="{% translate "What is it about? Mention moments like 1:23 in comments later." %}"></textarea>
           </label>
           <div class="field">
-            <span class="field-label">Visibility</span>
-            <div class="segmented" role="radiogroup" aria-label="Visibility">
+            <span class="field-label">{% translate "Visibility" %}</span>
+            <div class="segmented" role="radiogroup" aria-label="{% translate "Visibility" %}">
               {% for value, label in visibilities %}
                 <label><input type="radio" name="visibility" value="{{ value }}" {% if forloop.first %}checked{% endif %}><span>{% icon value|visibility_icon "icon-sm" %}{{ label }}</span></label>
               {% endfor %}
             </div>
-            <span class="field-help">Public appears in the library. Unlisted works for anyone with the link. Private is only you.</span>
+            <span class="field-help">{% translate "Public appears in the library. Unlisted works for anyone with the link. Private is only you." %}</span>
           </div>
           {% if categories %}
             <label class="field">
-              <span class="field-label">Category</span>
+              <span class="field-label">{% translate "Category" %}</span>
               <select id="category-input" name="category">
-                <option value="">No category</option>
+                <option value="">{% translate "No category" %}</option>
                 {% for category in categories %}<option value="{{ category.pk }}">{{ category.name }}</option>{% endfor %}
               </select>
             </label>
           {% endif %}
-          <button type="submit" class="btn btn-primary btn-lg btn-block" id="submit-button">{% icon "upload" %}Upload and publish</button>
+          <button type="submit" class="btn btn-primary btn-lg btn-block" id="submit-button">{% icon "upload" %}{% translate "Upload and publish" %}</button>
         </div>
       </section>
 
       <section class="panel">
-        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "cpu" %}</span>What happens next</h2></div>
+        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "cpu" %}</span>{% translate "What happens next" %}</h2></div>
         <ol class="steps">
-          <li>The file travels in 5 MB chunks; each one is acknowledged before the next.</li>
-          <li>ffprobe reads it, ffmpeg cuts a poster and an adaptive HLS ladder (up to 1080p / 720p / 480p) plus seek previews.</li>
-          <li>Audio gets a waveform cover, images a thumbnail, PDFs a first-page preview.</li>
-          <li>When it is ready, the page refreshes itself and the player picks the best rendition for each viewer.</li>
+          <li>{% translate "The file travels in 5 MB chunks; each one is acknowledged before the next." %}</li>
+          <li>{% translate "ffprobe reads it, ffmpeg cuts a poster and an adaptive HLS ladder (up to 1080p / 720p / 480p) plus seek previews." %}</li>
+          <li>{% translate "Audio gets a waveform cover, images a thumbnail, PDFs a first-page preview." %}</li>
+          <li>{% translate "When it is ready, the page refreshes itself and the player picks the best rendition for each viewer." %}</li>
         </ol>
       </section>
     </div>

@@ -1,12 +1,12 @@
 {% extends "allauth/layouts/base.html" %}
-{% load akon %}
+{% load akon i18n %}
 {% block auth_class %}auth-wide{% endblock %}
 {% block auth_nav %}
   {% if user.is_authenticated %}
-    <nav class="tabs" aria-label="Account sections">
-      <a class="tab" href="{% url 'core:account' %}">{% icon "user" "icon-sm" %}Profile</a>
-      <a class="tab {% if NAV == 'account_email' %}active{% endif %}" href="{% url 'account_email' %}">{% icon "mail" "icon-sm" %}Email</a>
-      <a class="tab {% if NAV == 'account_change_password' or NAV == 'account_set_password' %}active{% endif %}" href="{% url 'account_change_password' %}">{% icon "lock" "icon-sm" %}Password</a>
+    <nav class="tabs" aria-label="{% translate 'Account sections' %}">
+      <a class="tab" href="{% url 'core:account' %}">{% icon "user" "icon-sm" %}{% translate "Profile" %}</a>
+      <a class="tab {% if NAV == 'account_email' %}active{% endif %}" href="{% url 'account_email' %}">{% icon "mail" "icon-sm" %}{% translate "Email" %}</a>
+      <a class="tab {% if NAV == 'account_change_password' or NAV == 'account_set_password' %}active{% endif %}" href="{% url 'account_change_password' %}">{% icon "lock" "icon-sm" %}{% translate "Password" %}</a>
     </nav>
   {% endif %}
 {% endblock %}

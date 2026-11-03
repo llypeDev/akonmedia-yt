@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static akon humanize %}
+{% load static akon humanize i18n %}
 
 {% block title %}{{ media.title }} — {{ PORTAL_NAME }}{% endblock %}
 {% block description %}{{ media.description|default:media.title|truncatechars:180 }}{% endblock %}
@@ -44,8 +44,8 @@
       <div class="stage stage-missing">
         <div class="stack">
           {% icon "alert" "icon-xl" %}
-          <h2>No source file attached to this item.</h2>
-          <p>The record exists but its original was never uploaded or has been removed.</p>
+          <h2>{% translate "No source file attached to this item." %}</h2>
+          <p>{% translate "The record exists but its original was never uploaded or has been removed." %}</p>
         </div>
       </div>
     {% elif media.kind == "image" %}
@@ -60,8 +60,8 @@
           <div class="stack">
             {% icon "file-text" "icon-xl" %}
             <h2>{{ media.original_name|default:media.title }}</h2>
-            <p>This document cannot be previewed in the browser.</p>
-            <a class="btn btn-primary" href="{{ media.file.url }}" download>{% icon "download" "icon-sm" %}Download {{ media.size_bytes|filesizeformat }}</a>
+            <p>{% translate "This document cannot be previewed in the browser." %}</p>
+            <a class="btn btn-primary" href="{{ media.file.url }}" download>{% icon "download" "icon-sm" %}{% blocktranslate with size=media.size_bytes|filesizeformat %}Download {{ size }}{% endblocktranslate %}</a>
           </div>
         </div>
       {% endif %}
@@ -96,19 +96,20 @@
         {% if media.state == "failed" %}{% icon "x-circle" "icon-lg" %}{% else %}{% icon "loader" "icon-lg icon-spin" %}{% endif %}
         <div class="grow">
           {% if media.state == "failed" %}
-            <strong>Processing failed.</strong> Only you{% if not is_owner %}, the owner{% endif %} and curators can see this item.
+            <strong>{% translate "Processing failed." %}</strong>
+            {% if is_owner %}{% translate "Only you and curators can see this item." %}{% else %}{% translate "Only you, the owner and curators can see this item." %}{% endif %}
             {% if media.failure_reason %}<div class="mono">{{ media.failure_reason|truncatechars:240 }}</div>{% endif %}
           {% else %}
-            <strong>Processing — <span data-poll-label>{{ media.get_state_display|lower }}</span>.</strong>
-            {% if media.kind == "video" %}Encoding the adaptive ladder (poster, renditions, seek previews).{% else %}Preparing the preview.{% endif %}
-            This page updates by itself.
+            <strong>{% translate "Processing" %} — <span data-poll-label>{{ media.get_state_display|lower }}</span>.</strong>
+            {% if media.kind == "video" %}{% translate "Encoding the adaptive ladder (poster, renditions, seek previews)." %}{% else %}{% translate "Preparing the preview." %}{% endif %}
+            {% translate "This page updates by itself." %}
             <div class="scanline"></div>
           {% endif %}
         </div>
         {% if media.state == "failed" and can_edit %}
           <form method="post" action="{% url 'core:media_reprocess' media.uid %}">
             {% csrf_token %}
-            <button type="submit" class="btn btn-sm">{% icon "refresh" "icon-sm" %}Retry</button>
+            <button type="submit" class="btn btn-sm">{% icon "refresh" "icon-sm" %}{% translate "Retry" %}</button>
           </form>
         {% endif %}
       </div>
@@ -124,35 +125,35 @@
         {% avatar media.owner "lg" %}
         <span>
           <span class="creator-name">{{ media.owner.get_short_name }}</span>
-          <span class="creator-sub">{{ owner_uploads|intcomma }} public upload{{ owner_uploads|pluralize }}</span>
+          <span class="creator-sub">{% blocktranslate with shown=owner_uploads|intcomma count counter=owner_uploads %}{{ shown }} public upload{% plural %}{{ shown }} public uploads{% endblocktranslate %}</span>
         </span>
       </a>
 
       <div class="watch-actions">
         <details class="dropdown" data-dropdown>
-          <summary class="btn btn-sm">{% icon "share" "icon-sm" %}Share</summary>
+          <summary class="btn btn-sm">{% icon "share" "icon-sm" %}{% translate "Share" %}</summary>
           <div class="dropdown-menu" style="width: min(380px, 86vw)">
-            <div class="menu-label">Link</div>
+            <div class="menu-label">{% translate "Link" %}</div>
             <div class="menu-form">
               <div class="copy-field">
-                <input class="input input-sm" id="share-url" readonly value="{{ page_url }}" aria-label="Link to this page">
-                <button type="button" class="btn btn-sm" data-copy-target="#share-url" data-copied="Link copied">{% icon "copy" "icon-sm" %}Copy</button>
+                <input class="input input-sm" id="share-url" readonly value="{{ page_url }}" aria-label="{% translate "Link to this page" %}">
+                <button type="button" class="btn btn-sm" data-copy-target="#share-url" data-copied="{% translate "Link copied" %}">{% icon "copy" "icon-sm" %}{% translate "Copy" %}</button>
               </div>
               {% if media.kind == "video" or media.kind == "audio" %}
-                <button type="button" class="menu-item" data-copy-time="{{ page_url }}" data-copied="Link at the current time copied">{% icon "clock" %}Copy link at current time</button>
+                <button type="button" class="menu-item" data-copy-time="{{ page_url }}" data-copied="{% translate "Link at the current time copied" %}">{% icon "clock" %}{% translate "Copy link at current time" %}</button>
               {% endif %}
             </div>
             {% if media.kind != "document" %}
               <div class="menu-sep"></div>
-              <div class="menu-label">Embed</div>
+              <div class="menu-label">{% translate "Embed" %}</div>
               <div class="menu-form" data-embed-builder="{{ embed_url }}" data-title="{{ media.title }}">
-                <textarea class="textarea embed-code" id="embed-code" readonly aria-label="Embed code">{{ embed_snippet }}</textarea>
+                <textarea class="textarea embed-code" id="embed-code" readonly aria-label="{% translate "Embed code" %}">{{ embed_snippet }}</textarea>
                 {% if media.kind == "video" or media.kind == "audio" %}
-                  <label class="check"><input type="checkbox" data-param="start"> Start at <span class="mono" data-start-label>0:00</span></label>
-                  <label class="check"><input type="checkbox" data-param="autoplay"> Autoplay (muted)</label>
-                  <label class="check"><input type="checkbox" data-param="title"> Show the title</label>
+                  <label class="check"><input type="checkbox" data-param="start"> {% translate "Start at" %} <span class="mono" data-start-label>0:00</span></label>
+                  <label class="check"><input type="checkbox" data-param="autoplay"> {% translate "Autoplay (muted)" %}</label>
+                  <label class="check"><input type="checkbox" data-param="title"> {% translate "Show the title" %}</label>
                 {% endif %}
-                <button type="button" class="btn btn-primary btn-sm" data-copy-target="#embed-code" data-copied="Embed code copied">{% icon "code" "icon-sm" %}Copy embed code</button>
+                <button type="button" class="btn btn-primary btn-sm" data-copy-target="#embed-code" data-copied="{% translate "Embed code copied" %}">{% icon "code" "icon-sm" %}{% translate "Copy embed code" %}</button>
               </div>
             {% endif %}
           </div>
@@ -160,9 +161,9 @@
 
         {% if user.is_authenticated and media.state == "ready" %}
           <details class="dropdown" data-dropdown data-autofocus>
-            <summary class="btn btn-sm">{% icon "list-plus" "icon-sm" %}Save</summary>
+            <summary class="btn btn-sm">{% icon "list-plus" "icon-sm" %}{% translate "Save" %}</summary>
             <div class="dropdown-menu" style="width: min(320px, 86vw)">
-              <div class="menu-label">Save to playlist</div>
+              <div class="menu-label">{% translate "Save to playlist" %}</div>
               <div class="menu-scroll">
                 {% for playlist in user_playlists %}
                   <form method="post" action="{% url 'core:add_to_playlist' media.uid %}">
@@ -170,27 +171,27 @@
                     <input type="hidden" name="playlist" value="{{ playlist.uid }}">
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                     {% if playlist.has_item %}<input type="hidden" name="action" value="remove">{% endif %}
-                    <button type="submit" class="menu-item" title="{% if playlist.has_item %}Remove from{% else %}Add to{% endif %} {{ playlist.title }}">
+                    <button type="submit" class="menu-item" title="{% if playlist.has_item %}{% blocktranslate with name=playlist.title %}Remove from {{ name }}{% endblocktranslate %}{% else %}{% blocktranslate with name=playlist.title %}Add to {{ name }}{% endblocktranslate %}{% endif %}">
                       {% icon playlist.visibility|visibility_icon %}<span class="grow">{{ playlist.title }}</span>
                       {% if playlist.has_item %}<span class="check-mark">{% icon "check" "icon-sm" %}</span>{% endif %}
                     </button>
                   </form>
                 {% empty %}
-                  <p class="muted" style="padding: 4px 10px 8px; font-size: 13px">You have no playlists yet.</p>
+                  <p class="muted" style="padding: 4px 10px 8px; font-size: 13px">{% translate "You have no playlists yet." %}</p>
                 {% endfor %}
               </div>
               <div class="menu-sep"></div>
               <form class="menu-form" method="post" action="{% url 'core:add_to_playlist' media.uid %}">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <input class="input input-sm" type="text" name="new_title" maxlength="255" placeholder="New playlist name" required>
+                <input class="input input-sm" type="text" name="new_title" maxlength="255" placeholder="{% translate "New playlist name" %}" required>
                 <div class="row">
-                  <select class="select input-sm grow" name="visibility" aria-label="Visibility">
-                    <option value="private">Private</option>
-                    <option value="unlisted">Unlisted</option>
-                    <option value="public">Public</option>
+                  <select class="select input-sm grow" name="visibility" aria-label="{% translate "Visibility" %}">
+                    <option value="private">{% translate "Private" %}</option>
+                    <option value="unlisted">{% translate "Unlisted" %}</option>
+                    <option value="public">{% translate "Public" %}</option>
                   </select>
-                  <button type="submit" class="btn btn-primary btn-sm">{% icon "plus" "icon-sm" %}Create</button>
+                  <button type="submit" class="btn btn-primary btn-sm">{% icon "plus" "icon-sm" %}{% translate "Create" %}</button>
                 </div>
               </form>
             </div>
@@ -198,42 +199,42 @@
         {% endif %}
 
         {% if media.file %}{% if media.kind == "image" or media.kind == "document" or can_edit %}
-          <a class="btn btn-sm" href="{{ media.file.url }}" download>{% icon "download" "icon-sm" %}<span class="hide-sm">Download</span></a>
+          <a class="btn btn-sm" href="{{ media.file.url }}" download>{% icon "download" "icon-sm" %}<span class="hide-sm">{% translate "Download" %}</span></a>
         {% endif %}{% endif %}
         {% if can_edit %}
-          <a class="btn btn-sm" href="{% url 'core:media_edit' media.uid %}">{% icon "pencil" "icon-sm" %}Edit</a>
+          <a class="btn btn-sm" href="{% url 'core:media_edit' media.uid %}">{% icon "pencil" "icon-sm" %}{% translate "Edit" %}</a>
         {% endif %}
       </div>
     </div>
 
     <div class="description clamp" data-clamp>
       <div class="description-meta">
-        <span>{{ media.views_count|intcomma }} view{{ media.views_count|pluralize }}</span>
-        <span title="{{ media.created_at|date:'DATETIME_FORMAT' }}">{{ media.created_at|date:"j M Y" }}</span>
+        <span>{% blocktranslate with shown=media.views_count|intcomma count counter=media.views_count %}{{ shown }} view{% plural %}{{ shown }} views{% endblocktranslate %}</span>
+        <span title="{{ media.created_at|date:'SHORT_DATETIME_FORMAT' }}">{{ media.created_at|date:"SHORT_DATE_FORMAT" }}</span>
         {% if media.category %}<a class="text-link" href="{% url 'core:index' %}?category={{ media.category.slug }}">#{{ media.category.name|slugify }}</a>{% endif %}
         {% if media.visibility != "public" %}<span class="badge badge-{{ media.visibility }}">{% icon media.visibility|visibility_icon %}{{ media.get_visibility_display }}</span>{% endif %}
         {% if media.state != "ready" %}<span class="badge badge-{{ media.state }}">{% icon media.state|state_icon %}{{ media.get_state_display }}</span>{% endif %}
       </div>
       <div class="prose">
-        {% if media.description %}{{ media.description|urlize|linebreaks }}{% else %}<p class="muted">No description.</p>{% endif %}
+        {% if media.description %}{{ media.description|urlize|linebreaks }}{% else %}<p class="muted">{% translate "No description." %}</p>{% endif %}
       </div>
       <div class="description-extra">
         <dl class="spec-grid">
-          <div class="spec"><dt>Type</dt><dd>{{ media.get_kind_display }}{% if extension %} · {{ extension }}{% endif %}</dd></div>
-          {% if media.duration_seconds %}<div class="spec"><dt>Duration</dt><dd>{{ media.duration_label }}</dd></div>{% endif %}
-          {% if media.width and media.height %}<div class="spec"><dt>Resolution</dt><dd>{{ media.width }}×{{ media.height }}</dd></div>{% endif %}
-          {% if renditions %}<div class="spec"><dt>Streaming</dt><dd>HLS · {{ renditions|join:" / " }}</dd></div>{% endif %}
-          {% if media.size_bytes %}<div class="spec"><dt>Original</dt><dd>{{ media.size_bytes|filesizeformat }}</dd></div>{% endif %}
-          {% if subtitles %}<div class="spec"><dt>Captions</dt><dd>{% for subtitle in subtitles %}{{ subtitle.language|upper }}{% if not forloop.last %} · {% endif %}{% endfor %}</dd></div>{% endif %}
-          <div class="spec"><dt>ID</dt><dd>{{ media.uid }}</dd></div>
+          <div class="spec"><dt>{% translate "Type" %}</dt><dd>{{ media.get_kind_display }}{% if extension %} · {{ extension }}{% endif %}</dd></div>
+          {% if media.duration_seconds %}<div class="spec"><dt>{% translate "Duration" %}</dt><dd>{{ media.duration_label }}</dd></div>{% endif %}
+          {% if media.width and media.height %}<div class="spec"><dt>{% translate "Resolution" %}</dt><dd>{{ media.width }}×{{ media.height }}</dd></div>{% endif %}
+          {% if renditions %}<div class="spec"><dt>{% translate "Streaming" %}</dt><dd>HLS · {{ renditions|join:" / " }}</dd></div>{% endif %}
+          {% if media.size_bytes %}<div class="spec"><dt>{% translate "Original" %}</dt><dd>{{ media.size_bytes|filesizeformat }}</dd></div>{% endif %}
+          {% if subtitles %}<div class="spec"><dt>{% translate "Captions" %}</dt><dd>{% for subtitle in subtitles %}{{ subtitle.language|upper }}{% if not forloop.last %} · {% endif %}{% endfor %}</dd></div>{% endif %}
+          <div class="spec"><dt>{% translate "ID" %}</dt><dd>{{ media.uid }}</dd></div>
         </dl>
       </div>
-      <button type="button" class="description-toggle" hidden>Show more</button>
+      <button type="button" class="description-toggle" hidden>{% translate "Show more" %}</button>
     </div>
 
     {% if chapters %}
       <section class="chapters-block">
-        <h2 class="side-title">{% icon "rows" "icon-sm" %}Chapters <span class="count-pill">{{ chapters|length }}</span></h2>
+        <h2 class="side-title">{% icon "rows" "icon-sm" %}{% translate "Chapters" %} <span class="count-pill">{{ chapters|length }}</span></h2>
         <ol class="chapter-list">
           {% for chapter in chapters %}
             <li><button type="button" data-seek="{{ chapter.start_seconds|floatformat:0 }}"><span class="ts">{{ chapter.start_seconds|clock }}</span>{{ chapter.title }}</button></li>
@@ -246,7 +247,7 @@
       {% if media.kind == "video" or media.kind == "audio" %}
         <section class="panel mt-3">
           <div class="panel-head">
-            <h2><span class="panel-title-icon">{% icon "captions" %}</span>Subtitles</h2>
+            <h2><span class="panel-title-icon">{% icon "captions" %}</span>{% translate "Subtitles" %}</h2>
             <span class="count-pill">{{ subtitles|length }}</span>
           </div>
           {% if subtitles %}
@@ -256,11 +257,11 @@
                   {% for subtitle in subtitles %}
                     <tr>
                       <td><strong>{{ subtitle.display_label }}</strong> <span class="badge">{{ subtitle.language }}</span></td>
-                      <td class="num">{{ subtitle.cues.count }} cue{{ subtitle.cues.count|pluralize }}</td>
+                      <td class="num">{% blocktranslate count counter=subtitle.cues.count %}{{ counter }} cue{% plural %}{{ counter }} cues{% endblocktranslate %}</td>
                       <td class="actions">
                         <a class="btn btn-xs btn-ghost" href="{% url 'core:subtitle_vtt' media.uid subtitle.language %}">.vtt</a>
                         <a class="btn btn-xs btn-ghost" href="{% url 'core:subtitle_srt' media.uid subtitle.language %}">.srt</a>
-                        {% if can_edit %}<a class="btn btn-xs" href="{% url 'core:subtitle_editor' media.uid subtitle.language %}">{% icon "pencil" "icon-xs" %}Edit</a>{% endif %}
+                        {% if can_edit %}<a class="btn btn-xs" href="{% url 'core:subtitle_editor' media.uid subtitle.language %}">{% icon "pencil" "icon-xs" %}{% translate "Edit" %}</a>{% endif %}
                       </td>
                     </tr>
                   {% endfor %}
@@ -268,19 +269,19 @@
               </table>
             </div>
           {% else %}
-            <p class="muted">No subtitle tracks yet.</p>
+            <p class="muted">{% translate "No subtitle tracks yet." %}</p>
           {% endif %}
 
           {% if can_edit %}
             <form class="stack-sm mt-2" method="post" action="{% url 'core:subtitle_upload' media.uid %}" enctype="multipart/form-data">
               {% csrf_token %}
               <div class="form-row">
-                <input class="input" type="text" name="language" placeholder="Language code (en, pt-BR)" maxlength="16" required aria-label="Language code">
-                <input class="input" type="text" name="label" placeholder="Label (optional)" maxlength="120" aria-label="Label">
+                <input class="input" type="text" name="language" placeholder="{% translate "Language code (en, pt-BR)" %}" maxlength="16" required aria-label="{% translate "Language code" %}">
+                <input class="input" type="text" name="label" placeholder="{% translate "Label (optional)" %}" maxlength="120" aria-label="{% translate "Label" %}">
               </div>
               <div class="row-between">
-                <input type="file" name="file" accept=".srt,.vtt,text/vtt" required aria-label="Subtitle file">
-                <button type="submit" class="btn btn-primary btn-sm">{% icon "upload" "icon-sm" %}Upload track</button>
+                <input type="file" name="file" accept=".srt,.vtt,text/vtt" required aria-label="{% translate "Subtitle file" %}">
+                <button type="submit" class="btn btn-primary btn-sm">{% icon "upload" "icon-sm" %}{% translate "Upload track" %}</button>
               </div>
             </form>
           {% endif %}
@@ -292,7 +293,7 @@
   {# ------------------------------------------------------------- comments #}
   <section class="watch-talk" id="comments">
     <div class="comments-head">
-      <h2>{% icon "message" %}{{ comment_count|intcomma }} Comment{{ comment_count|pluralize }}</h2>
+      <h2>{% icon "message" %}{% blocktranslate with shown=comment_count|intcomma count counter=comment_count %}{{ shown }} Comment{% plural %}{{ shown }} Comments{% endblocktranslate %}</h2>
     </div>
 
     {% if user.is_authenticated %}
@@ -301,23 +302,24 @@
           {% avatar user "md" %}
           <form method="post" action="" data-capture-time>
             {% csrf_token %}
-            <textarea class="textarea" name="body" rows="2" maxlength="4000" placeholder="Add a comment… mention a moment like 1:23 and it becomes a link" required></textarea>
+            <textarea class="textarea" name="body" rows="2" maxlength="4000" placeholder="{% translate "Add a comment… mention a moment like 1:23 and it becomes a link" %}" required></textarea>
             <input type="hidden" name="timestamp" value="">
             <div class="composer-foot">
               {% if media.kind == "video" or media.kind == "audio" %}
-                <label class="check"><input type="checkbox" data-time-toggle> Pin to <span class="mono" data-time-label>0:00</span></label>
+                <label class="check"><input type="checkbox" data-time-toggle> {% translate "Pin to" %} <span class="mono" data-time-label>0:00</span></label>
               {% else %}<span></span>{% endif %}
-              <button type="submit" class="btn btn-primary btn-sm">{% icon "send" "icon-sm" %}Comment</button>
+              <button type="submit" class="btn btn-primary btn-sm">{% icon "send" "icon-sm" %}{% translate "Comment" %}</button>
             </div>
           </form>
         </div>
       {% else %}
-        <p class="muted mt-1">Comments open once the media is published.</p>
+        <p class="muted mt-1">{% translate "Comments open once the media is published." %}</p>
       {% endif %}
     {% else %}
       <div class="composer">
         <span class="avatar avatar-md" style="--av-a:#334155;--av-b:#1e293b">?</span>
-        <p class="muted" style="align-self:center"><a class="text-link" href="{% url 'account_login' %}?next={{ request.get_full_path|urlencode }}">Sign in</a> to comment.</p>
+        {% url 'account_login' as login_path %}
+        <p class="muted" style="align-self:center">{% blocktranslate with url=login_path next=request.get_full_path|urlencode %}<a class="text-link" href="{{ url }}?next={{ next }}">Sign in</a> to comment.{% endblocktranslate %}</p>
       </div>
     {% endif %}
 
@@ -325,7 +327,7 @@
       {% for comment in comments %}
         {% include "core/_comment.html" with is_reply=False %}
       {% empty %}
-        <li class="muted">No comments yet. Start the conversation.</li>
+        <li class="muted">{% translate "No comments yet. Start the conversation." %}</li>
       {% endfor %}
     </ul>
   </section>
@@ -335,7 +337,7 @@
     {% if playlist_ctx %}
       <section class="side-card">
         <div class="side-card-head">
-          <span class="eyebrow">{% icon "list-video" "icon-xs" %}Playlist</span>
+          <span class="eyebrow">{% icon "list-video" "icon-xs" %}{% translate "Playlist" %}</span>
           <h2 class="mt-1"><a href="{% url 'core:playlist' playlist_ctx.playlist.uid %}">{{ playlist_ctx.playlist.title }}</a></h2>
           <p>{{ playlist_ctx.playlist.owner.get_short_name }} · <span class="mono">{{ playlist_ctx.position }}/{{ playlist_ctx.entries|length }}</span></p>
         </div>
@@ -359,7 +361,7 @@
 
     {% if related %}
       <section>
-        <h2 class="side-title">{% icon "skip-forward" "icon-sm" %}Up next</h2>
+        <h2 class="side-title">{% icon "skip-forward" "icon-sm" %}{% translate "Up next" %}</h2>
         <div class="up-next">
           {% for item in related %}
             <a class="list-card" href="{% url 'core:media' item.uid %}">
@@ -370,7 +372,7 @@
               <span style="min-width:0">
                 <span class="media-title">{{ item.title }}</span>
                 <span class="media-meta" style="display:block">{{ item.owner.get_short_name }}</span>
-                <span class="media-meta" style="display:block">{{ item.views_count|compact }} view{{ item.views_count|pluralize }} · {{ item.created_at|timesince }} ago</span>
+                <span class="media-meta" style="display:block">{% blocktranslate with shown=item.views_count|compact count counter=item.views_count %}{{ shown }} view{% plural %}{{ shown }} views{% endblocktranslate %} · {% blocktranslate with since=item.created_at|timesince %}{{ since }} ago{% endblocktranslate %}</span>
               </span>
             </a>
           {% endfor %}

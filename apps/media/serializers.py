@@ -1,4 +1,5 @@
 """Serializers for the media API."""
+from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apps.rbac import permissions as policy
@@ -70,7 +71,7 @@ class MediaCreateSerializer(serializers.ModelSerializer):
 
     def validate_file(self, value):
         if value.size > 4 * 1024 * 1024 * 1024:
-            raise serializers.ValidationError("Files above 4 GB must use the chunked uploader.")
+            raise serializers.ValidationError(_("Files above 4 GB must use the chunked uploader."))
         return value
 
 

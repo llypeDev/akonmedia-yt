@@ -1,33 +1,33 @@
 {% extends "base.html" %}
-{% load akon %}
+{% load akon i18n %}
 
-{% block title %}Edit {{ playlist.title }} — {{ PORTAL_NAME }}{% endblock %}
+{% block title %}{% blocktranslate with title=playlist.title %}Edit {{ title }}{% endblocktranslate %} — {{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
   <header class="page-head">
     <div>
-      <a class="back-link" href="{% url 'core:playlists' %}">{% icon "chevron-left" "icon-sm" %}Playlists</a>
-      <h1>Edit playlist</h1>
-      <p class="lede">{{ playlist.title }} · <span class="mono">{{ entries|length }}</span> item{{ entries|length|pluralize }}</p>
+      <a class="back-link" href="{% url 'core:playlists' %}">{% icon "chevron-left" "icon-sm" %}{% translate "Playlists" %}</a>
+      <h1>{% translate "Edit playlist" %}</h1>
+      <p class="lede">{{ playlist.title }} · {% blocktranslate count counter=entries|length %}<span class="mono">{{ counter }}</span> item{% plural %}<span class="mono">{{ counter }}</span> items{% endblocktranslate %}</p>
     </div>
-    <a class="btn" href="{% url 'core:playlist' playlist.uid %}">{% icon "eye" "icon-sm" %}View the public page</a>
+    <a class="btn" href="{% url 'core:playlist' playlist.uid %}">{% icon "eye" "icon-sm" %}{% translate "View the public page" %}</a>
   </header>
 
   <div class="split">
     <div class="stack">
       <section class="panel">
         <div class="panel-head">
-          <h2><span class="panel-title-icon">{% icon "rows" %}</span>Items</h2>
+          <h2><span class="panel-title-icon">{% icon "rows" %}</span>{% translate "Items" %}</h2>
         </div>
 
         <form class="row" method="post" action="{% url 'core:playlist_edit' playlist.uid %}" style="margin-bottom:18px">
           {% csrf_token %}
           <input type="hidden" name="action" value="add">
-          <input class="input grow" type="text" name="media_uid" list="media-suggestions" placeholder="Paste a media link or identifier, or pick from the list" required aria-label="Media to add">
+          <input class="input grow" type="text" name="media_uid" list="media-suggestions" placeholder="{% translate 'Paste a media link or identifier, or pick from the list' %}" required aria-label="{% translate 'Media to add' %}">
           <datalist id="media-suggestions">
             {% for media in suggestions %}<option value="{{ media.uid }}">{{ media.title }}</option>{% endfor %}
           </datalist>
-          <button type="submit" class="btn btn-primary">{% icon "plus" "icon-sm" %}Add media</button>
+          <button type="submit" class="btn btn-primary">{% icon "plus" "icon-sm" %}{% translate "Add media" %}</button>
         </form>
 
         {% if entries %}
@@ -49,20 +49,20 @@
                     <input type="hidden" name="action" value="move">
                     <input type="hidden" name="item_id" value="{{ entry.pk }}">
                     <input type="hidden" name="direction" value="up">
-                    <button class="btn btn-sm btn-square btn-ghost" type="submit" {% if forloop.first %}disabled{% endif %} aria-label="Move up">{% icon "arrow-up" "icon-sm" %}</button>
+                    <button class="btn btn-sm btn-square btn-ghost" type="submit" {% if forloop.first %}disabled{% endif %} aria-label="{% translate 'Move up' %}">{% icon "arrow-up" "icon-sm" %}</button>
                   </form>
                   <form method="post" action="{% url 'core:playlist_edit' playlist.uid %}">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="move">
                     <input type="hidden" name="item_id" value="{{ entry.pk }}">
                     <input type="hidden" name="direction" value="down">
-                    <button class="btn btn-sm btn-square btn-ghost" type="submit" {% if forloop.last %}disabled{% endif %} aria-label="Move down">{% icon "arrow-down" "icon-sm" %}</button>
+                    <button class="btn btn-sm btn-square btn-ghost" type="submit" {% if forloop.last %}disabled{% endif %} aria-label="{% translate 'Move down' %}">{% icon "arrow-down" "icon-sm" %}</button>
                   </form>
                   <form method="post" action="{% url 'core:playlist_edit' playlist.uid %}">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="remove">
                     <input type="hidden" name="item_id" value="{{ entry.pk }}">
-                    <button class="btn btn-sm btn-square btn-ghost" type="submit" aria-label="Remove" title="Remove">{% icon "trash" "icon-sm" %}</button>
+                    <button class="btn btn-sm btn-square btn-ghost" type="submit" aria-label="{% translate 'Remove' %}" title="{% translate 'Remove' %}">{% icon "trash" "icon-sm" %}</button>
                   </form>
                 </div>
               </li>
@@ -71,8 +71,8 @@
         {% else %}
           <div class="empty-state compact">
             <div class="empty-icon">{% icon "list-plus" %}</div>
-            <h3>Nothing in this playlist yet.</h3>
-            <p>Paste a link to any media page above, or choose one of your uploads from the suggestions.</p>
+            <h3>{% translate "Nothing in this playlist yet." %}</h3>
+            <p>{% translate "Paste a link to any media page above, or choose one of your uploads from the suggestions." %}</p>
           </div>
         {% endif %}
       </section>
@@ -80,41 +80,41 @@
 
     <div class="stack">
       <section class="panel">
-        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "pencil" %}</span>Details</h2></div>
+        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "pencil" %}</span>{% translate "Details" %}</h2></div>
         <form class="form-grid" method="post" action="{% url 'core:playlist_edit' playlist.uid %}">
           {% csrf_token %}
           <input type="hidden" name="action" value="rename">
           <label class="field">
-            <span class="field-label">Title</span>
+            <span class="field-label">{% translate "Title" %}</span>
             <input type="text" name="title" maxlength="255" value="{{ playlist.title }}" required>
           </label>
           <label class="field">
-            <span class="field-label">Description</span>
+            <span class="field-label">{% translate "Description" %}</span>
             <textarea name="description" rows="3" maxlength="2000">{{ playlist.description }}</textarea>
           </label>
           <div class="field">
-            <span class="field-label">Visibility</span>
-            <div class="segmented" role="radiogroup" aria-label="Visibility">
+            <span class="field-label">{% translate "Visibility" %}</span>
+            <div class="segmented" role="radiogroup" aria-label="{% translate 'Visibility' %}">
               {% for value, label in visibilities %}
                 <label><input type="radio" name="visibility" value="{{ value }}" {% if playlist.visibility == value %}checked{% endif %}><span>{% icon value|visibility_icon "icon-sm" %}{{ label }}</span></label>
               {% endfor %}
             </div>
           </div>
-          <div class="form-actions"><button type="submit" class="btn btn-primary">{% icon "check" "icon-sm" %}Save details</button></div>
+          <div class="form-actions"><button type="submit" class="btn btn-primary">{% icon "check" "icon-sm" %}{% translate "Save details" %}</button></div>
         </form>
       </section>
 
       <section class="panel panel-danger">
         <div class="panel-head">
           <div>
-            <h2>Delete playlist</h2>
-            <p>The media stays where it is; only this collection goes away.</p>
+            <h2>{% translate "Delete playlist" %}</h2>
+            <p>{% translate "The media stays where it is; only this collection goes away." %}</p>
           </div>
         </div>
-        <form method="post" action="{% url 'core:playlist_edit' playlist.uid %}" data-confirm="Delete the playlist “{{ playlist.title }}”?">
+        <form method="post" action="{% url 'core:playlist_edit' playlist.uid %}" data-confirm="{% blocktranslate with title=playlist.title %}Delete the playlist “{{ title }}”?{% endblocktranslate %}">
           {% csrf_token %}
           <input type="hidden" name="action" value="delete">
-          <button type="submit" class="btn btn-danger">{% icon "trash" "icon-sm" %}Delete playlist</button>
+          <button type="submit" class="btn btn-danger">{% icon "trash" "icon-sm" %}{% translate "Delete playlist" %}</button>
         </form>
       </section>
     </div>

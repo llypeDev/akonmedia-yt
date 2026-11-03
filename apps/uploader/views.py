@@ -9,6 +9,7 @@
 from django.core.files import File
 from django.db import transaction
 from django.http import Http404
+from django.utils.translation import gettext as _
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -53,7 +54,7 @@ class StartUploadView(APIView):
         data = payload.validated_data
 
         if not 1024 * 1024 <= data["chunk_size"] <= MAX_CHUNK:
-            return Response({"detail": "chunk_size out of range"}, status=400)
+            return Response({"detail": _("chunk_size out of range")}, status=400)
 
         session = UploadSession.objects.create(
             owner=request.user,
@@ -81,7 +82,7 @@ class UploadSessionView(APIView):
     def delete(self, request, session_id):
         session = _session_for(request, session_id)
         if session.completed:
-            return Response({"detail": "already completed"}, status=400)
+            return Response({"detail": _("This upload was already completed.")}, status=400)
         session.discard_part()
         session.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -93,16 +94,16 @@ class ChunkUploadView(APIView):
     def put(self, request, session_id):
         session = _session_for(request, session_id)
         if session.completed:
-            return Response({"detail": "session already completed"}, status=400)
+            return Response({"detail": _("This upload was already completed.")}, status=400)
 
         try:
             index = int(request.query_params.get("index", ""))
         except (TypeError, ValueError):
-            return Response({"detail": "index query parameter is required"}, status=400)
+            return Response({"detail": _("The index query parameter is required.")}, status=400)
 
         if index != session.next_index:
             return Response(
-                {"detail": "out of order", "expected_index": session.next_index},
+                {"detail": _("Chunk out of order."), "expected_index": session.next_index},
                 status=status.HTTP_409_CONFLICT,
             )
 
@@ -111,18 +112,18 @@ class ChunkUploadView(APIView):
         except ValueError:
             declared = 0
         if declared > MAX_CHUNK:
-            return Response({"detail": "chunk too large"}, status=413)
+            return Response({"detail": _("Chunk too large.")}, status=413)
 
         # Read the raw stream rather than ``request.body``: the body accessor
         # enforces DATA_UPLOAD_MAX_MEMORY_SIZE, which is smaller than the
         # largest chunk this endpoint accepts.
         payload = request._request.read(MAX_CHUNK + 1)
         if not payload:
-            return Response({"detail": "empty chunk"}, status=400)
+            return Response({"detail": _("Empty chunk.")}, status=400)
         if len(payload) > MAX_CHUNK:
-            return Response({"detail": "chunk too large"}, status=413)
+            return Response({"detail": _("Chunk too large.")}, status=413)
         if session.received_bytes + len(payload) > session.total_size:
-            return Response({"detail": "chunk exceeds declared size"}, status=400)
+            return Response({"detail": _("The chunk goes past the declared file size.")}, status=400)
 
         with session.part_path.open("ab") as handle:
             handle.write(payload)
@@ -140,13 +141,13 @@ class CompleteUploadView(APIView):
     def post(self, request, session_id):
         session = _session_for(request, session_id)
         if session.completed:
-            return Response({"detail": "already completed"}, status=400)
+            return Response({"detail": _("This upload was already completed.")}, status=400)
 
         part = session.part_path
         on_disk = part.stat().st_size if part.exists() else 0
         if on_disk != session.total_size:
             return Response(
-                {"detail": "upload incomplete", "received_bytes": on_disk,
+                {"detail": _("The upload is incomplete."), "received_bytes": on_disk,
                  "total_size": session.total_size},
                 status=400,
             )
@@ -154,14 +155,14 @@ class CompleteUploadView(APIView):
         title = (request.data.get("title") or "").strip() or session.filename.rsplit(".", 1)[0]
         visibility = request.data.get("visibility", Media.Visibility.PUBLIC)
         if visibility not in Media.Visibility.values:
-            return Response({"detail": "invalid visibility"}, status=400)
+            return Response({"detail": _("Invalid visibility.")}, status=400)
 
         category = None
         category_id = request.data.get("category")
         if category_id not in (None, ""):
             category = Category.objects.filter(pk=category_id).first()
             if category is None:
-                return Response({"detail": "unknown category"}, status=400)
+                return Response({"detail": _("Unknown category.")}, status=400)
 
         with transaction.atomic():
             media = Media(

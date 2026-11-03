@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% load akon humanize %}
+{% load akon humanize i18n %}
 
-{% block title %}{% if query %}{{ query }} — {% endif %}Search — {{ PORTAL_NAME }}{% endblock %}
+{% block title %}{% if query %}{{ query }} — {% endif %}{% translate "Search" %} — {{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
   <header class="page-head">
     <div>
-      <span class="eyebrow">{% icon "search" "icon-xs" %}Search</span>
-      <h1>{% if query %}Results for “{{ query }}”{% else %}Search the library{% endif %}</h1>
+      <span class="eyebrow">{% icon "search" "icon-xs" %}{% translate "Search" %}</span>
+      <h1>{% if query %}{% blocktranslate %}Results for “{{ query }}”{% endblocktranslate %}{% else %}{% translate "Search the library" %}{% endif %}</h1>
       <p class="lede">
         {% if query %}
-          <span class="mono">{{ count|intcomma }}</span> result{{ count|pluralize }} across titles, descriptions, categories and creators.
+          {% blocktranslate trimmed count counter=count with shown=count|intcomma %}<span class="mono">{{ shown }}</span> result across titles, descriptions, categories and creators.{% plural %}<span class="mono">{{ shown }}</span> results across titles, descriptions, categories and creators.{% endblocktranslate %}
         {% else %}
-          Type something in the field above — press <kbd>/</kbd> from anywhere to jump to it.
+          {% blocktranslate trimmed %}Type something in the field above — press <kbd>/</kbd> from anywhere to jump to it.{% endblocktranslate %}
         {% endif %}
       </p>
     </div>
@@ -20,8 +20,8 @@
 
   {% if query %}
     <div class="toolbar">
-      <nav class="chips" aria-label="Filter by type">
-        <a class="chip {% if not kind %}active{% endif %}" href="{% querystring kind=None page=None %}">{% icon "grid" "icon-sm" %}All</a>
+      <nav class="chips" aria-label="{% translate 'Filter by type' %}">
+        <a class="chip {% if not kind %}active{% endif %}" href="{% querystring kind=None page=None %}">{% icon "grid" "icon-sm" %}{% translate "All" %}</a>
         {% for value, label in kinds %}
           <a class="chip {% if kind == value %}active{% endif %}" href="{% querystring kind=value page=None %}">{% icon value|kind_icon "icon-sm" %}{{ label }}</a>
         {% endfor %}
@@ -29,7 +29,7 @@
       <form class="sort" method="get" action="{% url 'core:search' %}">
         <input type="hidden" name="q" value="{{ query }}">
         {% if kind %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
-        <label for="sort">{% icon "sort" "icon-sm" %}<span class="sr-only">Sort by</span></label>
+        <label for="sort">{% icon "sort" "icon-sm" %}<span class="sr-only">{% translate "Sort by" %}</span></label>
         <select class="select" id="sort" name="sort" onchange="this.form.submit()">
           {% for value, label in sorts %}<option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
         </select>
@@ -45,9 +45,9 @@
   {% elif query %}
     <div class="empty-state">
       <div class="empty-icon">{% icon "search" %}</div>
-      <h3>Nothing matched</h3>
-      <p>No published media matches “{{ query }}”{% if kind %} in this type{% endif %}. Check the spelling or try a broader word.</p>
-      <a class="btn" href="{% url 'core:index' %}">{% icon "compass" "icon-sm" %}Browse the library</a>
+      <h3>{% translate "Nothing matched" %}</h3>
+      <p>{% if kind %}{% blocktranslate %}No published media of this type matches “{{ query }}”. Check the spelling or try a broader word.{% endblocktranslate %}{% else %}{% blocktranslate %}No published media matches “{{ query }}”. Check the spelling or try a broader word.{% endblocktranslate %}{% endif %}</p>
+      <a class="btn" href="{% url 'core:index' %}">{% icon "compass" "icon-sm" %}{% translate "Browse the library" %}</a>
     </div>
   {% endif %}
 {% endblock %}

@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Max, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from apps.media import access
@@ -56,7 +57,7 @@ def playlists(request):
 def _create(request):
     title = (request.POST.get("title") or "").strip()
     if not title:
-        messages.error(request, "A playlist needs a title.")
+        messages.error(request, _("A playlist needs a title."))
         return redirect("core:playlists")
 
     visibility = request.POST.get("visibility", Media.Visibility.PUBLIC)
@@ -69,7 +70,9 @@ def _create(request):
         visibility=visibility,
         owner=request.user,
     )
-    messages.success(request, f"Playlist “{playlist.title}” created. Add something to it.")
+    messages.success(
+        request, _("Playlist “%(title)s” created. Add something to it.") % {"title": playlist.title}
+    )
     return redirect("core:playlist_edit", uid=playlist.uid)
 
 
@@ -141,15 +144,15 @@ def _mutate(request, playlist: Playlist):
         media = Media.objects.filter(uid=_uid_from(request.POST.get("media_uid", ""))).first()
         if media is None or not access.can_view_media(request.user, media):
             # Somebody else's private item is reported exactly like a typo.
-            messages.error(request, "No media with that identifier.")
+            messages.error(request, _("No media with that identifier."))
         elif playlist.entries.filter(media=media).exists():
-            messages.info(request, "Already in this playlist.")
+            messages.info(request, _("Already in this playlist."))
         else:
             last = playlist.entries.aggregate(Max("position"))["position__max"]
             PlaylistItem.objects.create(
                 playlist=playlist, media=media, position=0 if last is None else last + 1
             )
-            messages.success(request, "Added to the playlist.")
+            messages.success(request, _("Added to the playlist."))
 
     elif action == "remove":
         playlist.entries.filter(pk=request.POST.get("item_id") or 0).delete()
@@ -167,12 +170,12 @@ def _mutate(request, playlist: Playlist):
         if visibility in Media.Visibility.values:
             playlist.visibility = visibility
         playlist.save(update_fields=["title", "description", "visibility"])
-        messages.success(request, "Playlist details saved.")
+        messages.success(request, _("Playlist details saved."))
 
     elif action == "delete":
         title = playlist.title
         playlist.delete()
-        messages.success(request, f"Playlist “{title}” deleted.")
+        messages.success(request, _("Playlist “%(title)s” deleted.") % {"title": title})
         return redirect("core:playlists")
 
     return redirect("core:playlist_edit", uid=playlist.uid)

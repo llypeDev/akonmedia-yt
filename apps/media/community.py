@@ -1,5 +1,6 @@
 """Viewsets for the surrounding objects: comments, playlists, categories."""
 from django.db.models import Q
+from django.utils.translation import gettext as _
 from rest_framework import permissions, serializers, viewsets
 from rest_framework.exceptions import PermissionDenied
 
@@ -52,12 +53,12 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         media = serializer.validated_data["media"]
         if media.state != Media.State.READY:
-            raise PermissionDenied("That media is not published yet.")
+            raise PermissionDenied(_("That media is not published yet."))
         if not access.can_view_media(self.request.user, media):
-            raise PermissionDenied("That media is not available.")
+            raise PermissionDenied(_("That media is not available."))
         parent = serializer.validated_data.get("parent")
         if parent is not None and parent.media_id != media.pk:
-            raise serializers.ValidationError({"parent": "Reply to a comment on the same media."})
+            raise serializers.ValidationError({"parent": _("Reply to a comment on the same media.")})
         serializer.save(author=self.request.user)
 
     def perform_update(self, serializer):
@@ -69,7 +70,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         user = self.request.user
         if instance.author_id != user.id and not policy.can_moderate_comments(user):
-            raise PermissionDenied("Not your comment.")
+            raise PermissionDenied(_("Not your comment."))
         instance.delete()
 
 

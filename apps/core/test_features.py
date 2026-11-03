@@ -10,6 +10,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import CommandError, call_command
 from django.template import Context, Template
 from django.test import TestCase, override_settings
+from django.utils import translation
 
 from apps.media.models import Category, Chapter, Comment, Media, Playlist, PlaylistItem
 from apps.rbac.roles import Role
@@ -316,7 +317,7 @@ class LibraryFeatureTests(TestCase):
     def test_hero_shows_library_statistics(self):
         response = self.client.get("/")
         self.assertEqual(response.context["stats"]["items"], 2)
-        self.assertContains(response, "Trending now")
+        self.assertContains(response, "Em alta")
 
 
 class ManageAccountsTests(TestCase):
@@ -378,7 +379,7 @@ class OperationalPageTests(TestCase):
     def test_branded_404(self):
         response = self.client.get("/view/doesnotexist/")
         self.assertEqual(response.status_code, 404)
-        self.assertContains(response, "Nothing is streaming here", status_code=404)
+        self.assertContains(response, "Nada está passando por aqui", status_code=404)
 
     def test_sign_in_page_uses_the_portal_layout(self):
         response = self.client.get("/accounts/login/")
@@ -395,19 +396,27 @@ class TemplateHelperTests(TestCase):
         return Template("{% load akon %}" + source).render(Context(context))
 
     def test_compact_numbers(self):
-        self.assertEqual(self.render("{{ n|compact }}", n=950), "950")
-        self.assertEqual(self.render("{{ n|compact }}", n=1234), "1.2K")
-        self.assertEqual(self.render("{{ n|compact }}", n=34000), "34K")
-        self.assertEqual(self.render("{{ n|compact }}", n=1500000), "1.5M")
+        with translation.override("en"):
+            self.assertEqual(self.render("{{ n|compact }}", n=950), "950")
+            self.assertEqual(self.render("{{ n|compact }}", n=1234), "1.2K")
+            self.assertEqual(self.render("{{ n|compact }}", n=34000), "34K")
+            self.assertEqual(self.render("{{ n|compact }}", n=1500000), "1.5M")
+        with translation.override("pt-br"):
+            self.assertEqual(self.render("{{ n|compact }}", n=1234), "1,2 mil")
+            self.assertEqual(self.render("{{ n|compact }}", n=2000), "2 mil")
+            self.assertEqual(self.render("{{ n|compact }}", n=1500000), "1,5 mi")
 
     def test_clock(self):
         self.assertEqual(self.render("{{ s|clock }}", s=75), "1:15")
         self.assertEqual(self.render("{{ s|clock }}", s=3725), "1:02:05")
 
     def test_runtime_units(self):
-        self.assertEqual(self.render("{{ s|runtime_value }}{{ s|runtime_unit }}", s=45), "45s")
-        self.assertEqual(self.render("{{ s|runtime_value }}{{ s|runtime_unit }}", s=150), "2.5min")
-        self.assertEqual(self.render("{{ s|runtime_value }}{{ s|runtime_unit }}", s=7200), "2.0h")
+        with translation.override("en"):
+            self.assertEqual(self.render("{{ s|runtime_value }}{{ s|runtime_unit }}", s=45), "45s")
+            self.assertEqual(self.render("{{ s|runtime_value }}{{ s|runtime_unit }}", s=150), "2.5min")
+            self.assertEqual(self.render("{{ s|runtime_value }}{{ s|runtime_unit }}", s=7200), "2.0h")
+        with translation.override("pt-br"):
+            self.assertEqual(self.render("{{ s|runtime_value }}{{ s|runtime_unit }}", s=150), "2,5min")
 
     def test_timestamps_escape_before_linking(self):
         html = self.render("{{ text|timestamps }}", text="<script>x</script> at 10:05\nnext line")

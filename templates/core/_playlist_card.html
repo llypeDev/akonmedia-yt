@@ -1,4 +1,4 @@
-{% load akon %}
+{% load akon i18n %}
 <article class="playlist-card media-card">
   <a class="playlist-cover" href="{% url 'core:playlist' playlist.uid %}" tabindex="-1" aria-hidden="true">
     <span class="thumb">
@@ -7,7 +7,7 @@
       {% else %}
         <span class="thumb-fallback">{% icon "list-video" %}</span>
       {% endif %}
-      <span class="playlist-count"><strong>{{ playlist.item_count|default:0 }}</strong><span>item{{ playlist.item_count|default:0|pluralize }}</span></span>
+      <span class="playlist-count"><strong>{{ playlist.item_count|default:0 }}</strong><span>{% blocktranslate count counter=playlist.item_count|default:0 %}item{% plural %}items{% endblocktranslate %}</span></span>
     </span>
   </a>
   <div class="media-card-text">
@@ -18,7 +18,7 @@
       <span class="badge badge-{{ playlist.visibility }}">{% icon playlist.visibility|visibility_icon %}{{ playlist.get_visibility_display }}</span>
     </p>
     {% if editable %}
-      <p class="media-meta"><a class="text-link" href="{% url 'core:playlist_edit' playlist.uid %}">{% icon "pencil" "icon-xs" %} Edit playlist</a></p>
+      <p class="media-meta"><a class="text-link" href="{% url 'core:playlist_edit' playlist.uid %}">{% icon "pencil" "icon-xs" %} {% translate "Edit playlist" %}</a></p>
     {% endif %}
   </div>
 </article>

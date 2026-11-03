@@ -15,6 +15,16 @@
 (function () {
   "use strict";
 
+  // Translations come from Django's JavaScript catalog (/jsi18n/), loaded
+  // before this file; the fallbacks keep everything working without it.
+  var gettext = window.gettext || function (text) { return text; };
+  var ngettext = window.ngettext || function (singular, plural, count) { return count === 1 ? singular : plural; };
+  var interpolate = window.interpolate || function (fmt, obj, named) {
+    if (named) return fmt.replace(/%\(\w+\)s/g, function (m) { return String(obj[m.slice(2, -2)]); });
+    var i = 0;
+    return fmt.replace(/%s/g, function () { return String(obj[i++]); });
+  };
+
   var form = document.getElementById("upload-form");
   if (!form) return;
 
@@ -30,6 +40,8 @@
   var cancelButton = $("cancel-button");
 
   var CHUNK_RETRIES = 6;
+  // "12,6 MB" in Portuguese: the separator comes from Django's locale formats.
+  var DECIMAL = (window.get_format && window.get_format("DECIMAL_SEPARATOR")) || ".";
   var state = { file: null, session: null, xhr: null, cancelled: false, busy: false };
 
   /* ------------------------------------------------------------ helpers */
@@ -46,7 +58,8 @@
     var units = ["B", "KB", "MB", "GB", "TB"];
     var i = 0;
     while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
-    return (i === 0 ? n : n.toFixed(n < 10 ? 2 : n < 100 ? 1 : 0)) + " " + units[i];
+    var text = i === 0 ? String(n) : n.toFixed(n < 10 ? 2 : n < 100 ? 1 : 0);
+    return text.replace(".", DECIMAL) + " " + units[i];
   }
 
   function duration(seconds) {
@@ -76,10 +89,10 @@
   function kindOf(file) {
     var type = file.type || "";
     var name = file.name.toLowerCase();
-    if (type.indexOf("image/") === 0) return ["image", "Image"];
-    if (type.indexOf("audio/") === 0 || /\.(mp3|wav|flac|m4a|ogg|opus|aac)$/.test(name)) return ["music", "Audio"];
-    if (type === "application/pdf" || /\.pdf$/.test(name)) return ["file-text", "Document"];
-    return ["film", "Video"];
+    if (type.indexOf("image/") === 0) return ["image", gettext("Image")];
+    if (type.indexOf("audio/") === 0 || /\.(mp3|wav|flac|m4a|ogg|opus|aac)$/.test(name)) return ["music", gettext("Audio")];
+    if (type === "application/pdf" || /\.pdf$/.test(name)) return ["file-text", gettext("Document")];
+    return ["film", gettext("Video")];
   }
 
   function iconMarkup(name) {
@@ -213,7 +226,7 @@
         error.data = data;
         reject(error);
       };
-      xhr.onerror = function () { var e = new Error("network error"); e.status = 0; reject(e); };
+      xhr.onerror = function () { var e = new Error(gettext("network error")); e.status = 0; reject(e); };
       xhr.onabort = function () { var e = new Error("cancelled"); e.status = -1; reject(e); };
       xhr.send(blob);
     });
@@ -256,7 +269,9 @@
       var index = session.next_index || 0;
       lastSample.bytes = Math.min(file.size, index * chunkSize);
       telemetry(lastSample.bytes, index, total);
-      say(index ? "Resuming at chunk " + (index + 1) + " of " + total : "Sending " + total + " chunk" + (total === 1 ? "" : "s"));
+      say(index
+        ? interpolate(gettext("Resuming at chunk %(chunk)s of %(total)s"), { chunk: index + 1, total: total }, true)
+        : interpolate(ngettext("Sending %(total)s chunk", "Sending %(total)s chunks", total), { total: total }, true));
       cancelButton.hidden = false;
 
       function next(attempt) {
@@ -280,7 +295,7 @@
           if (error.status === 400 || error.status === 403 || error.status === 404 || error.status === 413) throw error;
           if (attempt >= CHUNK_RETRIES) throw error;
           var delay = Math.min(30000, 1000 * Math.pow(2, attempt));
-          detail("Connection hiccup — retrying chunk " + (index + 1) + " in " + Math.round(delay / 1000) + "s…", "error");
+          detail(interpolate(gettext("Connection hiccup — retrying chunk %(chunk)s in %(seconds)ss…"), { chunk: index + 1, seconds: Math.round(delay / 1000) }, true), "error");
           return wait(delay).then(function () {
             // Ask the server where it is: the failed request may have landed.
             return api("GET", "/api/v1/uploads/" + session.id + "/").then(function (fresh) {
@@ -291,9 +306,9 @@
       }
 
       return next(0).then(function () {
-        phase("Finalising");
-        say("Upload complete — handing the file to the encoder…");
-        detail("Large videos can take a while: posters, renditions and previews are generated now.");
+        phase(gettext("Finalising"));
+        say(gettext("Upload complete — handing the file to the encoder…"));
+        detail(gettext("Large videos can take a while: posters, renditions and previews are generated now."));
         cancelButton.hidden = true;
         track.classList.add("done");
         var category = $("category-input");
@@ -322,14 +337,14 @@
     resumeNote.hidden = true;
     panel.hidden = false;
     track.classList.remove("done", "error");
-    phase("Uploading");
+    phase(gettext("Uploading"));
     detail("");
 
     run().then(function (result) {
       remember(state.file, null);
       setProgress(1);
-      phase(result.state === "ready" ? "Published" : "Processing");
-      say(result.state === "ready" ? "Done — opening your media page." : "Uploaded. Encoding has started — opening the page.", "ok");
+      phase(result.state === "ready" ? gettext("Published") : gettext("Processing"));
+      say(result.state === "ready" ? gettext("Done — opening your media page.") : gettext("Uploaded. Encoding has started — opening the page."), "ok");
       detail("");
       state.busy = false;
       setTimeout(function () { window.location.href = result.url || ("/view/" + result.media_uid + "/"); }, 700);
@@ -338,16 +353,16 @@
       submit.disabled = false;
       cancelButton.hidden = true;
       if (error.status === -1) {
-        phase("Cancelled");
-        say("Upload cancelled.");
+        phase(gettext("Cancelled"));
+        say(gettext("Upload cancelled."));
         detail("");
         setProgress(0);
         return;
       }
       track.classList.add("error");
-      phase("Paused");
-      say("The upload stopped: " + (error.message || "unknown error") + ".", "error");
-      detail("Press “Upload and publish” again to continue from the last confirmed chunk.", "error");
+      phase(gettext("Paused"));
+      say(interpolate(gettext("The upload stopped: %(reason)s."), { reason: error.message || gettext("unknown error") }, true), "error");
+      detail(gettext("Press “Upload and publish” again to continue from the last confirmed chunk."), "error");
     });
   });
 

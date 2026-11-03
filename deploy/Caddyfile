@@ -1,6 +1,6 @@
-# AkonMedia behind Caddy, started by docker-compose.prod.yml.
+# QQplay behind Caddy, started by docker-compose.prod.yml.
 #
-# Caddy gets and renews the HTTPS certificate for AKON_DOMAIN by itself (Let's
+# Caddy gets and renews the HTTPS certificate for PORTAL_DOMAIN by itself (Let's
 # Encrypt), sends http:// to https://, and passes each request on:
 #
 #   /hls/...   the lives on air, straight from the ingest server ("live")
@@ -15,7 +15,7 @@
 	email {$ACME_EMAIL}
 }
 
-{$AKON_DOMAIN} {
+{$PORTAL_DOMAIN} {
 	encode zstd gzip
 
 	handle /hls/* {

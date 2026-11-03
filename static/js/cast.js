@@ -1,4 +1,4 @@
-/* AkonMedia: streaming a live from the browser.
+/* QQplay: streaming a live from the browser.
  *
  * In the control room, the "From this browser" tab records the camera, or the
  * screen with the microphone, using MediaRecorder, and posts one chunk a

@@ -1,4 +1,4 @@
-/* AkonMedia interface behaviour.
+/* QQplay interface behaviour.
  *
  * Small, dependency-free enhancements. Every page works without this file;
  * it adds keyboard shortcuts, menus, copy buttons, live processing status and

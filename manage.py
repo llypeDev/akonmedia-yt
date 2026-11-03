@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Command-line entry point for AkonMedia."""
+"""Command-line entry point for QQplay."""
 import os
 import sys
 

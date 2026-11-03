@@ -1,6 +1,6 @@
-# AkonMedia na Oracle Cloud, de graça
+# QQplay na Oracle Cloud, de graça
 
-Este guia coloca o AkonMedia no ar numa máquina da camada gratuita (Always Free)
+Este guia coloca o QQplay no ar numa máquina da camada gratuita (Always Free)
 da Oracle Cloud: um servidor ARM Ampere A1 com 2 núcleos e 12 GB de memória.
 Ele sai com HTTPS de verdade, lives pelo OBS e pelo navegador, e a gravação de
 cada live vira um vídeo da biblioteca. Conte com cerca de uma hora, quase toda
@@ -106,13 +106,13 @@ Entre na máquina. No Linux e no macOS, proteja a chave antes com
 ssh -i chave.key ubuntu@IP-PUBLICO
 ```
 
-Baixe o AkonMedia e rode o script de preparação. Ele abre as portas 80, 443 e
+Baixe o QQplay e rode o script de preparação. Ele abre as portas 80, 443 e
 1935 no firewall da máquina (também nas regras que voltam a cada boot) e
 instala o Docker:
 
 ```bash
-git clone https://github.com/llypeDev/akonmedia-yt.git
-cd akonmedia-yt
+git clone https://github.com/llypeDev/akonmedia-yt.git qqplay
+cd qqplay
 sh deploy/oracle/setup-host.sh
 exit
 ```
@@ -125,7 +125,7 @@ tokens).
 ## 5. Configure
 
 ```bash
-cd akonmedia-yt
+cd qqplay
 sh deploy/configure.sh aulas.suaescola.com.br voce@suaescola.com.br
 ```
 
@@ -177,7 +177,7 @@ transmitir:
 ## Atualizar
 
 ```bash
-cd ~/akonmedia-yt
+cd ~/qqplay
 git pull
 docker compose up -d --build
 docker image prune -f
@@ -189,12 +189,12 @@ falha, com o motivo, e volta com o botão "Tentar de novo".
 
 ## Backup
 
-O script `deploy/backup.sh` salva o banco de dados em `~/akonmedia-backups` e
+O script `deploy/backup.sh` salva o banco de dados em `~/qqplay-backups` e
 guarda 14 dias de cópias. Para rodá-lo toda noite, abra o agendador com
 `crontab -e` e acrescente a linha:
 
 ```
-30 3 * * * sh $HOME/akonmedia-yt/deploy/backup.sh >> $HOME/akonmedia-backups/backup.log 2>&1
+30 3 * * * sh $HOME/qqplay/deploy/backup.sh >> $HOME/qqplay-backups/backup.log 2>&1
 ```
 
 Uma cópia no mesmo disco não sobrevive à perda da máquina. De tempos em tempos,
@@ -202,9 +202,9 @@ traga o banco e os vídeos para o seu computador (Linux, macOS ou o WSL do
 Windows). O `rsync` só copia o que mudou desde a última vez:
 
 ```bash
-rsync -av -e "ssh -i chave.key" ubuntu@IP-PUBLICO:akonmedia-backups/ ./akonmedia-backups/
+rsync -av -e "ssh -i chave.key" ubuntu@IP-PUBLICO:qqplay-backups/ ./qqplay-backups/
 rsync -av -e "ssh -i chave.key" --rsync-path="sudo rsync" \
-  ubuntu@IP-PUBLICO:/var/lib/docker/volumes/akonmedia_media/_data/ ./akonmedia-media/
+  ubuntu@IP-PUBLICO:/var/lib/docker/volumes/qqplay_media/_data/ ./qqplay-media/
 ```
 
 A restauração está no [OPERATIONS.md](../../OPERATIONS.md#restauração).
@@ -240,7 +240,7 @@ Acompanhe o disco com `df -h /` e `docker system df`.
 |---|---|
 | O certificado não sai (`docker compose logs caddy` mostra erros de ACME) | o domínio aponta para o IP da instância? As portas 80 e 443 estão na Security List? |
 | O OBS não conecta | a porta 1935 está na Security List? O servidor e a chave vieram da sala de controle? |
-| Erro 403 de CSRF ao entrar | o endereço no navegador é exatamente o do `AKON_DOMAIN`, no `.env`? |
+| Erro 403 de CSRF ao entrar | o endereço no navegador é exatamente o do `PORTAL_DOMAIN`, no `.env`? |
 | Erro 502 logo depois de subir | o portal ainda está aplicando as migrações; espere um minuto |
 | A aba "Por este navegador" pede HTTPS | abra o site pelo endereço com `https://` |
 

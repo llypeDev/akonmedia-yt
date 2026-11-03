@@ -109,7 +109,7 @@ async function main() {
   });
   const source = clip();
   let encoderProcess = null;
-  console.log(`AkonMedia live test against ${BASE} — host ${HOST}, viewer ${VIEWER}`);
+  console.log(`QQplay live test against ${BASE} — host ${HOST}, viewer ${VIEWER}`);
 
   try {
     // ---------------------------------------------------------- the host

@@ -1,4 +1,4 @@
-// End-to-end smoke test for AkonMedia, driven in a real browser.
+// End-to-end smoke test for QQplay, driven in a real browser.
 //
 // It walks the whole product the way a person would: sign up, upload a video
 // in chunks (with a dropped connection on purpose), wait for encoding, play the
@@ -87,7 +87,7 @@ async function main() {
   watchErrors(page, errors);
   page.on("dialog", (dialog) => dialog.accept());
 
-  console.log(`AkonMedia smoke test against ${BASE} as ${EMAIL}`);
+  console.log(`QQplay smoke test against ${BASE} as ${EMAIL}`);
 
   // ------------------------------------------------------------ health
   const ready = await (await page.request.get(`${BASE}/health/ready/`)).json();

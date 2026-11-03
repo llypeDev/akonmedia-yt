@@ -1,4 +1,4 @@
-"""Template helpers for the AkonMedia interface.
+"""Template helpers for the QQplay interface.
 
     {% load akon %}
     {% icon "play" %}                  inline SVG from the sprite

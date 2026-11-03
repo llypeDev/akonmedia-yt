@@ -521,7 +521,7 @@ def upload(request):
 def health(request):
     """Liveness probe. Deliberately dumb: it must answer even when the
     database is down, so orchestration can tell "starting" from "crashed"."""
-    return JsonResponse({"status": "ok", "service": "akonmedia"})
+    return JsonResponse({"status": "ok", "service": "qqplay"})
 
 
 @never_cache
@@ -536,8 +536,8 @@ def ready(request):
         checks["database"] = f"error: {type(exc).__name__}"
         healthy = False
     try:
-        cache.set("akonmedia:ready", "1", 5)
-        checks["cache"] = "ok" if cache.get("akonmedia:ready") == "1" else "error"
+        cache.set("qqplay:ready", "1", 5)
+        checks["cache"] = "ok" if cache.get("qqplay:ready") == "1" else "error"
     except Exception as exc:  # noqa: BLE001
         checks["cache"] = f"error: {type(exc).__name__}"
     if checks["cache"] != "ok":

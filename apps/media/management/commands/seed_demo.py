@@ -41,7 +41,7 @@ from apps.rbac.roles import Role
 from apps.users.models import User
 
 PEOPLE = [
-    ("studio@example.com", "Akon Studio", Role.EDITOR),
+    ("studio@example.com", "QQplay Studio", Role.EDITOR),
     ("ana@example.com", "Ana Lima", Role.MEMBER),
     ("leo@example.com", "Leo Park", Role.MEMBER),
     ("kai@example.com", "Kai Moreno", Role.MANAGER),
@@ -387,7 +387,7 @@ class Command(BaseCommand):
         except TypeError:  # Pillow without FreeType support
             heading = body = ImageFont.load_default()
         draw.rectangle([0, 0, 1240, 18], fill=(34, 211, 238))
-        draw.text((100, 140), "AkonMedia", font=heading, fill=(5, 7, 12))
+        draw.text((100, 140), "QQplay", font=heading, fill=(5, 7, 12))
         draw.text((100, 230), "Visão geral da plataforma", font=body, fill=(90, 106, 129))
         lines = [
             "1. Envio em partes, com retomada.",

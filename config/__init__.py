@@ -1,4 +1,4 @@
-"""Configuration package for AkonMedia."""
+"""Configuration package for QQplay."""
 
 from .celery import app as celery_app
 

@@ -1,4 +1,4 @@
-/* AkonMedia live pages: the viewer page, the studio's control room and the
+/* QQplay live pages: the viewer page, the studio's control room and the
  * embed.
  *
  * The server renders every state of the page (waiting, on air, ended, each

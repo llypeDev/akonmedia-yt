@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load akon i18n %}
+{% comment %}
+  An API response, for a browser: rendered by apps/core/api_browser.py. The
+  JSON panel shows exactly what a client gets from the same address.
+{% endcomment %}
+{% block title %}{{ api.title }} · API — {{ PORTAL_NAME }}{% endblock %}
+{% block body_class %}api-page{% endblock %}
+{% block content %}
+  <header class="page-head api-head">
+    <div>
+      <nav class="api-crumbs" aria-label="{% translate 'API path' %}">
+        <a class="eyebrow" href="{{ api.root_url }}">{% icon "code" "icon-sm" %}API v1</a>
+        {% for crumb in api.crumbs %}
+          {% icon "chevron-right" "icon-xs" %}
+          {% if forloop.last %}<span aria-current="page">{{ crumb.label }}</span>{% else %}<a href="{{ crumb.url }}">{{ crumb.label }}</a>{% endif %}
+        {% endfor %}
+      </nav>
+      <h1>{{ api.title }}</h1>
+      {% if api.description %}<p class="lede">{{ api.description }}</p>{% endif %}
+    </div>
+    <a class="btn btn-sm" href="{{ api.json_url }}">{% icon "code" "icon-sm" %}{% translate "Plain JSON" %}</a>
+  </header>
+
+  <div class="api-request">
+    <span class="api-method">{{ api.method }}</span>
+    <code class="api-url mono">{{ api.path }}</code>
+    <span class="badge badge-{{ api.status_tone }}">{{ api.status_code }} {{ api.status_text }}</span>
+    <button class="icon-btn" type="button" data-copy="{{ api.absolute_url }}" data-copied="{% translate 'Address copied' %}"
+            aria-label="{% translate 'Copy the address' %}" title="{% translate 'Copy the address' %}">{% icon "copy" "icon-sm" %}</button>
+  </div>
+
+  <div class="api-meta">
+    {% if api.methods %}
+      <span class="api-allow">
+        <span>{% translate "Accepts" %}</span>
+        {% for method in api.methods %}<span class="api-method api-method-sm">{{ method }}</span>{% endfor %}
+      </span>
+    {% endif %}
+    <span class="api-auth">
+      {% if user.is_authenticated %}
+        {% icon "lock" "icon-sm" %}
+        {% blocktranslate with email=user.email %}Signed in as {{ email }}: requests use your session.{% endblocktranslate %}
+      {% else %}
+        {% icon "globe" "icon-sm" %}
+        {% translate "Anonymous: public data only." %}
+        <a class="text-link" href="{% url 'account_login' %}?next={{ request.get_full_path|urlencode }}">{% translate "Sign in" %}</a>
+      {% endif %}
+    </span>
+  </div>
+
+  {% if api.error %}
+    <div class="notice api-notice">
+      {% icon "alert" %}
+      <div><strong>{{ api.status_code }} {{ api.status_text }}</strong><p>{{ api.error }}</p></div>
+    </div>
+  {% endif %}
+
+  {% if api.is_root %}
+    <section class="section">
+      <div class="section-head"><h2>{% icon "layers" %}{% translate "Resources" %}</h2></div>
+      <div class="api-cards">
+        {% for resource in api.resources %}
+          <a class="api-card" href="{{ resource.url }}">
+            <span class="panel-title-icon">{% icon resource.icon %}</span>
+            <span class="api-card-text">
+              <strong>{{ resource.title }}</strong>
+              {% if resource.description %}<span class="api-card-desc">{{ resource.description }}</span>{% endif %}
+              <code class="mono">{{ resource.path }}</code>
+            </span>
+            {% icon "chevron-right" "api-card-go" %}
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+
+    <div class="api-columns section">
+      <section class="panel">
+        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "link" %}</span>{% translate "Other endpoints" %}</h2></div>
+        <ul class="api-endpoints">
+          {% for endpoint in api.extra_endpoints %}
+            <li>
+              <div class="api-endpoint-line">
+                <span class="api-method api-method-sm">{{ endpoint.method }}</span>
+                {% if endpoint.method == "GET" %}<a class="mono" href="{{ endpoint.url }}">{{ endpoint.url }}</a>{% else %}<code class="mono">{{ endpoint.url }}</code>{% endif %}
+              </div>
+              <p>{{ endpoint.description }}</p>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "keyboard" %}</span>{% translate "From a script" %}</h2></div>
+        <div class="api-snippet">
+          <code class="mono" id="api-example">{{ api.example }}</code>
+          <button class="icon-btn" type="button" data-copy-target="#api-example" data-copied="{% translate 'Command copied' %}"
+                  aria-label="{% translate 'Copy the command' %}" title="{% translate 'Copy the command' %}">{% icon "copy" "icon-sm" %}</button>
+        </div>
+        <ul class="api-notes">
+          <li>{% translate "Lists come 24 items at a time: follow next and previous to page through them." %}</li>
+          <li>{% translate "In the browser, add ?format=json to any address to see the plain JSON." %}</li>
+          <li>{% translate "Writing (POST, PATCH, DELETE) needs the session of a signed-in account and its CSRF token." %}</li>
+        </ul>
+      </section>
+    </div>
+  {% endif %}
+
+  {% if api.pagination.next or api.pagination.previous %}
+    <nav class="pager api-pager" aria-label="{% translate 'Pagination' %}">
+      {% if api.pagination.previous %}
+        <a class="btn btn-sm" href="{{ api.pagination.previous }}" rel="prev">{% icon "chevron-left" "icon-sm" %}{% translate "Previous" %}</a>
+      {% else %}
+        <span class="btn btn-sm is-disabled" aria-disabled="true">{% icon "chevron-left" "icon-sm" %}{% translate "Previous" %}</span>
+      {% endif %}
+      <span class="pager-info">{% blocktranslate with shown=api.pagination.shown count counter=api.pagination.count %}{{ shown }} of {{ counter }} item{% plural %}{{ shown }} of {{ counter }} items{% endblocktranslate %}</span>
+      {% if api.pagination.next %}
+        <a class="btn btn-sm" href="{{ api.pagination.next }}" rel="next">{% translate "Next" %}{% icon "chevron-right" "icon-sm" %}</a>
+      {% else %}
+        <span class="btn btn-sm is-disabled" aria-disabled="true">{% translate "Next" %}{% icon "chevron-right" "icon-sm" %}</span>
+      {% endif %}
+    </nav>
+  {% elif api.pagination %}
+    <p class="pager api-pager"><span class="pager-info">{% blocktranslate with shown=api.pagination.shown count counter=api.pagination.count %}{{ shown }} of {{ counter }} item{% plural %}{{ shown }} of {{ counter }} items{% endblocktranslate %}</span></p>
+  {% endif %}
+
+  {% if api.has_body %}
+    <section class="panel panel-flush api-response section">
+      <div class="api-response-head">
+        <h2>{% icon "code" "icon-sm" %}{% translate "Response" %}</h2>
+        <span class="mono faint">application/json</span>
+        <button class="btn btn-xs" type="button" data-copy-target="#api-json" data-copied="{% translate 'JSON copied' %}">{% icon "copy" "icon-sm" %}{% translate "Copy" %}</button>
+      </div>
+      <pre class="json-view" id="api-json"><code>{{ api.body }}</code></pre>
+    </section>
+  {% endif %}
+{% endblock %}

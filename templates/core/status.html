@@ -1,0 +1,112 @@
+{% load static akon i18n %}{% get_current_language as LANGUAGE_CODE %}{% comment %}
+  The readiness checks for a browser (apps/core/views.py, ready). Standalone on
+  purpose, like 500.html: it is rendered without the request, so nothing here
+  may need the database, the session or the signed-in user.
+{% endcomment %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'en' }}" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="refresh" content="{{ refresh_seconds }}">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#05070c" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f7fb" media="(prefers-color-scheme: light)">
+  <title>{{ headline }} — {% translate "Status" %} — {{ PORTAL_NAME }}</title>
+  <script>
+    /* The theme the visitor picked in the portal, before first paint. */
+    (function () {
+      var root = document.documentElement;
+      try {
+        var theme = localStorage.getItem("akon-theme");
+        if (theme !== "light" && theme !== "dark") {
+          theme = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        }
+        root.setAttribute("data-theme", theme);
+      } catch (e) { /* storage blocked: keep the default */ }
+    })();
+  </script>
+  <link rel="icon" href="{% static 'brand/favicon.svg' %}" type="image/svg+xml">
+  <link rel="icon" href="{% static 'brand/favicon-32.png' %}" type="image/png" sizes="32x32">
+  <link rel="preload" href="{% static 'vendor/fonts/inter-latin-var.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{% static 'vendor/fonts/space-grotesk-latin-var.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="status-body" data-sprite="{% static 'icons/sprite.svg' %}">
+  <div class="status-page">
+    <header class="status-top">
+      <a class="brand" href="{% url 'core:index' %}" aria-label="{% blocktranslate %}{{ PORTAL_NAME }} home{% endblocktranslate %}">
+        <img class="logo-dark" src="{% static 'brand/logo-wordmark-dark.svg' %}" alt="{{ PORTAL_NAME }}" width="107" height="32">
+        <img class="logo-light" src="{% static 'brand/logo-wordmark-light.svg' %}" alt="{{ PORTAL_NAME }}" width="107" height="32">
+      </a>
+      <div class="btn-group">
+        <button class="icon-btn" type="button" data-action="toggle-theme" aria-label="{% translate 'Switch colour theme' %}" title="{% translate 'Switch theme' %}">
+          {% icon "sun" "icon-sun" %}{% icon "moon" "icon-moon" %}
+        </button>
+        <a class="btn btn-ghost btn-sm" href="{% url 'core:index' %}">{% icon "chevron-left" "icon-sm" %}{% translate "Back to the library" %}</a>
+      </div>
+    </header>
+
+    <main id="main" class="stack">
+      <section class="status-hero is-{{ overall }}">
+        <span class="status-orb">{% if overall == "ok" %}{% icon "check-circle" %}{% else %}{% icon "alert" %}{% endif %}</span>
+        <div>
+          <span class="eyebrow"><span class="status-dot"></span>{% translate "System status" %}</span>
+          <h1>{{ headline }}</h1>
+          <p class="lede">{{ summary }}</p>
+        </div>
+      </section>
+
+      <section class="panel panel-flush" aria-label="{% translate 'Services' %}">
+        <ul class="status-checks">
+          {% for check in checks %}
+            <li class="status-check is-{{ check.tone }}">
+              <span class="status-check-icon">{% icon check.icon %}</span>
+              <div class="grow">
+                <h2>{{ check.title }}</h2>
+                <p>{{ check.description }}</p>
+                {% if check.detail %}<code class="mono">{{ check.detail }}</code>{% endif %}
+              </div>
+              <span class="status-pill"><span class="status-dot"></span>{{ check.label }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <p class="status-meta">
+        {% icon "clock" "icon-sm" %}
+        <span>{% blocktranslate with time=checked_at|time:"H:i:s" seconds=refresh_seconds %}Checked at {{ time }}. This page checks again every {{ seconds }} seconds.{% endblocktranslate %}</span>
+      </p>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2><span class="panel-title-icon">{% icon "activity" %}</span>{% translate "For monitoring" %}</h2>
+            <p>{% translate "The same checks as JSON, for uptime monitors and container health checks." %}</p>
+          </div>
+          <a class="btn btn-sm" href="?format=json">{% icon "code" "icon-sm" %}{% translate "Plain JSON" %}</a>
+        </div>
+        <dl class="status-probes">
+          <div>
+            <dt><span class="api-method api-method-sm">GET</span><code class="mono">{% url 'core:ready' %}</code></dt>
+            <dd>{% translate "Readiness: 200 while the portal can serve, 503 when the database or the cache fails." %}</dd>
+          </div>
+          <div>
+            <dt><span class="api-method api-method-sm">GET</span><code class="mono">{% url 'core:health' %}</code></dt>
+            <dd>{% translate "Liveness: 200 while the process answers, even with the database down." %}</dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+
+    <footer class="status-foot">
+      <span>© {% now "Y" %} {{ PORTAL_NAME }}</span>
+      <nav><a href="{% url 'core:index' %}">{% translate "Library" %}</a><a href="/api/v1/">API</a></nav>
+    </footer>
+  </div>
+
+  {# Theme switch and copy buttons; the page works without them. #}
+  <script src="{% url 'javascript-catalog' %}"></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
+</body>
+</html>

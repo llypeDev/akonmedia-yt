@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: QQplay\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 21:24+0000\n"
+"POT-Creation-Date: 2026-11-03 21:38+0000\n"
 "PO-Revision-Date: 2026-11-03 16:07+0000\n"
 "Last-Translator: QQplay\n"
 "Language-Team: Português (Brasil)\n"
@@ -13,6 +13,91 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: apps/core/api_browser.py:32
+msgctxt "API resource"
+msgid "Media"
+msgstr "Mídias"
+
+#: apps/core/api_browser.py:33
+msgctxt "API resource"
+msgid "Media item"
+msgstr "Mídia"
+
+#: apps/core/api_browser.py:34
+msgid ""
+"Videos, audio, images and documents, with their HLS playlist, poster, "
+"chapters and subtitles."
+msgstr ""
+"Vídeos, áudios, imagens e documentos, com a playlist HLS, o pôster, os "
+"capítulos e as legendas de cada um."
+
+#: apps/core/api_browser.py:38
+msgctxt "API resource"
+msgid "Comments"
+msgstr "Comentários"
+
+#: apps/core/api_browser.py:39
+msgctxt "API resource"
+msgid "Comment"
+msgstr "Comentário"
+
+#: apps/core/api_browser.py:40
+msgid ""
+"What viewers wrote under each media item, replies included. Filter with "
+"?media=<uid>."
+msgstr ""
+"O que o público escreveu em cada mídia, com as respostas. Filtre com "
+"?media=<uid>."
+
+#: apps/core/api_browser.py:44
+msgctxt "API resource"
+msgid "Playlists"
+msgstr "Playlists"
+
+#: apps/core/api_browser.py:45
+msgctxt "API resource"
+msgid "Playlist"
+msgstr "Playlist"
+
+#: apps/core/api_browser.py:46
+msgid "Collections of media in a set order, public or private."
+msgstr "Coleções de mídias numa ordem definida, públicas ou privadas."
+
+#: apps/core/api_browser.py:50
+msgctxt "API resource"
+msgid "Categories"
+msgstr "Categorias"
+
+#: apps/core/api_browser.py:51
+msgctxt "API resource"
+msgid "Category"
+msgstr "Categoria"
+
+#: apps/core/api_browser.py:52
+msgid "The categories that organise the library."
+msgstr "As categorias que organizam a biblioteca."
+
+#: apps/core/api_browser.py:59
+msgid "Who is signed in, and what the account may do."
+msgstr "Quem está conectado e o que a conta pode fazer."
+
+#: apps/core/api_browser.py:60
+msgid "Starts a resumable upload, sent in chunks."
+msgstr "Inicia um envio retomável, mandado em partes."
+
+#: apps/core/api_browser.py:226
+#, python-format
+msgid "%(portal)s API"
+msgstr "API do %(portal)s"
+
+#: apps/core/api_browser.py:228
+msgid ""
+"The data behind the portal, as JSON: public reading for everyone, writing "
+"with the session of a signed-in account."
+msgstr ""
+"Os dados do portal em JSON: leitura pública para todos, escrita com a sessão"
+" de uma conta conectada."
 
 #: apps/core/apps.py:8
 msgid "Core"
@@ -27,15 +112,15 @@ msgstr "“%(title)s” voltou para a fila."
 msgid "Media removed."
 msgstr "Mídia removida."
 
-#: apps/core/manage_views.py:126 apps/core/views.py:416
+#: apps/core/manage_views.py:126 apps/core/views.py:419
 msgid "Comment restored."
 msgstr "Comentário restaurado."
 
-#: apps/core/manage_views.py:130 apps/core/views.py:416
+#: apps/core/manage_views.py:130 apps/core/views.py:419
 msgid "Comment hidden."
 msgstr "Comentário ocultado."
 
-#: apps/core/manage_views.py:133 apps/core/views.py:411
+#: apps/core/manage_views.py:133 apps/core/views.py:414
 msgid "Comment deleted."
 msgstr "Comentário excluído."
 
@@ -214,56 +299,131 @@ msgctxt "compact number, thousands"
 msgid "%(number)sK"
 msgstr "%(number)s mil"
 
-#: apps/core/views.py:37
+#: apps/core/views.py:40
 msgid "Latest"
 msgstr "Mais recentes"
 
-#: apps/core/views.py:38
+#: apps/core/views.py:41
 msgid "Most viewed"
 msgstr "Mais vistos"
 
-#: apps/core/views.py:39
+#: apps/core/views.py:42
 msgid "Oldest"
 msgstr "Mais antigos"
 
-#: apps/core/views.py:40
+#: apps/core/views.py:43
 msgid "A–Z"
 msgstr "A–Z"
 
-#: apps/core/views.py:43 templates/base.html:136
+#: apps/core/views.py:46 templates/base.html:136
 msgid "Videos"
 msgstr "Vídeos"
 
-#: apps/core/views.py:44 apps/media/models.py:64 templates/base.html:137
+#: apps/core/views.py:47 apps/media/models.py:64 templates/base.html:137
 msgid "Audio"
 msgstr "Áudio"
 
-#: apps/core/views.py:45 templates/base.html:138
+#: apps/core/views.py:48 templates/base.html:138
 msgid "Images"
 msgstr "Imagens"
 
-#: apps/core/views.py:46 templates/base.html:139
+#: apps/core/views.py:49 templates/base.html:139
 msgid "Documents"
 msgstr "Documentos"
 
-#: apps/core/views.py:371 templates/core/media_detail.html:316
+#: apps/core/views.py:374 templates/core/media_detail.html:316
 msgid "Comments open once the media is published."
 msgstr "Os comentários abrem quando a mídia é publicada."
 
-#: apps/core/views.py:449
+#: apps/core/views.py:452
 #, python-format
 msgid "Removed from “%(title)s”."
 msgstr "Removida de “%(title)s”."
 
-#: apps/core/views.py:451
+#: apps/core/views.py:454
 #, python-format
 msgid "Already in “%(title)s”."
 msgstr "Já está em “%(title)s”."
 
-#: apps/core/views.py:457
+#: apps/core/views.py:460
 #, python-format
 msgid "Added to “%(title)s”."
 msgstr "Adicionada a “%(title)s”."
+
+#: apps/core/views.py:534
+msgid "Database"
+msgstr "Banco de dados"
+
+#: apps/core/views.py:535
+msgid "Accounts, media, comments, playlists and lives."
+msgstr "Contas, mídias, comentários, playlists e lives."
+
+#: apps/core/views.py:539
+msgid "Cache"
+msgstr "Cache"
+
+#: apps/core/views.py:540
+msgid ""
+"Fast memory shared by the portal's processes, the lives' state included."
+msgstr ""
+"Memória rápida compartilhada pelos processos do portal, inclusive o estado "
+"das lives."
+
+#: apps/core/views.py:544 templates/live/control.html:48
+msgid "Encoder"
+msgstr "Codificador"
+
+#: apps/core/views.py:545
+msgid ""
+"ffmpeg and ffprobe, which turn uploads into adaptive video, posters and "
+"previews."
+msgstr ""
+"ffmpeg e ffprobe, que transformam os envios em vídeo adaptativo, pôsteres e "
+"prévias."
+
+#: apps/core/views.py:605
+msgid "Operational"
+msgstr "Operando"
+
+#: apps/core/views.py:607
+msgid "Not installed"
+msgstr "Não instalado"
+
+#: apps/core/views.py:609
+msgid "Failing"
+msgstr "Com falha"
+
+#: apps/core/views.py:618
+msgid "The portal is having trouble"
+msgstr "O portal está com problemas"
+
+#: apps/core/views.py:620
+msgid ""
+"A service it depends on is not answering. Pages may fail until it comes "
+"back; the details are below."
+msgstr ""
+"Um serviço de que ele depende não está respondendo. As páginas podem falhar "
+"até ele voltar; os detalhes estão abaixo."
+
+#: apps/core/views.py:625
+msgid "Running, without the encoder"
+msgstr "No ar, sem o codificador"
+
+#: apps/core/views.py:627
+msgid ""
+"Browsing and playback work, but new uploads wait in the queue until ffmpeg "
+"is available."
+msgstr ""
+"A navegação e a reprodução funcionam, mas os novos envios esperam na fila "
+"até o ffmpeg estar disponível."
+
+#: apps/core/views.py:632
+msgid "All systems operational"
+msgstr "Todos os sistemas operando"
+
+#: apps/core/views.py:633
+msgid "The portal is ready for visits, uploads and lives."
+msgstr "O portal está pronto para visitas, envios e lives."
 
 #: apps/live/apps.py:8 templates/live/lives.html:10
 msgid "Live streams"
@@ -522,6 +682,7 @@ msgid "The stream from this browser has stopped."
 msgstr "A transmissão por este navegador parou."
 
 #: apps/media/apps.py:8 templates/base.html:186 templates/core/index.html:87
+#: templates/core/status.html:104
 msgid "Library"
 msgstr "Biblioteca"
 
@@ -951,7 +1112,7 @@ msgstr ""
 "Algo no endereço ou no formulário estava malformado. Volte e tente de novo."
 
 #: templates/400.html:10 templates/403.html:11 templates/404.html:11
-#: templates/500.html:19
+#: templates/500.html:19 templates/core/status.html:46
 msgid "Back to the library"
 msgstr "Voltar para a biblioteca"
 
@@ -972,6 +1133,7 @@ msgstr ""
 "com um gestor se achar que deveria ter."
 
 #: templates/403.html:12 templates/base.html:117
+#: templates/core/api_browser.html:47
 msgid "Sign in"
 msgstr "Entrar"
 
@@ -1077,7 +1239,7 @@ msgstr "Pular para o conteúdo"
 msgid "Toggle navigation"
 msgstr "Mostrar ou ocultar a navegação"
 
-#: templates/base.html:60
+#: templates/base.html:60 templates/core/status.html:38
 #, python-format
 msgid "%(PORTAL_NAME)s home"
 msgstr "Início do %(PORTAL_NAME)s"
@@ -1100,11 +1262,11 @@ msgstr "Buscar mídias"
 msgid "Upload"
 msgstr "Enviar"
 
-#: templates/base.html:81
+#: templates/base.html:81 templates/core/status.html:43
 msgid "Switch colour theme"
 msgstr "Alternar tema de cores"
 
-#: templates/base.html:81
+#: templates/base.html:81 templates/core/status.html:43
 msgid "Switch theme"
 msgstr "Alternar tema"
 
@@ -1189,7 +1351,8 @@ msgid "Self-hosted · HLS · ABR"
 msgstr "Auto-hospedado · HLS · ABR"
 
 #: templates/base.html:174 templates/base.html:188
-#: templates/core/manage.html:185 templates/live/studio_lives.html:32
+#: templates/core/manage.html:185 templates/core/status.html:14
+#: templates/live/studio_lives.html:32
 msgid "Status"
 msgstr "Status"
 
@@ -1261,11 +1424,12 @@ msgstr "Idioma"
 msgid "Change"
 msgstr "Alterar"
 
-#: templates/core/_pager.html:2
+#: templates/core/_pager.html:2 templates/core/api_browser.html:110
 msgid "Pagination"
 msgstr "Paginação"
 
 #: templates/core/_pager.html:4 templates/core/_pager.html:6
+#: templates/core/api_browser.html:112 templates/core/api_browser.html:114
 msgid "Previous"
 msgstr "Anterior"
 
@@ -1275,6 +1439,7 @@ msgid "Page %(number)s of %(total)s"
 msgstr "Página %(number)s de %(total)s"
 
 #: templates/core/_pager.html:10 templates/core/_pager.html:12
+#: templates/core/api_browser.html:118 templates/core/api_browser.html:120
 msgid "Next"
 msgstr "Próxima"
 
@@ -1344,6 +1509,98 @@ msgstr "Endereços de e-mail"
 #: templates/core/account.html:55
 msgid "Sign out of this device"
 msgstr "Sair deste dispositivo"
+
+#: templates/core/api_browser.html:12
+msgid "API path"
+msgstr "Caminho na API"
+
+#: templates/core/api_browser.html:22 templates/core/status.html:87
+msgid "Plain JSON"
+msgstr "JSON puro"
+
+#: templates/core/api_browser.html:29
+msgid "Address copied"
+msgstr "Endereço copiado"
+
+#: templates/core/api_browser.html:30
+msgid "Copy the address"
+msgstr "Copiar o endereço"
+
+#: templates/core/api_browser.html:36
+msgid "Accepts"
+msgstr "Aceita"
+
+#: templates/core/api_browser.html:43
+#, python-format
+msgid "Signed in as %(email)s: requests use your session."
+msgstr "Conectado como %(email)s: as requisições usam a sua sessão."
+
+#: templates/core/api_browser.html:46
+msgid "Anonymous: public data only."
+msgstr "Anônimo: só os dados públicos."
+
+#: templates/core/api_browser.html:61
+msgid "Resources"
+msgstr "Recursos"
+
+#: templates/core/api_browser.html:79
+msgid "Other endpoints"
+msgstr "Outros endpoints"
+
+#: templates/core/api_browser.html:94
+msgid "From a script"
+msgstr "Num script"
+
+#: templates/core/api_browser.html:97
+msgid "Command copied"
+msgstr "Comando copiado"
+
+#: templates/core/api_browser.html:98
+msgid "Copy the command"
+msgstr "Copiar o comando"
+
+#: templates/core/api_browser.html:101
+msgid ""
+"Lists come 24 items at a time: follow next and previous to page through "
+"them."
+msgstr ""
+"As listas vêm de 24 em 24 itens: siga next e previous para passar as "
+"páginas."
+
+#: templates/core/api_browser.html:102
+msgid "In the browser, add ?format=json to any address to see the plain JSON."
+msgstr ""
+"No navegador, acrescente ?format=json a qualquer endereço para ver o JSON "
+"puro."
+
+#: templates/core/api_browser.html:103
+msgid ""
+"Writing (POST, PATCH, DELETE) needs the session of a signed-in account and "
+"its CSRF token."
+msgstr ""
+"Para escrever (POST, PATCH, DELETE), é preciso a sessão de uma conta "
+"conectada e o token CSRF dela."
+
+#: templates/core/api_browser.html:116 templates/core/api_browser.html:124
+#, python-format
+msgid "%(shown)s of %(counter)s item"
+msgid_plural "%(shown)s of %(counter)s items"
+msgstr[0] "%(shown)s de %(counter)s item"
+msgstr[1] "%(shown)s de %(counter)s itens"
+
+#: templates/core/api_browser.html:130
+msgid "Response"
+msgstr "Resposta"
+
+#: templates/core/api_browser.html:132
+msgid "JSON copied"
+msgstr "JSON copiado"
+
+#: templates/core/api_browser.html:132 templates/core/media_detail.html:140
+#: templates/live/control.html:71 templates/live/control.html:79
+#: templates/live/control.html:113 templates/live/watch.html:57
+msgid "Copy"
+msgstr "Copiar"
 
 #: templates/core/channel.html:13
 #, python-format
@@ -1843,12 +2100,6 @@ msgstr "Link para esta página"
 #: templates/live/watch.html:57
 msgid "Link copied"
 msgstr "Link copiado"
-
-#: templates/core/media_detail.html:140 templates/live/control.html:71
-#: templates/live/control.html:79 templates/live/control.html:113
-#: templates/live/watch.html:57
-msgid "Copy"
-msgstr "Copiar"
 
 #: templates/core/media_detail.html:143
 msgid "Link at the current time copied"
@@ -2434,6 +2685,46 @@ msgstr ""
 "Nenhuma mídia publicada corresponde a “%(query)s”. Confira a grafia ou tente"
 " uma palavra mais ampla."
 
+#: templates/core/status.html:54
+msgid "System status"
+msgstr "Status do sistema"
+
+#: templates/core/status.html:60
+msgid "Services"
+msgstr "Serviços"
+
+#: templates/core/status.html:78
+#, python-format
+msgid "Checked at %(time)s. This page checks again every %(seconds)s seconds."
+msgstr ""
+"Verificado às %(time)s. Esta página verifica de novo a cada %(seconds)s "
+"segundos."
+
+#: templates/core/status.html:84
+msgid "For monitoring"
+msgstr "Para monitoramento"
+
+#: templates/core/status.html:85
+msgid ""
+"The same checks as JSON, for uptime monitors and container health checks."
+msgstr ""
+"As mesmas verificações em JSON, para monitores de disponibilidade e health "
+"checks de containers."
+
+#: templates/core/status.html:92
+msgid ""
+"Readiness: 200 while the portal can serve, 503 when the database or the "
+"cache fails."
+msgstr ""
+"Pronto para atender: 200 enquanto o portal pode servir, 503 quando o banco "
+"de dados ou o cache falha."
+
+#: templates/core/status.html:96
+msgid "Liveness: 200 while the process answers, even with the database down."
+msgstr ""
+"Processo no ar: 200 enquanto o processo responde, mesmo com o banco de dados"
+" fora do ar."
+
 #: templates/core/studio.html:9 templates/live/studio_lives.html:9
 msgid "Creator studio"
 msgstr "Estúdio do criador"
@@ -2967,10 +3258,6 @@ msgstr ""
 #: templates/live/control.html:33
 msgid "End live"
 msgstr "Encerrar live"
-
-#: templates/live/control.html:48
-msgid "Encoder"
-msgstr "Codificador"
 
 #: templates/live/control.html:48
 msgid "Connected"

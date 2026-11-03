@@ -5,7 +5,7 @@ instead of relying on whatever font the viewer has installed. Run this once when
 the wordmark changes; the generated SVGs are committed.
 
 The font (Inter, SIL Open Font License) is downloaded on first run and is only
-used here to produce outlines — it is not redistributed with the output.
+used here to produce outlines â€” it is not redistributed with the output.
 
     python tools/build_logo.py
 """
@@ -94,7 +94,7 @@ def build(variant: str, first_fill: str, second_fill: str) -> None:
 </svg>
 """
     target = OUT / f"logo-wordmark-{variant}.svg"
-    target.write_text(svg, encoding="utf-8")
+    target.write_text(svg, encoding="utf-8", newline="\n")
     print(f"{target.name}: {width} x 48, {len(first) + len(second)} glyph points")
 
 

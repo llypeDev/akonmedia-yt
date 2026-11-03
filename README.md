@@ -44,7 +44,7 @@ reconstruída de ponta a ponta. Falta a virada (cut-over) em si.
 | Upload de legendas (SRT/VTT), editor de falas sincronizado com uma prévia, download em WebVTT e SRT | pronto |
 | Temas escuro e claro, layout para celular, páginas de erro com a marca | pronto |
 | Interface em português do Brasil (padrão) e em inglês, com seletor de idioma | pronto |
-| Lives: RTMP do OBS, HLS sem recodificar, chat, embed e a gravação publicada como vídeo | pronto |
+| Lives pelo OBS ou pelo navegador: HLS, chat, embed e a gravação publicada como vídeo | pronto |
 | Guia de backup e restauração | `OPERATIONS.md` |
 
 ## Requisitos
@@ -144,9 +144,10 @@ node tools/e2e/smoke.mjs
 com o ffmpeg no papel do OBS: a live é criada, a página espera com a contagem
 regressiva e passa sozinha para a transmissão, espectadores e apresentador
 conversam no chat, uma mensagem é ocultada, o codificador cai e volta, a live é
-encerrada e a gravação vira um vídeo que o mesmo embed passa a exibir. São 26
-verificações; ele precisa do servidor de ingestão rodando (veja
-[Lives](#lives)) e do ffmpeg.
+encerrada e a gravação vira um vídeo que o mesmo embed passa a exibir. Depois,
+uma segunda live vai ao ar transmitida pelo próprio navegador, com a câmera e o
+microfone falsos do Chromium. São 32 verificações; ele precisa do servidor de
+ingestão rodando (veja [Lives](#lives)) e do ffmpeg.
 
 ```bash
 BASE_URL=http://127.0.0.1:8000 \
@@ -175,13 +176,14 @@ apps/
                         tarefas, entrega com byte ranges, gerador da demo
   uploader/             sessões de upload em partes retomáveis e sua limpeza
   live/                 lives: chamadas do servidor de ingestão, estado, chat,
-                        sala de controle, gravação publicada como vídeo
+                        sala de controle, transmissão pelo navegador (relay.py)
+                        e a gravação publicada como vídeo
 docker/live/            servidor de ingestão das lives (nginx + módulo RTMP)
 templates/              HTML escrito só para este projeto (allauth incluído)
 locale/pt_BR/           catálogos em português (fontes .po e .mo compilados)
 static/css/app.css      o design system: tokens, temas, layout, componentes
 static/css/player.css   a aparência do player
-static/js/              app.js (interface), player.js, upload.js, live.js
+static/js/              app.js, player.js, upload.js, live.js, cast.js
 static/brand/           símbolo, logotipos, favicons, ícones de app, imagem OG
 static/icons/sprite.svg sprite de ícones (Lucide, veja Licenças)
 static/vendor/          builds e fontes de terceiros, com a licença ao lado
@@ -311,6 +313,16 @@ a chave da sala de controle. Em Saída: vídeo H.264 com intervalo de quadro-cha
 de 2 s e áudio AAC; para 720p, de 2.500 a 4.000 Kbps. Como o servidor não
 recodifica, o público recebe exatamente a qualidade que o OBS envia.
 
+**Pelo navegador.** Na sala de controle, a aba "Por este navegador" transmite a
+câmera, ou a tela com o microfone, sem instalar nada. O navegador grava o vídeo
+em pedaços de um segundo e os envia ao portal; um processo do servidor
+(`apps/live/relay.py`) os converte com o ffmpeg e os entrega ao serviço `live`
+como se fosse o OBS, então o resto da live funciona igual. A conversão acontece
+no servidor, e não no computador de quem transmite: numa máquina de dois
+núcleos, conte com uma transmissão pelo navegador por vez. Exige o site em HTTPS
+(ou aberto como localhost) e funciona no Chrome, no Edge e no Firefox; no Safari
+não foi testado. Câmera e tela no mesmo quadro ainda pedem o OBS.
+
 | Variável | Para quê |
 |---|---|
 | `LIVE_HOOK_SECRET` | segredo compartilhado entre o serviço `live` e o portal; vazio, ninguém entra no ar |
@@ -319,6 +331,8 @@ recodifica, o público recebe exatamente a qualidade que o OBS envia.
 | `LIVE_CONTROL_URL` | controle interno do nginx (`http://live:8081/control`), usado para encerrar uma live |
 | `LIVE_RECORDINGS_DIR` | onde o portal enxerga as gravações (`/app/live/recordings` no Docker) |
 | `LIVE_RECONNECT_GRACE_SECONDS` | quanto tempo esperar o OBS voltar antes de encerrar a live |
+| `LIVE_RTMP_INTERNAL_URL` | para onde o portal envia as transmissões pelo navegador (`rtmp://live:1935/live` no Docker) |
+| `LIVE_BROWSER_DIR` | pasta de trabalho das transmissões pelo navegador (`/app/live/browser` no Docker) |
 
 **Em produção.** Libere a porta TCP 1935 para o OBS. Sirva o HLS (porta 8080 do
 serviço `live`, caminho `/hls/`) pelo mesmo proxy HTTPS do site: com o site em

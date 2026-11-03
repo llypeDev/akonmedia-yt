@@ -1,0 +1,32 @@
+{% load akon i18n %}
+<div class="cast" data-cast data-start-url="{% url 'live:cast_start' live.uid %}"{% if live.is_ended %} data-ended{% endif %}>
+  <p class="notice" data-cast-insecure hidden>{% icon "alert" "icon-sm" %}<span>{% translate "Streaming from the browser needs the site on HTTPS (or opened as localhost)." %}</span></p>
+  <p class="notice" data-cast-unsupported hidden>{% icon "alert" "icon-sm" %}<span>{% translate "This browser cannot stream. Use a recent Chrome, Edge or Firefox." %}</span></p>
+
+  <div class="field">
+    <span class="field-label">{% translate "Source" %}</span>
+    <div class="segmented" role="radiogroup" aria-label="{% translate "Source" %}">
+      <label><input type="radio" name="cast-source" value="camera" checked><span>{% icon "video" "icon-sm" %}{% translate "Camera" %}</span></label>
+      <label data-cast-screen-option><input type="radio" name="cast-source" value="screen"><span>{% icon "screen-share" "icon-sm" %}{% translate "Screen" %}</span></label>
+    </div>
+    <span class="field-help">{% translate "With Screen, your voice goes through the microphone; the computer's sound joins in when the browser offers to share it." %}</span>
+  </div>
+
+  <div class="cast-stage">
+    <video class="cast-video" data-cast-video muted playsinline autoplay hidden></video>
+    <div class="cast-placeholder" data-cast-placeholder>
+      {% icon "video" %}
+      <span>{% translate "Your camera or screen appears here before you go on air." %}</span>
+    </div>
+    <span class="cast-badge" data-cast-badge hidden>{% translate "On air from this browser" %}</span>
+    <div class="cast-meter" data-cast-meter hidden title="{% translate "Microphone level" %}"><i data-cast-level></i></div>
+  </div>
+
+  <div class="cast-actions">
+    <button type="button" class="btn" data-cast-preview>{% icon "eye" "icon-sm" %}{% translate "Preview" %}</button>
+    <button type="button" class="btn btn-primary" data-cast-start{% if live.is_ended %} disabled{% endif %}>{% icon "radio" "icon-sm" %}{% translate "Start streaming" %}</button>
+    <button type="button" class="btn btn-danger" data-cast-stop hidden>{% icon "stop" "icon-sm" %}{% translate "Stop streaming" %}</button>
+  </div>
+  <p class="cast-status" data-cast-status role="status" aria-live="polite"></p>
+  <p class="field-help">{% translate "Keep this tab open while you are on air: you can switch to other windows. Stopping here interrupts the live; when you are done, use “End live”." %}</p>
+</div>

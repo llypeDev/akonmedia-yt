@@ -474,3 +474,190 @@ class PageStateEscapingTests(LiveTestCase):
         self.assertNotIn("<", data)
         self.assertNotIn(">", data)
         self.assertIn("\\u003C!--\\u003Cscript", data)
+
+
+@override_settings(LIVE_HOOK_SECRET=SECRET, LIVE_RTMP_INTERNAL_URL="rtmp://ingest.internal:1935/live")
+class BrowserCastTests(LiveTestCase):
+    def setUp(self):
+        super().setUp()
+        self.root = Path(tempfile.mkdtemp(prefix="akon-cast-test-"))
+        self.dir_override = override_settings(LIVE_BROWSER_DIR=str(self.root))
+        self.dir_override.enable()
+        self.client.force_login(self.owner)
+        self.start_url = reverse("live:cast_start", args=[self.live.uid])
+
+    def tearDown(self):
+        self.dir_override.disable()
+        shutil.rmtree(self.root, ignore_errors=True)
+        super().tearDown()
+
+    def start(self):
+        with mock.patch("apps.live.relay.start") as start:
+            response = self.client.post(self.start_url)
+        return response, start
+
+    def test_the_owner_starts_a_relay_that_publishes_with_the_key(self):
+        response, start = self.start()
+        self.assertEqual(response.status_code, 201)
+        payload = response.json()
+        folder, target = start.call_args.args
+        self.assertEqual(folder, self.root / self.live.playback_id / payload["session"])
+        self.assertTrue(folder.is_dir())
+        self.assertEqual(target, f"rtmp://ingest.internal:1935/live/{self.live.encoder_key}")
+        self.assertEqual(payload["chunk_url"], f"/studio/lives/{self.live.uid}/cast/{payload['session']}/0/")
+
+    def test_only_the_owner_and_curators_can_stream(self):
+        self.client.logout()
+        self.assertEqual(self.client.post(self.start_url).status_code, 302)
+        self.client.force_login(make_user("other@example.com"))
+        self.assertEqual(self.start()[0].status_code, 404)
+        self.client.force_login(make_user("curator@example.com", role=Role.EDITOR))
+        self.assertEqual(self.start()[0].status_code, 201)
+
+    def test_one_source_at_a_time(self):
+        Live.objects.filter(pk=self.live.pk).update(publishing=True, status=Live.Status.LIVE)
+        self.assertEqual(self.start()[0].status_code, 409)
+
+    def test_an_earlier_browser_stream_is_stopped_first(self):
+        earlier = self.root / self.live.playback_id / "0123456789abcdef"
+        earlier.mkdir(parents=True)
+        (earlier / "status.json").write_text('{"state": "running"}')
+        response, start = self.start()
+        self.assertEqual(response.status_code, 409)
+        start.assert_not_called()
+        self.assertTrue((earlier / "end").exists())
+
+    def test_nothing_starts_after_the_end_or_without_ingest(self):
+        with override_settings(LIVE_HOOK_SECRET=""):
+            self.assertEqual(self.start()[0].status_code, 503)
+        Live.objects.filter(pk=self.live.pk).update(status=Live.Status.ENDED)
+        self.assertEqual(self.start()[0].status_code, 409)
+
+    def test_a_relay_that_cannot_start_is_reported(self):
+        with mock.patch("apps.live.relay.start", side_effect=OSError("no python")):
+            response = self.client.post(self.start_url)
+        self.assertEqual(response.status_code, 503)
+
+    def test_chunks_are_stored_for_the_relay_in_order(self):
+        payload = self.start()[0].json()
+        folder = self.root / self.live.playback_id / payload["session"]
+        for seq, data in enumerate((b"first", b"second")):
+            url = payload["chunk_url"].replace("/0/", f"/{seq}/")
+            response = self.client.post(url, data, content_type="application/octet-stream")
+            self.assertEqual(response.status_code, 202)
+        self.assertEqual((folder / "00000000.chunk").read_bytes(), b"first")
+        self.assertEqual((folder / "00000001.chunk").read_bytes(), b"second")
+        self.assertEqual(self.client.post(payload["stop_url"]).status_code, 200)
+        self.assertTrue((folder / "end").exists())
+        self.assertEqual(self.client.post(payload["chunk_url"], b"late",
+                                          content_type="application/octet-stream").status_code, 409)
+
+    def test_bad_chunks_are_refused(self):
+        payload = self.start()[0].json()
+        folder = self.root / self.live.playback_id / payload["session"]
+        base = f"/studio/lives/{self.live.uid}/cast/"
+        post = lambda url, data=b"x": self.client.post(url, data, content_type="application/octet-stream")
+        self.assertEqual(post(f"{base}ffffffffffffffff/0/").status_code, 404)
+        self.assertEqual(post(f"{base}..%2F..%2Fetc/0/").status_code, 404)
+        self.assertEqual(post(payload["chunk_url"], b"").status_code, 400)
+        with mock.patch("apps.live.views.MAX_CAST_CHUNK_BYTES", 3):
+            self.assertEqual(post(payload["chunk_url"], b"four").status_code, 413)
+        (folder / "status.json").write_text('{"state": "failed"}')
+        self.assertEqual(post(payload["chunk_url"]).status_code, 409)
+
+
+def make_webm(path: Path, seconds: int = 4) -> None:
+    subprocess.run(
+        [
+            shutil.which("ffmpeg"), "-y", "-loglevel", "error",
+            "-f", "lavfi", "-i", f"testsrc2=size=640x360:rate=30:duration={seconds}",
+            "-f", "lavfi", "-i", f"sine=frequency=440:sample_rate=48000:duration={seconds}",
+            "-c:v", "libvpx", "-deadline", "realtime", "-b:v", "1M", "-c:a", "libopus",
+            "-shortest", str(path),
+        ],
+        check=True, capture_output=True, timeout=120,
+    )
+
+
+@requires_ffmpeg
+class RelayTests(TestCase):
+    """The relay with a real ffmpeg, writing to a file instead of RTMP."""
+
+    def setUp(self):
+        from . import relay
+
+        self.relay = relay
+        self.root = Path(tempfile.mkdtemp(prefix="akon-relay-test-"))
+        self.session = self.root / "session"
+        self.session.mkdir()
+        self.output = self.root / "out.flv"
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def chunks(self, size=64 * 1024):
+        source = self.root / "source.webm"
+        make_webm(source)
+        data = source.read_bytes()
+        return [data[i:i + size] for i in range(0, len(data), size)]
+
+    def probe(self):
+        streams = subprocess.run(
+            [shutil.which("ffprobe"), "-v", "error", "-show_entries", "stream=codec_name:format=duration",
+             "-of", "default=noprint_wrappers=1", str(self.output)],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        keyframes = subprocess.run(
+            [shutil.which("ffprobe"), "-v", "error", "-select_streams", "v", "-show_entries",
+             "frame=key_frame,pts_time", "-of", "csv=p=0", str(self.output)],
+            capture_output=True, text=True, check=True,
+        ).stdout.split()
+        return streams, [float(line.split(",")[1]) for line in keyframes if line.startswith("1,")]
+
+    def test_browser_chunks_become_a_stream_with_regular_keyframes(self):
+        parts = self.chunks()
+        for seq, data in enumerate(parts):
+            (self.session / f"{seq:08d}.chunk").write_bytes(data)
+        (self.session / "end").touch()
+        self.assertEqual(self.relay.run(self.session, str(self.output)), 0)
+        status = self.relay.read_status(self.session)
+        self.assertEqual((status["state"], status["fed"]), ("stopped", len(parts)))
+        streams, keyframes = self.probe()
+        self.assertIn("codec_name=h264", streams)
+        self.assertIn("codec_name=aac", streams)
+        duration = float(streams.split("duration=")[1].split()[0])
+        self.assertAlmostEqual(duration, 4, delta=0.5)
+        self.assertEqual([round(t) for t in keyframes], [0, 2])
+        self.assertEqual(list(self.session.glob("*.chunk")), [])
+
+    def test_a_lost_chunk_is_skipped_instead_of_stalling(self):
+        parts = self.chunks(size=48 * 1024)
+        for seq, data in enumerate(parts):
+            if seq != 3:
+                (self.session / f"{seq:08d}.chunk").write_bytes(data)
+        (self.session / "end").touch()
+        with mock.patch.object(self.relay, "GAP_SECONDS", 0.3):
+            self.relay.run(self.session, str(self.output))
+        self.assertEqual(self.relay.read_status(self.session)["fed"], len(parts))
+        self.assertGreater(self.output.stat().st_size, 0)
+
+    def test_an_abandoned_session_stops_by_itself(self):
+        with mock.patch.object(self.relay, "FIRST_CHUNK_SECONDS", 0.3):
+            self.relay.run(self.session, str(self.output))
+        self.assertEqual(self.relay.read_status(self.session)["reason"], "idle")
+
+    def test_cleanup_removes_finished_sessions_only(self):
+        import os
+        import time
+
+        root = self.root / "browser"
+        old = root / "pb1" / "aaaaaaaaaaaaaaaa"
+        fresh = root / "pb1" / "bbbbbbbbbbbbbbbb"
+        for folder, state in ((old, "stopped"), (fresh, "running")):
+            folder.mkdir(parents=True)
+            self.relay.write_status(folder, state)
+        hours_ago = time.time() - 2 * 3600
+        os.utime(old, (hours_ago, hours_ago))
+        self.assertEqual(self.relay.cleanup(root, 3600), 1)
+        self.assertFalse(old.exists())
+        self.assertTrue(fresh.exists())

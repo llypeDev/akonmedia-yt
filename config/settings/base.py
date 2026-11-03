@@ -193,6 +193,11 @@ LIVE_HOOK_SECRET = env("LIVE_HOOK_SECRET", "")
 LIVE_RECORDINGS_DIR = env("LIVE_RECORDINGS_DIR", str(BASE_DIR / ".live" / "recordings"))
 #: How long a dropped encoder may take to reconnect before the live ends.
 LIVE_RECONNECT_GRACE_SECONDS = env_int("LIVE_RECONNECT_GRACE_SECONDS", 120)
+#: Where streams from a browser are published: the same ingest server, seen
+#: from this process (inside Docker, rtmp://live:1935/live).
+LIVE_RTMP_INTERNAL_URL = env("LIVE_RTMP_INTERNAL_URL", LIVE_RTMP_URL)
+#: Working folder for streams from a browser (chunks waiting for the relay).
+LIVE_BROWSER_DIR = env("LIVE_BROWSER_DIR", str(BASE_DIR / ".live" / "browser"))
 
 
 # --------------------------------------------------------------------------

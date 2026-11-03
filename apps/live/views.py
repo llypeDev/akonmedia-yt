@@ -5,7 +5,12 @@ page needs to know (status, stream address, viewers, recording) and brings the
 chat messages posted since the last one the page has.
 """
 import json
+import logging
+import re
+import secrets
+import subprocess
 from datetime import timedelta
+from pathlib import Path
 
 from django import forms
 from django.conf import settings
@@ -29,8 +34,10 @@ from apps.media import access
 from apps.media.models import Category, Media
 from apps.rbac import permissions as policy
 
-from . import presence, services
+from . import presence, relay, services
 from .models import ChatMessage, Live, new_stream_key
+
+logger = logging.getLogger(__name__)
 
 CHAT_MAX_LENGTH = 500
 CHAT_HISTORY = 50
@@ -448,3 +455,112 @@ def live_delete(request, uid: str):
         _("“%(title)s” was deleted. Its recording, if there is one, stays in your media.") % {"title": title},
     )
     return redirect("live:studio")
+
+
+# ----------------------------------------------------- streaming from a browser
+#
+# The control room records the camera or the screen with MediaRecorder and
+# posts one chunk a second; a relay process (relay.py) turns the chunks into an
+# RTMP stream to the ingest server, as if an encoder were connected.
+
+CAST_SESSION = re.compile(r"[0-9a-f]{16}")
+MAX_CAST_CHUNK_BYTES = 8 * 1024 * 1024
+
+
+def _cast_root(live: Live) -> Path:
+    return Path(settings.LIVE_BROWSER_DIR) / live.playback_id
+
+
+def _cast_session(live: Live, session: str) -> Path:
+    if not CAST_SESSION.fullmatch(session or ""):
+        raise Http404("unknown session")
+    folder = _cast_root(live) / session
+    if not folder.is_dir():
+        raise Http404("unknown session")
+    return folder
+
+
+def _active_casts(live: Live) -> list:
+    root = _cast_root(live)
+    if not root.is_dir():
+        return []
+    return [
+        folder for folder in root.iterdir()
+        if folder.is_dir() and not (folder / "end").exists()
+        and relay.read_status(folder).get("state") in ("starting", "running")
+    ]
+
+
+@login_required
+@require_POST
+def cast_start(request, uid: str):
+    live = _editable(request, uid)
+    if live.is_ended:
+        return JsonResponse({"detail": _("This live has ended.")}, status=409)
+    if not settings.LIVE_HOOK_SECRET:
+        return JsonResponse({"detail": _("Live ingest is not configured on this server.")}, status=503)
+    active = _active_casts(live)
+    if active:
+        # Only one source at a time: the earlier browser stream stops first.
+        for folder in active:
+            (folder / "end").touch()
+        return JsonResponse(
+            {"detail": _("The previous stream from a browser is stopping. Try again in a few seconds.")},
+            status=409,
+        )
+    if live.publishing:
+        return JsonResponse(
+            {"detail": _("An encoder is already streaming to this live. Stop it first.")}, status=409
+        )
+
+    session = secrets.token_hex(8)
+    folder = _cast_root(live) / session
+    folder.mkdir(parents=True)
+    target = f"{settings.LIVE_RTMP_INTERNAL_URL.rstrip('/')}/{live.encoder_key}"
+    try:
+        relay.start(folder, target, cwd=settings.BASE_DIR)
+    except (OSError, subprocess.SubprocessError) as exc:
+        logger.exception("live %s: the browser relay did not start", live.uid)
+        relay.write_status(folder, "failed", reason="failed", error=str(exc)[:300])
+        return JsonResponse({"detail": _("The stream could not be started on the server.")}, status=503)
+    return JsonResponse(
+        {
+            "session": session,
+            "chunk_url": reverse("live:cast_chunk", args=[live.uid, session, 0]),
+            "stop_url": reverse("live:cast_stop", args=[live.uid, session]),
+        },
+        status=201,
+    )
+
+
+@login_required
+@require_POST
+def cast_chunk(request, uid: str, session: str, seq: int):
+    live = _editable(request, uid)
+    folder = _cast_session(live, session)
+    state = relay.read_status(folder).get("state", "")
+    if state in ("stopped", "failed") or (folder / "end").exists():
+        return JsonResponse(
+            {"detail": _("The stream from this browser has stopped."), "state": state or "stopped"},
+            status=409,
+        )
+    if seq > 10_000_000:
+        return JsonResponse({"detail": "sequence out of range"}, status=400)
+    body = request.body
+    if not body:
+        return JsonResponse({"detail": "empty chunk"}, status=400)
+    if len(body) > MAX_CAST_CHUNK_BYTES:
+        return JsonResponse({"detail": "chunk too large"}, status=413)
+    part = folder / f"{seq:08d}.part"
+    part.write_bytes(body)
+    part.replace(folder / f"{seq:08d}.chunk")
+    return JsonResponse({"state": state or "starting"}, status=202)
+
+
+@login_required
+@require_POST
+def cast_stop(request, uid: str, session: str):
+    live = _editable(request, uid)
+    folder = _cast_session(live, session)
+    (folder / "end").touch()
+    return JsonResponse({"stopping": True})

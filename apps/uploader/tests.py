@@ -105,3 +105,100 @@ class UploadFlowTests(TestCase):
             format="json",
         )
         self.assertEqual(response.status_code, 400)
+
+
+class ResumeAndHousekeepingTests(TestCase):
+    """What the browser relies on to resume, cancel, and what cleans up after it."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(email="res@example.com", password="x" * 20)
+        self.client.force_authenticate(self.user)
+        self.tmp = Path(settings.BASE_DIR) / ".test-media" / uuid.uuid4().hex
+        self.override = override_settings(MEDIA_ROOT=str(self.tmp), CELERY_TASK_ALWAYS_EAGER=False)
+        self.override.enable()
+
+    def tearDown(self):
+        self.override.disable()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def start(self, total=CHUNK * 2, chunk=CHUNK, name="clip.mp4"):
+        response = self.client.post(
+            "/api/v1/uploads/", {"filename": name, "total_size": total, "chunk_size": chunk}, format="json"
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        return response.json()
+
+    def put(self, session, index, payload):
+        return self.client.put(
+            f"/api/v1/uploads/{session['id']}/chunk/?index={index}",
+            data=payload, content_type="application/octet-stream",
+        )
+
+    def test_status_reports_progress_for_resuming(self):
+        session = self.start()
+        self.put(session, 0, b"a" * CHUNK)
+        status = self.client.get(f"/api/v1/uploads/{session['id']}/").json()
+        self.assertEqual(status["next_index"], 1)
+        self.assertEqual(status["received_bytes"], CHUNK)
+        self.assertEqual(status["progress"], 0.5)
+
+    def test_status_realigns_after_a_torn_write(self):
+        session = self.start()
+        self.put(session, 0, b"a" * CHUNK)
+        stored = UploadSession.objects.get(pk=session["id"])
+        with stored.part_path.open("ab") as handle:  # half a chunk landed, the row never updated
+            handle.write(b"b" * (CHUNK // 2))
+        status = self.client.get(f"/api/v1/uploads/{session['id']}/").json()
+        self.assertEqual(status["next_index"], 1)
+        self.assertEqual(stored.bytes_on_disk(), CHUNK)
+
+    def test_cancel_removes_session_and_bytes(self):
+        session = self.start()
+        self.put(session, 0, b"a" * CHUNK)
+        part_dir = UploadSession.objects.get(pk=session["id"]).part_dir
+        self.assertTrue(part_dir.exists())
+        response = self.client.delete(f"/api/v1/uploads/{session['id']}/")
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(UploadSession.objects.filter(pk=session["id"]).exists())
+        self.assertFalse(part_dir.exists())
+
+    def test_completion_drops_the_duplicate_part_file(self):
+        from apps.media.models import Category
+
+        category = Category.objects.create(name="Clips")
+        session = self.start(total=CHUNK)
+        self.put(session, 0, b"z" * CHUNK)
+        part_dir = UploadSession.objects.get(pk=session["id"]).part_dir
+        response = self.client.post(
+            f"/api/v1/uploads/{session['id']}/complete/",
+            {"title": "With details", "description": "About it", "category": category.pk},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertFalse(part_dir.exists())
+        media = Media.objects.get(uid=response.json()["media_uid"])
+        self.assertEqual(media.description, "About it")
+        self.assertEqual(media.category, category)
+        self.assertEqual(response.json()["url"], f"/view/{media.uid}/")
+
+    def test_chunks_larger_than_the_form_limit_are_accepted(self):
+        big = 12 * 1024 * 1024  # above DATA_UPLOAD_MAX_MEMORY_SIZE (10 MB)
+        session = self.start(total=big, chunk=big)
+        response = self.put(session, 0, b"q" * big)
+        self.assertEqual(response.status_code, 200, response.content)
+
+    def test_stale_sessions_are_purged(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from .tasks import purge
+
+        old = self.start()
+        self.put(old, 0, b"a" * CHUNK)
+        UploadSession.objects.filter(pk=old["id"]).update(updated_at=timezone.now() - timedelta(hours=48))
+        fresh = self.start()
+        self.assertEqual(purge(24), 1)
+        self.assertFalse(UploadSession.objects.filter(pk=old["id"]).exists())
+        self.assertTrue(UploadSession.objects.filter(pk=fresh["id"]).exists())

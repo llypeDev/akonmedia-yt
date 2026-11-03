@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load akon humanize i18n %}
+
+{% block title %}{% translate "Studio" %} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">{% icon "dashboard" "icon-xs" %}{% translate "Creator studio" %}</span>
+      <h1>{% translate "Your media" %}</h1>
+      <p class="lede">{% translate "Everything you have uploaded — public, unlisted, private and still processing." %}</p>
+    </div>
+    <div class="btn-group">
+      <a class="btn" href="{% url 'core:channel' user.pk %}">{% icon "tv" "icon-sm" %}{% translate "Channel" %}</a>
+      <a class="btn btn-primary" href="{% url 'core:upload' %}">{% icon "upload" "icon-sm" %}{% translate "Upload" %}</a>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">{% icon "layers" %}{% translate "Uploads" %}</div><div class="stat-value">{{ totals.items|default:0|intcomma }}</div><div class="stat-note">{% blocktranslate count counter=by_state.ready|default:0 %}{{ counter }} published{% plural %}{{ counter }} published{% endblocktranslate %}</div></div>
+    <div class="stat"><div class="stat-label">{% icon "eye" %}{% translate "Views" %}</div><div class="stat-value">{{ totals.views|default:0|compact }}</div><div class="stat-note">{% translate "across all items" %}</div></div>
+    <div class="stat"><div class="stat-label">{% icon "message" %}{% translate "Comments" %}</div><div class="stat-value">{{ totals.comments|intcomma }}</div><div class="stat-note">{% translate "on your media" %}</div></div>
+    <div class="stat"><div class="stat-label">{% icon "timer" %}{% translate "Runtime" %}</div><div class="stat-value">{{ totals.seconds|runtime_value }}<small>{{ totals.seconds|runtime_unit }}</small></div><div class="stat-note">{% translate "video and audio" %}</div></div>
+    <div class="stat"><div class="stat-label">{% icon "hard-drive" %}{% translate "Storage" %}</div><div class="stat-value" style="font-size:22px">{{ totals.size|default:0|filesizeformat }}</div><div class="stat-note">{% translate "originals" %}</div></div>
+    <div class="stat {% if by_state.failed %}stat-bad{% elif processing %}stat-warn{% endif %}"><div class="stat-label">{% icon "activity" %}{% translate "Pipeline" %}</div><div class="stat-value">{% if by_state.failed %}{% blocktranslate count counter=by_state.failed %}{{ counter }} failed{% plural %}{{ counter }} failed{% endblocktranslate %}{% elif processing %}{% blocktranslate count counter=processing %}{{ counter }} busy{% plural %}{{ counter }} busy{% endblocktranslate %}{% else %}{% translate "Idle" %}{% endif %}</div><div class="stat-note">{% blocktranslate count counter=totals.playlists %}{{ counter }} playlist{% plural %}{{ counter }} playlists{% endblocktranslate %}</div></div>
+  </div>
+
+  <section class="panel panel-flush mt-3">
+    <div class="panel-head">
+      <nav class="chips" aria-label="{% translate "Filter by state" %}">
+        <a class="chip {% if not state %}active{% endif %}" href="{% querystring state=None page=None %}">{% translate "All" %} <span class="count">{{ totals.items|default:0 }}</span></a>
+        {% for value, label in states %}
+          <a class="chip {% if state == value %}active{% endif %}" href="{% querystring state=value page=None %}">{% icon value|state_icon "icon-sm" %}{{ label }}{% for key, n in by_state.items %}{% if key == value %} <span class="count">{{ n }}</span>{% endif %}{% endfor %}</a>
+        {% endfor %}
+      </nav>
+      <form method="get" class="row" style="flex-wrap:nowrap">
+        {% if state %}<input type="hidden" name="state" value="{{ state }}">{% endif %}
+        <select class="select input-sm" name="kind" onchange="this.form.submit()" aria-label="{% translate "Type" %}" style="width:auto">
+          <option value="">{% translate "All types" %}</option>
+          {% for value, label in kinds %}<option value="{{ value }}" {% if kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <input class="input input-sm" type="search" name="q" value="{{ query }}" placeholder="{% translate "Filter by title" %}" aria-label="{% translate "Filter by title" %}" style="width:200px">
+      </form>
+    </div>
+
+    {% if page_obj.object_list %}
+      <div class="table-wrap mt-2">
+        <table class="table">
+          <thead>
+            <tr><th>{% translate "Media" %}</th><th>{% translate "Visibility" %}</th><th>{% translate "State" %}</th><th class="num">{% translate "Views" %}</th><th class="num">{% translate "Comments" %}</th><th>{% translate "Date" %}</th><th class="actions"><span class="sr-only">{% translate "Actions" %}</span></th></tr>
+          </thead>
+          <tbody>
+            {% for media in page_obj.object_list %}
+              <tr>
+                <td>
+                  <a class="row-media" href="{% url 'core:media' media.uid %}">
+                    <span class="row-thumb thumb">
+                      {% if media.thumbnail_url %}<img src="{{ media.thumbnail_url }}" alt="" loading="lazy">{% else %}<span class="thumb-fallback">{% icon media.kind|kind_icon %}</span>{% endif %}
+                      {% if media.duration_seconds %}<span class="thumb-badge thumb-duration">{{ media.duration_label }}</span>{% endif %}
+                    </span>
+                    <span style="min-width:0">
+                      <span class="row-title">{{ media.title }}</span>
+                      <span class="row-sub">{{ media.get_kind_display }}{% if media.category %} · {{ media.category.name }}{% endif %} · {{ media.size_bytes|filesizeformat }}</span>
+                    </span>
+                  </a>
+                </td>
+                <td><span class="badge badge-{{ media.visibility }}">{% icon media.visibility|visibility_icon %}{{ media.get_visibility_display }}</span></td>
+                <td><span class="badge badge-{{ media.state }}" {% if media.failure_reason %}title="{{ media.failure_reason }}"{% endif %}>{% icon media.state|state_icon %}{{ media.get_state_display }}</span></td>
+                <td class="num">{{ media.views_count|intcomma }}</td>
+                <td class="num">{{ media.comment_count }}</td>
+                <td class="nowrap muted">{{ media.created_at|date:"SHORT_DATE_FORMAT" }}</td>
+                <td class="actions">
+                  <a class="btn btn-xs btn-ghost" href="{% url 'core:media' media.uid %}" title="{% translate "Open" %}">{% icon "eye" "icon-xs" %}</a>
+                  <a class="btn btn-xs" href="{% url 'core:media_edit' media.uid %}">{% icon "pencil" "icon-xs" %}{% translate "Edit" %}</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div style="padding: 0 22px 22px">{% include "core/_pager.html" %}</div>
+    {% else %}
+      <div style="padding: 22px">
+        <div class="empty-state compact">
+          <div class="empty-icon">{% icon "upload" %}</div>
+          <h3>{% if state or kind or query %}{% translate "Nothing matches this filter" %}{% else %}{% translate "No uploads yet" %}{% endif %}</h3>
+          <p>{% if state or kind or query %}{% translate "Clear the filters to see everything." %}{% else %}{% translate "Upload a video, track, image or PDF. Large files are sent in resumable chunks." %}{% endif %}</p>
+          {% if state or kind or query %}<a class="btn" href="{% url 'core:studio' %}">{% translate "Clear filters" %}</a>{% else %}<a class="btn btn-primary" href="{% url 'core:upload' %}">{% icon "upload" "icon-sm" %}{% translate "Upload media" %}</a>{% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

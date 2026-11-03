@@ -102,3 +102,71 @@ class RangeRequestTests(TestCase):
     def test_path_traversal_is_refused(self):
         response = self.client.get("/media/../../manage.py")
         self.assertIn(response.status_code, (400, 404))
+
+
+@override_settings(SERVE_MEDIA=True, DEBUG=False)
+class UploadedContentSafetyTests(TestCase):
+    """An upload must never run script in the portal's origin."""
+
+    def setUp(self):
+        self.root = Path(settings.BASE_DIR) / ".test-media" / uuid.uuid4().hex
+        self.root.mkdir(parents=True, exist_ok=True)
+        (self.root / "page.html").write_text("<script>alert(document.cookie)</script>", encoding="utf-8")
+        (self.root / "logo.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', encoding="utf-8")
+        (self.root / "clip.mp4").write_bytes(PAYLOAD)
+        (self.root / "doc.pdf").write_bytes(b"%PDF-1.4")
+        self.override = override_settings(MEDIA_ROOT=str(self.root))
+        self.override.enable()
+
+    def tearDown(self):
+        self.override.disable()
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_html_is_downloaded_and_sandboxed(self):
+        response = self.client.get("/media/page.html")
+        self.assertTrue(response["Content-Disposition"].startswith("attachment"))
+        self.assertIn("sandbox", response["Content-Security-Policy"])
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+
+    def test_svg_renders_but_cannot_run_script(self):
+        response = self.client.get("/media/logo.svg")
+        self.assertFalse(response.get("Content-Disposition", "").startswith("attachment"))
+        self.assertIn("sandbox", response["Content-Security-Policy"])
+
+    def test_video_stays_inline_even_for_ranges(self):
+        response = self.client.get("/media/clip.mp4", headers={"Range": "bytes=0-9"})
+        self.assertEqual(response.status_code, 206)
+        self.assertNotIn("Content-Disposition", response)
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+
+    def test_pdf_is_not_sandboxed_so_the_viewer_works(self):
+        response = self.client.get("/media/doc.pdf")
+        self.assertNotIn("Content-Security-Policy", response)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+
+
+@override_settings(SERVE_MEDIA=True, DEBUG=False)
+class MalformedRangeTests(TestCase):
+    def setUp(self):
+        self.root = Path(settings.BASE_DIR) / ".test-media" / uuid.uuid4().hex
+        self.root.mkdir(parents=True, exist_ok=True)
+        (self.root / "clip.mp4").write_bytes(PAYLOAD)
+        self.override = override_settings(MEDIA_ROOT=str(self.root))
+        self.override.enable()
+
+    def tearDown(self):
+        self.override.disable()
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_inverted_range_is_unsatisfiable(self):
+        response = self.client.get("/media/clip.mp4", headers={"Range": "bytes=500-100"})
+        self.assertEqual(response.status_code, 416)
+
+    def test_empty_suffix_is_unsatisfiable(self):
+        response = self.client.get("/media/clip.mp4", headers={"Range": "bytes=-0"})
+        self.assertEqual(response.status_code, 416)
+
+    def test_common_media_types_are_known(self):
+        self.assertEqual(content_type_for("a.mkv"), "video/x-matroska")
+        self.assertEqual(content_type_for("a.m4a"), "audio/mp4")
+        self.assertEqual(content_type_for("a.flac"), "audio/flac")

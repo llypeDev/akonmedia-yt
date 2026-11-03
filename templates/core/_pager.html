@@ -1,0 +1,15 @@
+{% load akon i18n %}{% if page_obj.has_other_pages %}
+  <nav class="pager" aria-label="{% translate 'Pagination' %}">
+    {% if page_obj.has_previous %}
+      <a class="btn btn-sm" href="{% querystring page=page_obj.previous_page_number %}" rel="prev">{% icon "chevron-left" "icon-sm" %}{% translate "Previous" %}</a>
+    {% else %}
+      <span class="btn btn-sm is-disabled" aria-disabled="true">{% icon "chevron-left" "icon-sm" %}{% translate "Previous" %}</span>
+    {% endif %}
+    <span class="pager-info">{% blocktranslate with number=page_obj.number total=page_obj.paginator.num_pages %}Page {{ number }} of {{ total }}{% endblocktranslate %}</span>
+    {% if page_obj.has_next %}
+      <a class="btn btn-sm" href="{% querystring page=page_obj.next_page_number %}" rel="next">{% translate "Next" %}{% icon "chevron-right" "icon-sm" %}</a>
+    {% else %}
+      <span class="btn btn-sm is-disabled" aria-disabled="true">{% translate "Next" %}{% icon "chevron-right" "icon-sm" %}</span>
+    {% endif %}
+  </nav>
+{% endif %}

@@ -1,57 +1,75 @@
-{% load static %}<!doctype html>
+{% load static i18n %}{% get_current_language as LANGUAGE_CODE %}<!doctype html>
 <html lang="{{ LANGUAGE_CODE|default:'en' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
   <title>{{ media.title }} — {{ PORTAL_NAME }}</title>
+  <link rel="icon" href="{% static 'brand/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/player.css' %}">
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #000; }
-    body { display: flex; flex-direction: column; font-family: ui-sans-serif, system-ui, sans-serif; }
-    video { width: 100%; height: 100%; display: block; background: #000; object-fit: contain; }
+    html, body { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; }
+    body { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; color: #e8eef6; }
+    .embed-frame { position: relative; width: 100%; height: 100%; }
+    .embed-frame .player { width: 100%; height: 100%; aspect-ratio: auto; }
+    .embed-frame video { width: 100%; height: 100%; display: block; background: #000; object-fit: contain; }
     .embed-title {
-      position: absolute; left: 0; right: 0; top: 0;
+      position: absolute; left: 0; right: 0; top: 0; z-index: 3;
       padding: 0.75rem 1rem;
-      background: linear-gradient(rgba(0,0,0,0.7), transparent);
+      background: linear-gradient(rgba(0, 0, 0, 0.72), transparent);
       color: #fff; font-size: 0.9375rem; font-weight: 600;
       pointer-events: none;
     }
-    .missing { color: #8c97a6; margin: auto; font-size: 0.9375rem; }
+    .embed-image { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .missing {
+      height: 100%; display: grid; place-items: center; text-align: center;
+      color: #8794a8; font-size: 0.9375rem;
+      background: radial-gradient(50% 70% at 50% 40%, rgba(34, 211, 238, 0.12), transparent 70%), #05070c;
+    }
+    .missing a { color: #22d3ee; }
   </style>
 </head>
 <body>
-  {% if media.file and media.kind != "image" %}
-    <div style="position: relative; flex: 1; min-height: 0;">
+  {% if media.file and media.kind == "image" %}
+    <div class="embed-frame">
       {% if show_title %}<div class="embed-title">{{ media.title }}</div>{% endif %}
-      <video
-        controls="{% if controls %}1{% endif %}"
-        {% if not controls %}controlslist="nodownload"{% endif %}
-        preload="metadata"
-        playsinline
-        {% if autoplay %}autoplay{% endif %}
-        {% if media.poster %}poster="{{ media.poster.url }}"{% endif %}
-        {% if media.hls_url %}data-hls="{{ media.hls_url }}"{% endif %}
-        data-fallback="{{ media.file.url }}"
-        src="{{ media.file.url }}"
-        {% if start %}data-start="{{ start }}"{% endif %}></video>
+      <img class="embed-image" src="{{ media.file.url }}" alt="{{ media.title }}">
     </div>
-  {% elif media.kind == "image" and media.file %}
-    <img src="{{ media.file.url }}" alt="{{ media.title }}" style="width:100%;height:100%;object-fit:contain">
+  {% elif media.file and media.kind == "video" or media.file and media.kind == "audio" %}
+    <div class="embed-frame">
+      {% if show_title %}<div class="embed-title">{{ media.title }}</div>{% endif %}
+      <div class="player" data-player data-embed="1"
+           data-src="{{ media.file.url }}"
+           {% if media.hls_url %}data-hls="{{ media.hls_url }}"{% endif %}
+           data-kind="{{ media.kind }}"
+           {% if show_title %}data-title="{{ media.title }}"{% endif %}
+           {% if media.poster %}data-poster="{{ media.poster.url }}"{% endif %}
+           {% if chapters_json != "[]" %}data-chapters="{{ chapters_json }}"{% endif %}
+           {% if storyboard_json %}data-storyboard="{{ storyboard_json }}"{% endif %}
+           {% if media.kind == "audio" %}data-visualizer="1"{% endif %}
+           {% if start %}data-start="{{ start }}"{% endif %}
+           {% if autoplay %}data-autoplay="1"{% endif %}
+           {% if not controls %}data-controls="0"{% endif %}
+           data-brand-url="{{ page_url }}" data-brand-label="{{ PORTAL_NAME }}">
+        <video class="player-media" {% if controls %}controls{% endif %} preload="metadata" playsinline
+               {% if autoplay %}autoplay muted{% endif %}
+               {% if media.poster %}poster="{{ media.poster.url }}"{% endif %}
+               src="{{ media.file.url }}"
+               {% if start %}data-start="{{ start }}"{% endif %}>
+          {% for subtitle in subtitles %}
+            <track kind="subtitles" srclang="{{ subtitle.language }}" label="{{ subtitle.display_label }}"
+                   src="{% url 'core:subtitle_vtt' media.uid subtitle.language %}">
+          {% endfor %}
+        </video>
+      </div>
+    </div>
   {% else %}
-    <p class="missing">This media is not available.</p>
+    <div class="missing"><p>{% translate "This media is not available for embedding." %}<br><a href="{{ page_url }}" target="_blank" rel="noopener">{% blocktranslate %}Open it on {{ PORTAL_NAME }}{% endblocktranslate %}</a></p></div>
   {% endif %}
 
+  <script src="{% url 'javascript-catalog' %}"></script>
   <script src="{% static 'vendor/hls.min.js' %}"></script>
   <script src="{% static 'js/player.js' %}"></script>
-  {% if start %}
-  <script>
-    (function () {
-      var v = document.querySelector("video");
-      if (!v) return;
-      var start = parseInt(v.getAttribute("data-start"), 10) || 0;
-      var seek = function () { if (start > 0) v.currentTime = start; };
-      v.addEventListener("loadedmetadata", seek, { once: true });
-    })();
-  </script>
-  {% endif %}
 </body>
 </html>

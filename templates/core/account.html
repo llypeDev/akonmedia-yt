@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load akon humanize i18n %}
+
+{% block title %}{% translate "Account" %} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">{% icon "settings" "icon-xs" %}{% translate "Account" %}</span>
+      <h1>{% translate "Settings" %}</h1>
+      <p class="lede">{% blocktranslate %}How you appear on {{ PORTAL_NAME }}, and how you sign in.{% endblocktranslate %}</p>
+    </div>
+    <a class="btn" href="{% url 'core:channel' user.pk %}">{% icon "tv" "icon-sm" %}{% translate "View your channel" %}</a>
+  </header>
+
+  <div class="split">
+    <section class="panel">
+      <div class="panel-head">
+        <h2><span class="panel-title-icon">{% icon "user" %}</span>{% translate "Public profile" %}</h2>
+      </div>
+      <div class="row" style="gap:16px; margin-bottom: 20px">
+        {% avatar user "xl" %}
+        <div>
+          <strong style="font-size:18px">{{ user.get_short_name }}</strong>
+          <div class="muted">{% blocktranslate count counter=stats.items|default:0 %}{{ counter }} upload{% plural %}{{ counter }} uploads{% endblocktranslate %} · {% blocktranslate count counter=stats.views|default:0 with shown=stats.views|default:0|compact %}{{ shown }} view{% plural %}{{ shown }} views{% endblocktranslate %}</div>
+          <span class="badge badge-role mt-1">{{ user.get_role_display }}</span>
+        </div>
+      </div>
+      <form class="form-grid" method="post">
+        {% csrf_token %}
+        <label class="field">
+          <span class="field-label">{% translate "Display name" %} <span class="hint">{% translate "shown on your uploads and comments" %}</span></span>
+          <input type="text" name="display_name" maxlength="120" value="{{ user.display_name }}" placeholder="{{ user.get_short_name }}">
+        </label>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">{% icon "check" "icon-sm" %}{% translate "Save profile" %}</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2><span class="panel-title-icon">{% icon "key" %}</span>{% translate "Sign-in" %}</h2>
+      </div>
+      <dl class="spec-grid" style="grid-template-columns: 1fr">
+        <div class="spec"><dt>{% translate "Email" %}</dt><dd>{{ user.email }}</dd></div>
+        <div class="spec"><dt>{% translate "Member since" %}</dt><dd>{{ user.date_joined|date:"SHORT_DATE_FORMAT" }}</dd></div>
+        <div class="spec"><dt>{% translate "Last sign-in" %}</dt><dd>{{ user.last_login|date:"SHORT_DATETIME_FORMAT"|default:"—" }}</dd></div>
+      </dl>
+      <div class="btn-group mt-2">
+        <a class="btn" href="{% url 'account_email' %}">{% icon "mail" "icon-sm" %}{% translate "Email addresses" %}</a>
+        <a class="btn" href="{% url 'account_change_password' %}">{% icon "lock" "icon-sm" %}{% translate "Change password" %}</a>
+      </div>
+      <hr class="divider">
+      <form method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}
+        <button class="btn btn-ghost" type="submit">{% icon "log-out" "icon-sm" %}{% translate "Sign out of this device" %}</button>
+      </form>
+    </section>
+  </div>
+{% endblock %}

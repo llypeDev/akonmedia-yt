@@ -24,6 +24,23 @@ EXTRA_TYPES = {
     ".ts": "video/mp2t",
     ".vtt": "text/vtt; charset=utf-8",
     ".m4s": "video/iso.segment",
+    ".mp4": "video/mp4",
+    ".m4v": "video/mp4",
+    ".m4a": "audio/mp4",
+    ".mov": "video/quicktime",
+    ".mkv": "video/x-matroska",
+    ".webm": "video/webm",
+    ".weba": "audio/webm",
+    ".ogv": "video/ogg",
+    ".oga": "audio/ogg",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/ogg",
+    ".flac": "audio/flac",
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".webp": "image/webp",
+    ".avif": "image/avif",
+    ".heic": "image/heic",
 }
 
 
@@ -33,6 +50,35 @@ def content_type_for(path: str) -> str:
         return EXTRA_TYPES[ext]
     guessed, _ = mimetypes.guess_type(path)
     return guessed or "application/octet-stream"
+
+
+#: Types a browser may render inline from our origin. Anything else (HTML,
+#: JavaScript, XML…) is downloaded instead, so an upload can never run script
+#: with the portal's cookies.
+INLINE_PREFIXES = ("video/", "audio/", "image/")
+INLINE_TYPES = {
+    "application/pdf",
+    "application/vnd.apple.mpegurl",
+    "text/vtt; charset=utf-8",
+}
+
+#: Applied to every media response. Harmless for <video> and <img>, which
+#: ignore it, and it neuters an SVG or text file opened directly.
+SANDBOX_POLICY = "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'"
+
+
+def _harden(response, content_type: str, filename: str) -> None:
+    response["X-Content-Type-Options"] = "nosniff"
+    inline = content_type in INLINE_TYPES or (
+        content_type.startswith(INLINE_PREFIXES) and content_type != "image/svg+xml"
+    )
+    if content_type == "image/svg+xml":
+        inline = True  # shown as a picture, but sandboxed below
+    if not inline:
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    if content_type != "application/pdf":
+        # Chrome's PDF viewer will not run inside a sandboxed document.
+        response["Content-Security-Policy"] = SANDBOX_POLICY
 
 
 class _LimitedReader:
@@ -66,23 +112,24 @@ def serve_media(request, path: str):
 
     size = os.path.getsize(full_path)
     content_type = content_type_for(full_path)
+    filename = os.path.basename(full_path).replace('"', "")
 
     header = request.headers.get("Range", "").strip()
     match = RANGE_RE.match(header) if header else None
 
-    if match is None:
+    if match is None or (match.group(1) == "" and match.group(2) == ""):
         response = FileResponse(open(full_path, "rb"), content_type=content_type)
         response["Accept-Ranges"] = "bytes"
         response["Content-Length"] = str(size)
+        _harden(response, content_type, filename)
         return response
 
     first, last = match.group(1), match.group(2)
 
-    if first == "" and last == "":
-        response = FileResponse(open(full_path, "rb"), content_type=content_type)
-        response["Accept-Ranges"] = "bytes"
-        response["Content-Length"] = str(size)
-        return response
+    if first == "" and (int(last) == 0 or size == 0):
+        unsatisfiable = HttpResponse(status=416)
+        unsatisfiable["Content-Range"] = f"bytes */{size}"
+        return unsatisfiable
 
     if first == "":
         # Suffix range: the last N bytes.
@@ -96,6 +143,10 @@ def serve_media(request, path: str):
             unsatisfiable["Content-Range"] = f"bytes */{size}"
             return unsatisfiable
         end = min(int(last), size - 1) if last else size - 1
+        if end < start:
+            invalid = HttpResponse(status=416)
+            invalid["Content-Range"] = f"bytes */{size}"
+            return invalid
 
     length = end - start + 1
 
@@ -107,4 +158,5 @@ def serve_media(request, path: str):
     response["Accept-Ranges"] = "bytes"
     response["Content-Range"] = f"bytes {start}-{end}/{size}"
     response["Content-Length"] = str(length)
+    _harden(response, content_type, filename)
     return response

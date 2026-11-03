@@ -38,7 +38,7 @@ class ManageAccessTests(TestCase):
         self.client.force_login(self.editor)
         response = self.client.get("/manage/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Encoding queue")
+        self.assertContains(response, "Fila de codificação")
 
     def test_member_cannot_fire_actions(self):
         self.client.force_login(self.member)

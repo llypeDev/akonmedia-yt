@@ -25,6 +25,11 @@ class Probe:
     width: int
     height: int
     codec: str
+    #: True when the file carries a real picture stream (not just cover art).
+    has_video: bool = False
+    has_audio: bool = False
+    #: True when the only picture is an embedded cover (ID3 APIC, MP4 covr).
+    has_cover: bool = False
 
 
 def _binary(name: str) -> str:
@@ -55,7 +60,10 @@ def probe(path: str | Path) -> Probe:
 
     data = json.loads(result.stdout or "{}")
     streams = data.get("streams", [])
-    video = next((s for s in streams if s.get("codec_type") == "video"), None)
+    pictures = [s for s in streams if s.get("codec_type") == "video"]
+    covers = [s for s in pictures if (s.get("disposition") or {}).get("attached_pic")]
+    moving = [s for s in pictures if s not in covers]
+    video = moving[0] if moving else None
     audio = next((s for s in streams if s.get("codec_type") == "audio"), None)
     chosen = video or audio or {}
 
@@ -71,6 +79,9 @@ def probe(path: str | Path) -> Probe:
         width=int(chosen.get("width") or 0),
         height=int(chosen.get("height") or 0),
         codec=chosen.get("codec_name", ""),
+        has_video=video is not None,
+        has_audio=audio is not None,
+        has_cover=bool(covers),
     )
 
 
@@ -94,6 +105,57 @@ def extract_poster(source: str | Path, target: str | Path, at: float = 1.0) -> P
             return target
 
     raise PipelineError("could not extract a frame from the source")
+
+
+#: H.264 profile names to profile_idc and the constraint byte x264 writes.
+H264_PROFILES = {
+    "Constrained Baseline": (0x42, 0xE0),
+    "Baseline": (0x42, 0xE0),
+    "Main": (0x4D, 0x40),
+    "High": (0x64, 0x00),
+}
+AAC_PROFILES = {"LC": "mp4a.40.2", "HE-AAC": "mp4a.40.5", "HE-AACv2": "mp4a.40.29"}
+
+
+def variant_codecs(variant_dir: str | Path) -> str:
+    """RFC 6381 codec string for one rendition, e.g. ``avc1.4d401f,mp4a.40.2``.
+
+    Read from the first segment rather than assumed from the encoder flags, so
+    the master playlist never advertises a level the stream does not have.
+    Returns an empty string when anything is unknown: no CODECS attribute is
+    better than a wrong one, which some players refuse to play.
+    """
+    ffprobe = shutil.which("ffprobe")
+    segments = sorted(Path(variant_dir).glob("seg_*.ts"))
+    if not ffprobe or not segments:
+        return ""
+    result = subprocess.run(
+        [ffprobe, "-v", "error", "-show_entries", "stream=codec_type,codec_name,profile,level",
+         "-of", "json", str(segments[0])],
+        capture_output=True, text=True, timeout=60,
+    )
+    if result.returncode != 0:
+        return ""
+    try:
+        streams = json.loads(result.stdout or "{}").get("streams", [])
+    except ValueError:
+        return ""
+
+    parts = []
+    for stream in streams:
+        kind, codec = stream.get("codec_type"), stream.get("codec_name")
+        if kind == "video":
+            profile = H264_PROFILES.get(stream.get("profile", ""))
+            level = stream.get("level")
+            if codec != "h264" or profile is None or not isinstance(level, int) or level <= 0:
+                return ""
+            parts.append(f"avc1.{profile[0]:02x}{profile[1]:02x}{level:02x}")
+        elif kind == "audio":
+            audio = AAC_PROFILES.get(stream.get("profile", ""))
+            if codec != "aac" or audio is None:
+                return ""
+            parts.append(audio)
+    return ",".join(parts)
 
 
 #: (height, video bitrate in kbit/s). A source never gets a rendition taller
@@ -176,6 +238,9 @@ def to_hls(
             attributes = f"RESOLUTION={variant_width}x{target_height},"
         else:
             attributes = ""
+        codecs = variant_codecs(out_dir / f"{target_height}p")
+        if codecs:
+            attributes += f'CODECS="{codecs}",'
         lines.append(
             f"#EXT-X-STREAM-INF:{attributes}BANDWIDTH={(bitrate + AUDIO_BITRATE_KBPS) * 1000}"
         )
@@ -183,3 +248,228 @@ def to_hls(
 
     master.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     return master
+
+
+# --------------------------------------------------------------------------
+# posters for things that are not a video frame
+# --------------------------------------------------------------------------
+
+#: Aurora palette shared with the brand: mint, cyan, violet.
+WAVE_COLOURS = ((46, 230, 166), (34, 211, 238), (124, 108, 255))
+POSTER_SIZE = (1280, 720)
+POSTER_BACKGROUND = (5, 7, 12)
+
+
+def extract_cover(source: str | Path, target: str | Path) -> Path:
+    """Write the cover art embedded in an audio file (ID3 APIC, MP4 covr)."""
+    ffmpeg = _binary("ffmpeg")
+    target = Path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    result = subprocess.run(
+        [
+            ffmpeg, "-y", "-i", str(source), "-map", "0:v:0", "-frames:v", "1",
+            "-vf", "scale='min(1280,iw)':-2", "-q:v", "3", str(target),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    if result.returncode != 0 or not target.exists() or target.stat().st_size == 0:
+        raise PipelineError("no usable cover art in the file")
+    return target
+
+
+def _gradient(size: tuple[int, int]):
+    """A left-to-right image running through the brand colours."""
+    from PIL import Image
+
+    width, height = size
+    strip = Image.new("RGB", (width, 1))
+    pixels = strip.load()
+    stops = len(WAVE_COLOURS) - 1
+    for x in range(width):
+        position = x / max(1, width - 1) * stops
+        index = min(int(position), stops - 1)
+        blend = position - index
+        start, end = WAVE_COLOURS[index], WAVE_COLOURS[index + 1]
+        pixels[x, 0] = tuple(round(a + (b - a) * blend) for a, b in zip(start, end))
+    return strip.resize((width, height))
+
+
+def waveform_poster(source: str | Path, target: str | Path) -> Path:
+    """Draw the audio as a waveform on a dark, faintly gridded 16:9 card.
+
+    ffmpeg renders the amplitude envelope; Pillow colours it with the brand
+    gradient and adds a soft reflection, so audio sits in the library next to
+    video without looking like a missing thumbnail.
+    """
+    from PIL import Image, ImageDraw, ImageFilter
+
+    ffmpeg = _binary("ffmpeg")
+    target = Path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    width, height = POSTER_SIZE
+    wave_height = 300
+    raw = target.with_name(f".{target.stem}-wave.png")
+
+    result = subprocess.run(
+        [
+            ffmpeg, "-y", "-i", str(source),
+            "-filter_complex",
+            f"aformat=channel_layouts=mono,showwavespic=s={width - 160}x{wave_height}"
+            ":colors=white:scale=sqrt:draw=full",
+            "-frames:v", "1", str(raw),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    try:
+        if result.returncode != 0 or not raw.exists():
+            raise PipelineError(f"waveform failed: {result.stderr.strip()[-300:]}")
+
+        with Image.open(raw) as rendered:
+            mask = rendered.convert("L")
+
+        card = Image.new("RGB", POSTER_SIZE, POSTER_BACKGROUND)
+        grid = ImageDraw.Draw(card)
+        for x in range(0, width, 40):
+            grid.line([(x, 0), (x, height)], fill=(12, 17, 27))
+        for y in range(0, height, 40):
+            grid.line([(0, y), (width, y)], fill=(12, 17, 27))
+
+        top = (height - wave_height) // 2
+        colour = _gradient(mask.size)
+
+        glow = Image.new("L", POSTER_SIZE, 0)
+        glow.paste(mask, (80, top))
+        glow = glow.filter(ImageFilter.GaussianBlur(18)).point(lambda v: int(v * 0.55))
+        card.paste(_gradient(POSTER_SIZE), (0, 0), glow)
+        card.paste(colour, (80, top), mask)
+
+        reflection = mask.transpose(Image.Transpose.FLIP_TOP_BOTTOM).point(lambda v: int(v * 0.18))
+        lower = top + wave_height + 6
+        visible = max(0, min(wave_height, height - lower))
+        if visible:
+            card.paste(colour.crop((0, 0, mask.width, visible)), (80, lower),
+                       reflection.crop((0, 0, mask.width, visible)))
+
+        card.save(target, "JPEG", quality=88, optimize=True, progressive=True)
+    finally:
+        raw.unlink(missing_ok=True)
+    return target
+
+
+def image_poster(source: str | Path, target: str | Path, longest: int = 1280) -> tuple[int, int]:
+    """Write a JPEG thumbnail of an image and return the original size.
+
+    EXIF orientation is applied first, so a portrait phone photo is not shown
+    on its side. Transparency is flattened onto the page background.
+    """
+    from PIL import Image, ImageOps
+
+    target = Path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with Image.open(source) as opened:
+            image = ImageOps.exif_transpose(opened)
+            size = image.size
+            image.thumbnail((longest, longest))
+            if image.mode in ("RGBA", "LA", "P"):
+                image = image.convert("RGBA")
+                flat = Image.new("RGB", image.size, POSTER_BACKGROUND)
+                flat.paste(image, mask=image.getchannel("A"))
+                image = flat
+            image.convert("RGB").save(target, "JPEG", quality=86, optimize=True, progressive=True)
+    except Exception as exc:  # noqa: BLE001 - Pillow raises many unrelated types
+        raise PipelineError(f"could not read the image: {exc}") from exc
+    return size
+
+
+def pdf_available() -> bool:
+    return bool(shutil.which("pdftoppm"))
+
+
+def pdf_poster(source: str | Path, target: str | Path) -> Path:
+    """Render the first page of a PDF (needs poppler's pdftoppm)."""
+    pdftoppm = shutil.which("pdftoppm")
+    if not pdftoppm:
+        raise PipelineUnavailable("pdftoppm is not installed")
+    target = Path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    prefix = target.with_suffix("")
+    result = subprocess.run(
+        [pdftoppm, "-jpeg", "-jpegopt", "quality=85", "-f", "1", "-l", "1",
+         "-singlefile", "-scale-to", "1280", str(source), str(prefix)],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    produced = prefix.with_suffix(".jpg")
+    if result.returncode != 0 or not produced.exists():
+        raise PipelineError(f"could not render the first page: {result.stderr.strip()[-200:]}")
+    if produced != target:
+        produced.replace(target)
+    return target
+
+
+# --------------------------------------------------------------------------
+# seek previews
+# --------------------------------------------------------------------------
+
+STORYBOARD_TILE = (160, 90)
+STORYBOARD_COLUMNS = 10
+STORYBOARD_MAX_TILES = 100
+
+
+def plan_storyboard(duration: float) -> tuple[float, int]:
+    """Pick (interval in seconds, number of tiles) for a clip of this length."""
+    if duration <= 0:
+        return 0.0, 0
+    interval = max(1.0, duration / STORYBOARD_MAX_TILES)
+    interval = round(interval, 2)
+    count = max(1, min(STORYBOARD_MAX_TILES, int(duration // interval) + (1 if duration % interval else 0)))
+    return interval, count
+
+
+def storyboard(source: str | Path, target: str | Path, duration: float) -> dict:
+    """Write one sprite sheet of evenly spaced thumbnails for the seek bar.
+
+    Returns the metadata a player needs to find a tile: interval, grid shape,
+    tile size and count. One request covers the whole timeline.
+    """
+    ffmpeg = _binary("ffmpeg")
+    interval, count = plan_storyboard(duration)
+    if not count:
+        raise PipelineError("cannot plan a storyboard without a duration")
+
+    target = Path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tile_w, tile_h = STORYBOARD_TILE
+    columns = min(STORYBOARD_COLUMNS, count)
+    rows = (count + columns - 1) // columns
+
+    result = subprocess.run(
+        [
+            ffmpeg, "-y", "-i", str(source), "-an",
+            "-vf",
+            f"fps=1/{interval},scale={tile_w}:{tile_h}:force_original_aspect_ratio=decrease,"
+            f"pad={tile_w}:{tile_h}:(ow-iw)/2:(oh-ih)/2:color=black,"
+            f"tile={columns}x{rows}",
+            "-frames:v", "1", "-q:v", "5", str(target),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60 * 30,
+    )
+    if result.returncode != 0 or not target.exists():
+        raise PipelineError(f"storyboard failed: {result.stderr.strip()[-300:]}")
+
+    return {
+        "interval": interval,
+        "cols": columns,
+        "rows": rows,
+        "width": tile_w,
+        "height": tile_h,
+        "count": count,
+    }

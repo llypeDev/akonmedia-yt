@@ -28,3 +28,6 @@
 # documentation not needed inside the image
 /README.md
 /OPERATIONS.md
+
+# screenshots for the README
+/docs

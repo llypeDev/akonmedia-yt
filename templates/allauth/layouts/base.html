@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load static %}
+{% comment %}
+  Every django-allauth page (sign in, sign up, password reset, email
+  management) renders inside the portal shell, in a single centred card.
+{% endcomment %}
+{% block title %}{% block head_title %}{% endblock head_title %} — {{ PORTAL_NAME }}{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+{% block main %}
+  <div class="content auth-page">
+    <div class="auth-card {% block auth_class %}{% endblock %}">
+      <img class="auth-mark" src="{% static 'brand/logo-mark.svg' %}" alt="" width="48" height="48">
+      {% block auth_nav %}{% endblock %}
+      {% block content %}{% endblock content %}
+    </div>
+  </div>
+{% endblock %}

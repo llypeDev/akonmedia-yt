@@ -1,0 +1,50 @@
+{% load akon i18n %}
+<li class="comment" id="c-{{ comment.pk }}">
+  <a href="{% url 'core:channel' comment.author_id %}" title="{{ comment.author.get_short_name }}">{% avatar comment.author is_reply|yesno:"sm,md" %}</a>
+  <div class="comment-body">
+    <div class="comment-head">
+      <a class="comment-author {% if comment.author_id == media.owner_id %}is-owner{% endif %}" href="{% url 'core:channel' comment.author_id %}">{{ comment.author.get_short_name }}</a>
+      {% if comment.timestamp is not None %}
+        <button type="button" class="ts-chip" data-seek="{{ comment.timestamp|floatformat:0 }}" title="{% translate "Jump to this moment" %}">{% icon "clock" "icon-xs" %}{{ comment.timestamp|clock }}</button>
+      {% endif %}
+      <a class="comment-time" href="#c-{{ comment.pk }}">{% blocktranslate with since=comment.created_at|timesince %}{{ since }} ago{% endblocktranslate %}</a>
+    </div>
+    <div class="comment-text">{{ comment.body|timestamps }}</div>
+    <div class="comment-actions">
+      {% if user.is_authenticated and media.state == "ready" %}
+        <details class="reply">
+          <summary class="link-btn">{% icon "reply" "icon-xs" %} {% translate "Reply" %}</summary>
+          <form class="reply-form" method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="parent" value="{{ comment.pk }}">
+            <textarea class="textarea" name="body" rows="2" maxlength="4000" placeholder="{% blocktranslate with name=comment.author.get_short_name %}Reply to {{ name }}…{% endblocktranslate %}" required></textarea>
+            <div class="row"><button type="submit" class="btn btn-primary btn-sm">{% icon "send" "icon-sm" %}{% translate "Reply" %}</button></div>
+          </form>
+        </details>
+      {% endif %}
+      {% if user.is_authenticated and comment.author_id == user.id or can_moderate %}
+        <form method="post" action="{% url 'core:comment_action' comment.pk %}" data-confirm="{% if is_reply %}{% translate "Delete this comment?" %}{% else %}{% translate "Delete this comment and its replies?" %}{% endif %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}#comments">
+          <button type="submit" class="link-btn danger">{% translate "Delete" %}</button>
+        </form>
+      {% endif %}
+      {% if can_moderate %}
+        <form method="post" action="{% url 'core:comment_action' comment.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="hide">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}#comments">
+          <button type="submit" class="link-btn">{% translate "Hide" %}</button>
+        </form>
+      {% endif %}
+    </div>
+    {% if comment.visible_replies %}
+      <ul class="replies">
+        {% for reply in comment.visible_replies %}
+          {% include "core/_comment.html" with comment=reply is_reply=True %}
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</li>

@@ -5,9 +5,10 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# ffmpeg does the encoding; libpq is the client library psycopg links against.
+# ffmpeg does the encoding, poppler-utils renders PDF first-page previews, and
+# libpq is the client library psycopg links against.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg libpq5 \
+ && apt-get install -y --no-install-recommends ffmpeg poppler-utils libpq5 \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -25,6 +26,9 @@ RUN useradd --create-home --uid 1000 app \
 USER app
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD python -c "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=4).status == 200 else 1)"
 
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", \

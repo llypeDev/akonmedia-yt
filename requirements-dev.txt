@@ -1,0 +1,11 @@
+# Tools for regenerating the brand kit, the web fonts and the icon sprite:
+#
+#     python tools/build_logo.py
+#
+# Not needed to run the application. cairosvg also needs the system cairo
+# library (libcairo2 on Debian/Ubuntu, `brew install cairo` on macOS).
+-r requirements.txt
+fonttools==4.68.0
+brotli==1.2.1
+uharfbuzz==0.57.0
+cairosvg==2.9.1

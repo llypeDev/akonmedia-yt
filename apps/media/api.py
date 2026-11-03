@@ -44,6 +44,9 @@ class MediaViewSet(viewsets.ModelViewSet):
         user = self.request.user
 
         published = Q(visibility=Media.Visibility.PUBLIC, state=Media.State.READY)
+        if self.action != "list":
+            # Unlisted means "anyone with the link": fetchable, never listed.
+            published |= Q(visibility=Media.Visibility.UNLISTED, state=Media.State.READY)
 
         if user.is_authenticated:
             if not policy.can_curate_others(user):

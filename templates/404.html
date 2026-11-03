@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load akon i18n %}
+{% block title %}{% translate "Not found" %} — {{ PORTAL_NAME }}{% endblock %}
+{% block content %}
+  <section class="error-page">
+    <div>
+      <div class="error-code mono">404</div>
+      <h1>{% translate "Nothing is streaming here" %}</h1>
+      <p>{% translate "The page or media you asked for does not exist, was removed, or is private." %}</p>
+      <div class="btn-group">
+        <a class="btn btn-primary" href="{% url 'core:index' %}">{% icon "home" "icon-sm" %}{% translate "Back to the library" %}</a>
+        <a class="btn" href="{% url 'core:search' %}">{% icon "search" "icon-sm" %}{% translate "Search" %}</a>
+      </div>
+    </div>
+  </section>
+{% endblock %}

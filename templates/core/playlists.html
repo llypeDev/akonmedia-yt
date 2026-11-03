@@ -1,42 +1,63 @@
 {% extends "base.html" %}
+{% load akon i18n %}
 
-{% block title %}Playlists — {{ PORTAL_NAME }}{% endblock %}
+{% block title %}{% translate "Playlists" %} — {{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
-  <section class="intro">
-    <h1>Playlists</h1>
-    <p class="lede">Ordered collections of media you can share or embed.</p>
-  </section>
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">{% icon "list-video" "icon-xs" %}{% translate "Playlists" %}</span>
+      <h1>{% translate "Collections" %}</h1>
+      <p class="lede">{% translate "Ordered collections of media you can share, embed and play back to back." %}</p>
+    </div>
+    {% if user.is_authenticated %}
+      <details class="dropdown" data-dropdown data-autofocus>
+        <summary class="btn btn-primary">{% icon "plus" "icon-sm" %}{% translate "New playlist" %}</summary>
+        <div class="dropdown-menu" style="width:min(340px, 86vw)">
+          <form class="menu-form" method="post" action="{% url 'core:playlists' %}">
+            {% csrf_token %}
+            <div class="menu-label" style="padding-left:0">{% translate "Create a playlist" %}</div>
+            <input class="input" type="text" name="title" maxlength="255" placeholder="{% translate 'New playlist title' %}" required aria-label="{% translate 'Title' %}">
+            <textarea class="textarea" name="description" rows="2" maxlength="2000" placeholder="{% translate 'Description (optional)' %}" aria-label="{% translate 'Description' %}"></textarea>
+            <select class="select" name="visibility" aria-label="{% translate 'Visibility' %}">
+              {% for value, label in visibilities %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">{% icon "plus" "icon-sm" %}{% translate "Create" %}</button>
+          </form>
+        </div>
+      </details>
+    {% endif %}
+  </header>
 
   {% if user.is_authenticated %}
-    <form class="inline-form" method="post" action="{% url 'core:playlists' %}">
-      {% csrf_token %}
-      <input type="text" name="title" maxlength="255" placeholder="New playlist title" required>
-      <select name="visibility">
-        <option value="public">Public</option>
-        <option value="unlisted">Unlisted</option>
-        <option value="private">Private</option>
-      </select>
-      <button type="submit" class="button">Create</button>
-    </form>
+    <section class="section">
+      <div class="section-head"><h2>{% icon "user" %}{% translate "Your playlists" %}</h2></div>
+      {% if my_playlists %}
+        <div class="grid grid-tight">
+          {% for playlist in my_playlists %}{% include "core/_playlist_card.html" with editable=True %}{% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state compact">
+          <div class="empty-icon">{% icon "list-plus" %}</div>
+          <h3>{% translate "No playlists yet" %}</h3>
+          <p>{% translate "Create one here, or use “Save” under any video to start a collection." %}</p>
+        </div>
+      {% endif %}
+    </section>
   {% endif %}
 
-  {% if playlists %}
-    <ul class="playlist-list">
-      {% for playlist in playlists %}
-        <li>
-          <a class="playlist-title" href="{% url 'core:playlist' playlist.uid %}">{{ playlist.title }}</a>
-          <span class="playlist-meta">
-            {{ playlist.owner.get_short_name }} · {{ playlist.entries.count }} item{{ playlist.entries.count|pluralize }}
-            · {{ playlist.get_visibility_display }}
-          </span>
-          {% if playlist.owner == user %}
-            <a class="playlist-edit" href="{% url 'core:playlist_edit' playlist.uid %}">Edit</a>
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="empty">No playlists yet.</p>
-  {% endif %}
+  <section class="section">
+    <div class="section-head"><h2>{% icon "globe" %}{% if user.is_authenticated %}{% translate "From the community" %}{% else %}{% translate "Public playlists" %}{% endif %}</h2></div>
+    {% if playlists %}
+      <div class="grid grid-tight">
+        {% for playlist in playlists %}{% include "core/_playlist_card.html" %}{% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state compact">
+        <div class="empty-icon">{% icon "list-video" %}</div>
+        <h3>{% translate "No public playlists yet" %}</h3>
+        <p>{% translate "When someone publishes a playlist it shows up here." %}</p>
+      </div>
+    {% endif %}
+  </section>
 {% endblock %}

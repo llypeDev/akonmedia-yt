@@ -76,10 +76,20 @@ def media_detail(request, uid: str):
         .order_by("created_at")
     )
 
+    can_edit = request.user.is_authenticated and (
+        is_owner or policy.can_curate_others(request.user)
+    )
+
     return render(
         request,
         "core/media_detail.html",
-        {"media": media, "comments": comments, "is_owner": is_owner},
+        {
+            "media": media,
+            "comments": comments,
+            "is_owner": is_owner,
+            "can_edit": can_edit,
+            "subtitles": media.subtitles.all(),
+        },
     )
 
 

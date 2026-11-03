@@ -6,8 +6,8 @@ directory is original work and is licensed MIT (see `LICENSE`).
 
 ## Status
 
-Phase 4 of 6 — playback and contribution. The player is adaptive, media can be
-embedded anywhere, and uploads happen from the browser with resume.
+Phase 5 of 6 — curation and captions. Playlists, moderation queues and an
+in-browser subtitle editor are working. What remains is the cut-over itself.
 
 | Area | State |
 |---|---|
@@ -23,7 +23,10 @@ embedded anywhere, and uploads happen from the browser with resume.
 | Public library page, media page, comments, search | done |
 | Adaptive HLS player with progressive fallback (vendored hls.js) | done |
 | Embed page with iframe snippet, start time and title options | done |
-| Playlist UI, moderation queues, subtitle editor | next |
+| Playlists: create, add, remove, reorder, share | done |
+| Curation queue: encoding, failures with retry, hidden comments | done |
+| Subtitle upload (SRT/VTT), cue editor, WebVTT served per track | done |
+| Cut-over: delete the legacy tree, switch the licence | next |
 
 ## Requirements
 

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Subtitles — {{ media.title }}{% endblock %}
+
+{% block content %}
+  <section class="intro">
+    <h1>Subtitles</h1>
+    <p class="lede">
+      {{ media.title }} · {{ subtitle.display_label }}
+      · <a href="{% url 'core:media' media.uid %}">Back to media</a>
+    </p>
+  </section>
+
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}<li class="message">{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post" action="{% url 'core:subtitle_editor' media.uid subtitle.language %}">
+    {% csrf_token %}
+
+    <table class="table cue-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-time">Start</th>
+          <th class="col-time">End</th>
+          <th>Text</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cue in cues %}
+          <tr>
+            <td class="col-num">{{ forloop.counter }}</td>
+            <td class="col-time">
+              <input type="text" name="cue_start" value="{{ cue.start_label }}" inputmode="numeric">
+            </td>
+            <td class="col-time">
+              <input type="text" name="cue_end" value="{{ cue.end_label }}" inputmode="numeric">
+            </td>
+            <td><textarea name="cue_text" rows="2">{{ cue.text }}</textarea></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="muted">No cues on this track.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="actions">
+      <button type="submit" class="button">Save cues</button>
+    </div>
+  </form>
+
+  <form method="post" action="{% url 'core:subtitle_delete' media.uid subtitle.language %}"
+        onsubmit="return confirm('Remove this subtitle track?');">
+    {% csrf_token %}
+    <button type="submit" class="link danger">Delete this track</button>
+  </form>
+{% endblock %}

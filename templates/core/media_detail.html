@@ -19,7 +19,13 @@
              {% if media.poster %}poster="{{ media.poster.url }}"{% endif %}
              {% if media.hls_url %}data-hls="{{ media.hls_url }}"{% endif %}
              data-fallback="{{ media.file.url }}"
-             src="{{ media.file.url }}"></video>
+             src="{{ media.file.url }}">
+        {% for subtitle in subtitles %}
+          <track kind="subtitles" srclang="{{ subtitle.language }}"
+                 label="{{ subtitle.display_label }}" default
+                 src="{% url 'core:subtitle_vtt' media.uid subtitle.language %}">
+        {% endfor %}
+      </video>
     {% endif %}
   </div>
 
@@ -40,6 +46,38 @@
         <h2>Embed</h2>
         <p class="muted">Paste this into any page that accepts HTML.</p>
         <textarea class="embed-code" rows="3" readonly onclick="this.select()">&lt;iframe src="{{ request.scheme }}://{{ request.get_host }}{% url 'core:embed' media.uid %}" width="640" height="360" frameborder="0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"&gt;&lt;/iframe&gt;</textarea>
+      </section>
+
+      <section class="subtitles-panel">
+        <h2>Subtitles</h2>
+        {% if subtitles %}
+          <ul class="entry-list">
+            {% for subtitle in subtitles %}
+              <li>
+                <span class="entry-title">{{ subtitle.display_label }}</span>
+                <span class="entry-meta">{{ subtitle.cues.count }} cue{{ subtitle.cues.count|pluralize }}</span>
+                <span class="entry-actions">
+                  {% if can_edit %}
+                    <a class="link" href="{% url 'core:subtitle_editor' media.uid subtitle.language %}">Edit</a>
+                  {% endif %}
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">No subtitle tracks yet.</p>
+        {% endif %}
+
+        {% if can_edit %}
+          <form class="inline-form" method="post" action="{% url 'core:subtitle_upload' media.uid %}"
+                enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="text" name="language" placeholder="Language code (en, pt-BR)" maxlength="16" required>
+            <input type="text" name="label" placeholder="Label (optional)" maxlength="120">
+            <input type="file" name="file" accept=".srt,.vtt,text/vtt" required>
+            <button type="submit" class="button">Upload</button>
+          </form>
+        {% endif %}
       </section>
 
       {% if media.chapters.all %}

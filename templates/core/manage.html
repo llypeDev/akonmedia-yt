@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Manage — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <section class="intro">
+    <h1>Manage</h1>
+    <p class="lede">Curation queues. Everything here needs a decision.</p>
+  </section>
+
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}<li class="message">{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  <section class="panel">
+    <h2>Encoding queue <span class="count">{{ queue|length }}</span></h2>
+    {% if queue %}
+      <table class="table">
+        <thead><tr><th>Title</th><th>Owner</th><th>State</th><th></th></tr></thead>
+        <tbody>
+          {% for media in queue %}
+            <tr>
+              <td><a href="{% url 'core:media' media.uid %}">{{ media.title }}</a></td>
+              <td>{{ media.owner.get_short_name }}</td>
+              <td><span class="state">{{ media.get_state_display }}</span></td>
+              <td>
+                <form method="post" action="{% url 'core:manage_action' %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="kind" value="media">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="id" value="{{ media.pk }}">
+                  <button class="link danger" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Nothing waiting.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Failed <span class="count">{{ failed|length }}</span></h2>
+    {% if failed %}
+      <table class="table">
+        <thead><tr><th>Title</th><th>Owner</th><th>Reason</th><th></th></tr></thead>
+        <tbody>
+          {% for media in failed %}
+            <tr>
+              <td><a href="{% url 'core:media' media.uid %}">{{ media.title }}</a></td>
+              <td>{{ media.owner.get_short_name }}</td>
+              <td class="reason">{{ media.failure_reason|truncatechars:90 }}</td>
+              <td>
+                <form method="post" action="{% url 'core:manage_action' %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="kind" value="media">
+                  <input type="hidden" name="action" value="retry">
+                  <input type="hidden" name="id" value="{{ media.pk }}">
+                  <button class="link" type="submit">Retry</button>
+                </form>
+                <form method="post" action="{% url 'core:manage_action' %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="kind" value="media">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="id" value="{{ media.pk }}">
+                  <button class="link danger" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">No failures.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Hidden comments <span class="count">{{ hidden_comments|length }}</span></h2>
+    {% if hidden_comments %}
+      <ul class="entry-list">
+        {% for comment in hidden_comments %}
+          <li>
+            <span class="entry-title">{{ comment.author.get_short_name }} on {{ comment.media.title }}</span>
+            <span class="entry-meta">{{ comment.body|truncatechars:70 }}</span>
+            <span class="entry-actions">
+              <form method="post" action="{% url 'core:manage_action' %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="kind" value="comment">
+                <input type="hidden" name="action" value="unhide">
+                <input type="hidden" name="id" value="{{ comment.pk }}">
+                <button class="link" type="submit">Restore</button>
+              </form>
+              <form method="post" action="{% url 'core:manage_action' %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="kind" value="comment">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="id" value="{{ comment.pk }}">
+                <button class="link danger" type="submit">Delete</button>
+              </form>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">Nothing hidden.</p>
+    {% endif %}
+  </section>
+{% endblock %}

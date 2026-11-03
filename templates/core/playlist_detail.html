@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ playlist.title }} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <section class="intro">
+    <h1>{{ playlist.title }}</h1>
+    <p class="lede">
+      {{ playlist.owner.get_short_name }} · {{ entries|length }} item{{ entries|length|pluralize }}
+      {% if can_edit %} · <a href="{% url 'core:playlist_edit' playlist.uid %}">Edit playlist</a>{% endif %}
+    </p>
+    {% if playlist.description %}<p class="prose">{{ playlist.description|linebreaks }}</p>{% endif %}
+  </section>
+
+  {% if entries %}
+    <div class="grid">
+      {% for entry in entries %}
+        {% include "core/_card.html" with media=entry.media %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">This playlist is empty.</p>
+  {% endif %}
+{% endblock %}

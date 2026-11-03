@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Playlists — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <section class="intro">
+    <h1>Playlists</h1>
+    <p class="lede">Ordered collections of media you can share or embed.</p>
+  </section>
+
+  {% if user.is_authenticated %}
+    <form class="inline-form" method="post" action="{% url 'core:playlists' %}">
+      {% csrf_token %}
+      <input type="text" name="title" maxlength="255" placeholder="New playlist title" required>
+      <select name="visibility">
+        <option value="public">Public</option>
+        <option value="unlisted">Unlisted</option>
+        <option value="private">Private</option>
+      </select>
+      <button type="submit" class="button">Create</button>
+    </form>
+  {% endif %}
+
+  {% if playlists %}
+    <ul class="playlist-list">
+      {% for playlist in playlists %}
+        <li>
+          <a class="playlist-title" href="{% url 'core:playlist' playlist.uid %}">{{ playlist.title }}</a>
+          <span class="playlist-meta">
+            {{ playlist.owner.get_short_name }} · {{ playlist.entries.count }} item{{ playlist.entries.count|pluralize }}
+            · {{ playlist.get_visibility_display }}
+          </span>
+          {% if playlist.owner == user %}
+            <a class="playlist-edit" href="{% url 'core:playlist_edit' playlist.uid %}">Edit</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">No playlists yet.</p>
+  {% endif %}
+{% endblock %}

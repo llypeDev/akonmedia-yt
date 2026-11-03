@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ playlist.title }} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <section class="intro">
+    <h1>Edit playlist</h1>
+    <p class="lede"><a href="{% url 'core:playlist' playlist.uid %}">View the public page</a></p>
+  </section>
+
+  <form class="panel" method="post" action="{% url 'core:playlist_edit' playlist.uid %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="rename">
+
+    <label class="field">
+      <span>Title</span>
+      <input type="text" name="title" maxlength="255" value="{{ playlist.title }}" required>
+    </label>
+
+    <label class="field">
+      <span>Description</span>
+      <textarea name="description" rows="3">{{ playlist.description }}</textarea>
+    </label>
+
+    <label class="field">
+      <span>Visibility</span>
+      <select name="visibility">
+        <option value="public" {% if playlist.visibility == "public" %}selected{% endif %}>Public</option>
+        <option value="unlisted" {% if playlist.visibility == "unlisted" %}selected{% endif %}>Unlisted</option>
+        <option value="private" {% if playlist.visibility == "private" %}selected{% endif %}>Private</option>
+      </select>
+    </label>
+
+    <button type="submit" class="button">Save details</button>
+  </form>
+
+  <form class="inline-form" method="post" action="{% url 'core:playlist_edit' playlist.uid %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <input type="text" name="media_uid" placeholder="Media identifier" required>
+    <button type="submit" class="button">Add media</button>
+  </form>
+
+  {% if entries %}
+    <ol class="entry-list">
+      {% for entry in entries %}
+        <li>
+          <span class="entry-title">{{ entry.media.title }}</span>
+          <span class="entry-meta">{{ entry.media.get_kind_display }} · {{ entry.media.duration_label }}</span>
+          <span class="entry-actions">
+            <form method="post" action="{% url 'core:playlist_edit' playlist.uid %}" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="move">
+              <input type="hidden" name="item_id" value="{{ entry.pk }}">
+              <input type="hidden" name="direction" value="up">
+              <button class="link" type="submit" {% if forloop.first %}disabled{% endif %}>↑</button>
+            </form>
+            <form method="post" action="{% url 'core:playlist_edit' playlist.uid %}" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="move">
+              <input type="hidden" name="item_id" value="{{ entry.pk }}">
+              <input type="hidden" name="direction" value="down">
+              <button class="link" type="submit" {% if forloop.last %}disabled{% endif %}>↓</button>
+            </form>
+            <form method="post" action="{% url 'core:playlist_edit' playlist.uid %}" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="remove">
+              <input type="hidden" name="item_id" value="{{ entry.pk }}">
+              <button class="link danger" type="submit">Remove</button>
+            </form>
+          </span>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p class="empty">Nothing in this playlist yet.</p>
+  {% endif %}
+{% endblock %}

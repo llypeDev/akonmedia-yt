@@ -3,7 +3,12 @@
 Viewers' pages poll ``state`` every few seconds: one request answers what the
 page needs to know (status, stream address, viewers, recording) and brings the
 chat messages posted since the last one the page has.
+
+Reactions travel the same way. Every reaction added or taken back bumps
+``Live.reactions_rev``; a page sends the revision it has seen, and only when
+that is behind does the answer carry the reactions of the recent messages.
 """
+from collections import defaultdict
 import json
 import logging
 import re
@@ -18,7 +23,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
-from django.db.models import F
+from django.db import IntegrityError, transaction
+from django.db.models import Count, F
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -35,7 +41,7 @@ from apps.media.models import Category, Media
 from apps.rbac import permissions as policy
 
 from . import presence, relay, services
-from .models import ChatMessage, Live, new_stream_key
+from .models import ChatMessage, ChatReaction, Live, new_stream_key
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +51,12 @@ CHAT_BATCH = 100
 CHAT_RATE_SECONDS = 2
 #: How long a hidden message keeps being announced so open pages drop it.
 HIDDEN_ANNOUNCE = timedelta(minutes=10)
+#: The most recent messages whose reactions a page is kept up to date on;
+#: a page keeps 300 messages at most (static/js/live.js).
+REACTION_WINDOW = 300
+#: Reactions one person may add or take back in REACTION_PERIOD seconds.
+REACTION_BURST = 20
+REACTION_PERIOD = 10
 
 
 # ------------------------------------------------------------------ forms
@@ -125,7 +137,33 @@ def can_post(user, live: Live) -> bool:
     return bool(user and user.is_authenticated and chat_open(live))
 
 
-def message_payload(message: ChatMessage, user, live: Live, can_moderate: bool) -> dict:
+def reaction_summary(message_ids, user) -> dict:
+    """{message id: [{"kind", "count", "mine"}, ...]} for the messages that
+    have reactions, each list in the order the chat offers them."""
+    if not message_ids:
+        return {}
+    order = {kind: index for index, kind in enumerate(ChatReaction.EMOJI)}
+    rows = (
+        ChatReaction.objects.filter(message_id__in=message_ids)
+        .values("message_id", "kind")
+        .annotate(count=Count("id"))
+    )
+    mine = set()
+    if user is not None and user.is_authenticated:
+        mine = set(
+            ChatReaction.objects.filter(message_id__in=message_ids, user=user).values_list("message_id", "kind")
+        )
+    summary = defaultdict(list)
+    for row in rows:
+        summary[row["message_id"]].append(
+            {"kind": row["kind"], "count": row["count"], "mine": (row["message_id"], row["kind"]) in mine}
+        )
+    for reactions in summary.values():
+        reactions.sort(key=lambda item: order.get(item["kind"], 99))
+    return dict(summary)
+
+
+def message_payload(message: ChatMessage, user, live: Live, can_moderate: bool, reactions=None) -> dict:
     return {
         "id": message.id,
         "author": message.author.get_short_name(),
@@ -135,10 +173,13 @@ def message_payload(message: ChatMessage, user, live: Live, can_moderate: bool) 
         "host": message.author_id == live.owner_id,
         "mine": bool(user and user.is_authenticated and message.author_id == user.id),
         "can_hide": can_moderate,
+        "reactions": reactions or [],
     }
 
 
-def chat_payload(request, live: Live, after: int = 0) -> dict:
+def chat_payload(request, live: Live, after: int = 0, reactions_rev: int = -1) -> dict:
+    """The chat for a page that has every message up to ``after`` and the
+    reactions as of ``reactions_rev`` (-1: none yet)."""
     user = request.user
     can_moderate = access.can_moderate_live_chat(user, live)
     visible = live.messages.filter(is_hidden=False).select_related("author")
@@ -152,14 +193,33 @@ def chat_payload(request, live: Live, after: int = 0) -> dict:
     else:
         batch = list(reversed(visible.order_by("-id")[:CHAT_HISTORY]))
         hidden = []
-    return {
+
+    # The reactions of the new messages, and when the page is behind on
+    # reactions, of every recent message it may still be showing.
+    batch_ids = [m.id for m in batch]
+    window = []
+    if after > 0 and reactions_rev != live.reactions_rev:
+        window = list(
+            visible.filter(id__lte=after).order_by("-id").values_list("id", flat=True)[:REACTION_WINDOW]
+        )
+    summary = reaction_summary(batch_ids + window, user) if batch_ids or window else {}
+
+    payload = {
         "enabled": live.chat_enabled,
         "open": chat_open(live),
         "can_post": can_post(user, live),
+        "can_react": can_post(user, live),
         "can_moderate": can_moderate,
-        "messages": [message_payload(m, user, live, can_moderate) for m in batch],
+        "messages": [message_payload(m, user, live, can_moderate, summary.get(m.id)) for m in batch],
         "hidden": hidden,
+        "reactions_rev": live.reactions_rev,
     }
+    if window:
+        # Every shown message from window_from on takes these reactions, and
+        # one missing from the map has none left.
+        payload["reactions"] = {str(mid): summary.get(mid, []) for mid in window if mid in summary}
+        payload["reactions_from"] = window[-1]
+    return payload
 
 
 def recording_payload(request, live: Live):
@@ -188,7 +248,7 @@ def recording_payload(request, live: Live):
     return {"state": "pending", "ready": False, "url": ""}
 
 
-def state_payload(request, live: Live, after: int = 0, client: str = "") -> dict:
+def state_payload(request, live: Live, after: int = 0, client: str = "", reactions_rev: int = -1) -> dict:
     services.tick(live)
     on_air = live.is_on_air
     if on_air and client:
@@ -203,7 +263,7 @@ def state_payload(request, live: Live, after: int = 0, client: str = "") -> dict
         "ended_at": _iso(live.ended_at),
         "viewers": presence.count(live) if on_air else 0,
         "recording": recording_payload(request, live),
-        "chat": chat_payload(request, live, after),
+        "chat": chat_payload(request, live, after, reactions_rev),
     }
     if access.can_edit_live(request.user, live):
         payload["control"] = {
@@ -307,11 +367,16 @@ def embed(request, uid: str):
 @require_GET
 def state(request, uid: str):
     live = _viewable(request, uid)
+    try:
+        reactions_rev = int(request.GET.get("rrev", -1))
+    except (TypeError, ValueError):
+        reactions_rev = -1
     payload = state_payload(
         request,
         live,
         after=_int(request.GET.get("after")),
         client=(request.GET.get("client") or "")[:40],
+        reactions_rev=reactions_rev,
     )
     response = JsonResponse(payload)
     response["Cache-Control"] = "no-store"
@@ -338,6 +403,52 @@ def chat_post(request, uid: str):
     message = ChatMessage.objects.create(live=live, author=request.user, body=body)
     can_moderate = access.can_moderate_live_chat(request.user, live)
     return JsonResponse({"message": message_payload(message, request.user, live, can_moderate)}, status=201)
+
+
+@require_POST
+def chat_react(request, uid: str, message_id: int):
+    """Add (``on=1``) or take back (``on=0``) one's reaction of a ``kind``.
+
+    Stating the wanted end, rather than toggling, means a double click or a
+    retried request cannot flip it back.
+    """
+    live = _viewable(request, uid)
+    user = request.user
+    if not user.is_authenticated:
+        return JsonResponse({"detail": _("Sign in to react.")}, status=403)
+    if not chat_open(live):
+        return JsonResponse({"detail": _("The chat is closed.")}, status=403)
+    kind = request.POST.get("kind", "")
+    if kind not in ChatReaction.Kind.values:
+        return JsonResponse({"detail": _("Unknown reaction.")}, status=400)
+    message = get_object_or_404(ChatMessage, pk=message_id, live=live, is_hidden=False)
+
+    key = f"live:react:{user.pk}"
+    cache.add(key, 0, timeout=REACTION_PERIOD)
+    try:
+        used = cache.incr(key)
+    except ValueError:  # expired between the two calls
+        cache.set(key, 1, timeout=REACTION_PERIOD)
+        used = 1
+    if used > REACTION_BURST:
+        return JsonResponse({"detail": _("Slow down a little with the reactions.")}, status=429)
+
+    wanted = request.POST.get("on", "1") not in ("0", "false", "")
+    with transaction.atomic():
+        if wanted:
+            try:
+                with transaction.atomic():
+                    changed = ChatReaction.objects.get_or_create(message=message, user=user, kind=kind)[1]
+            except IntegrityError:  # the same request, twice at once
+                changed = False
+        else:
+            changed = ChatReaction.objects.filter(message=message, user=user, kind=kind).delete()[0] > 0
+        if changed:
+            Live.objects.filter(pk=live.pk).update(reactions_rev=F("reactions_rev") + 1)
+    return JsonResponse({
+        "id": message.id,
+        "reactions": reaction_summary([message.id], user).get(message.id, []),
+    })
 
 
 @require_POST

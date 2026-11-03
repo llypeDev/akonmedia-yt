@@ -792,6 +792,7 @@ ICON_MAP = {
     "skip-forward": "skip-forward", "image-up": "image-up", "heart": "heart",
     "bell": "bell", "radio": "radio", "tv": "tv", "mic": "mic",
     "video": "video", "screen-share": "screen-share", "stop": "circle-stop",
+    "smile-plus": "smile-plus", "camera": "camera", "user-round": "circle-user-round",
 }
 
 SVG_NS = "http://www.w3.org/2000/svg"

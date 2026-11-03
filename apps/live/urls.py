@@ -13,6 +13,7 @@ urlpatterns = [
     path("live/<str:uid>/state/", views.state, name="state"),
     path("live/<str:uid>/chat/", views.chat_post, name="chat"),
     path("live/<str:uid>/chat/<int:message_id>/hide/", views.chat_hide, name="chat_hide"),
+    path("live/<str:uid>/chat/<int:message_id>/react/", views.chat_react, name="chat_react"),
     path("embed/live/<str:uid>/", views.embed, name="embed"),
     # creators
     path("studio/lives/", views.studio_lives, name="studio"),

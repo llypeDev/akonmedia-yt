@@ -10,6 +10,7 @@
      data-state-url="{% url 'live:state' live.uid %}"
      data-chat-url="{% url 'live:chat' live.uid %}"
      data-hide-url="{% url 'live:chat_hide' live.uid 0 %}"
+     data-react-url="{% url 'live:chat_react' live.uid 0 %}"
      data-title="{{ live.title }}"
      data-sprite="{% static 'icons/sprite.svg' %}">
   <script type="application/json" data-live-state>{{ state_json|safe }}</script>

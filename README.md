@@ -41,11 +41,12 @@ reconstruída de ponta a ponta. Falta a virada (cut-over) em si.
 | Página de embed com opções de tempo inicial, autoplay, título e controles | pronto |
 | Estúdio do criador: métricas, filtros, edição de detalhes, miniatura, capítulos, reprocessar, excluir | pronto |
 | Páginas de canal e configurações da conta | pronto |
+| Imagem do perfil: 16 personagens, a própria foto (enquadrada no navegador, salva sem metadados) ou as iniciais | pronto |
 | Curadoria: fila de codificação, falhas com nova tentativa, moderação de comentários, papéis das contas | pronto |
 | Upload de legendas (SRT/VTT), editor de falas sincronizado com uma prévia, download em WebVTT e SRT | pronto |
 | Temas escuro e claro, layout para celular, páginas de erro com a marca | pronto |
 | Interface em português do Brasil (padrão) e em inglês, com seletor de idioma | pronto |
-| Lives pelo OBS ou pelo navegador: HLS, chat, embed e a gravação publicada como vídeo | pronto |
+| Lives pelo OBS ou pelo navegador: HLS, chat com reações, embed e a gravação publicada como vídeo | pronto |
 | Guia de backup e restauração | `OPERATIONS.md` |
 
 ## Requisitos
@@ -194,7 +195,8 @@ apps/
                         edição, playlists, legendas, gerenciar; template tags;
                         health
   rbac/                 escada de papéis e o único lugar que a interpreta
-  users/                modelo de conta, admin, API de sessão
+  users/                modelo de conta, imagem do perfil (avatars.py), admin,
+                        API de sessão
   media/                modelos, regras de acesso, API REST, pipeline ffmpeg,
                         tarefas, entrega com byte ranges, gerador da demo
   uploader/             sessões de upload em partes retomáveis e sua limpeza
@@ -212,11 +214,13 @@ templates/              HTML escrito só para este projeto (allauth incluído)
 locale/pt_BR/           catálogos em português (fontes .po e .mo compilados)
 static/css/app.css      o design system: tokens, temas, layout, componentes
 static/css/player.css   a aparência do player
-static/js/              app.js, player.js, upload.js, live.js, cast.js
+static/js/              app.js, player.js, upload.js, live.js, cast.js, avatar.js
 static/brand/           símbolo, logotipos, favicons, ícones de app, imagem OG
+static/avatars/         os personagens que se pode escolher para o perfil
 static/icons/sprite.svg sprite de ícones (Lucide, veja Licenças)
 static/vendor/          builds e fontes de terceiros, com a licença ao lado
 tools/build_logo.py     regenera o kit da marca, as fontes e o sprite de ícones
+tools/build_avatars.py  regenera os personagens do perfil
 tools/e2e/smoke.mjs     teste de ponta a ponta no navegador
 tools/e2e/live.mjs      teste de ponta a ponta das lives
 ```
@@ -412,7 +416,13 @@ mídia, não pede login.
 ```bash
 uv pip install -r requirements-dev.txt     # fonttools, brotli, cairosvg…
 python tools/build_logo.py                 # ou: brand | fonts | icons
+python tools/build_avatars.py              # os personagens do perfil
 ```
+
+Os personagens são desenhados em código (formas simples sobre os gradientes da
+marca) e gravados em `static/avatars/<chave>.svg`. A chave é o que fica salvo
+na conta de quem o escolheu: um personagem pode ser redesenhado, mas não
+renomeado nem removido.
 
 ## Ambiente
 

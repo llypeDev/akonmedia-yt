@@ -18,7 +18,7 @@ from apps.rbac.roles import Role
 from apps.users.models import User
 
 from . import presence, services, tasks
-from .models import ChatMessage, Live, LiveRecording
+from .models import ChatMessage, ChatReaction, Live, LiveRecording
 
 SECRET = "test-hook-secret"
 
@@ -453,6 +453,100 @@ class ChatTests(LiveTestCase):
         messages = self.client.get(self.state_url).json()["chat"]["messages"]
         self.assertEqual(len(messages), 50)
         self.assertEqual(messages[-1]["body"], "m59")
+
+
+class ReactionTests(LiveTestCase):
+    def setUp(self):
+        super().setUp()
+        self.viewer = make_user("viewer@example.com")
+        self.other = make_user("other@example.com")
+        self.message = ChatMessage.objects.create(live=self.live, author=self.owner, body="Bem-vindos!")
+        self.url = reverse("live:chat_react", args=[self.live.uid, self.message.id])
+        self.state_url = reverse("live:state", args=[self.live.uid])
+
+    def react(self, kind="like", on=True):
+        return self.client.post(self.url, {"kind": kind, "on": "1" if on else "0"})
+
+    def test_signing_in_is_required_to_react(self):
+        response = self.react()
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(ChatReaction.objects.exists())
+
+    def test_reacting_counts_once_per_person_and_kind(self):
+        self.client.force_login(self.viewer)
+        first = self.react().json()
+        self.assertEqual(first["reactions"], [{"kind": "like", "count": 1, "mine": True}])
+        # Asking for the same again changes nothing: a double click is harmless.
+        self.assertEqual(self.react().json()["reactions"], first["reactions"])
+        self.react("fire")
+        self.client.force_login(self.other)
+        reactions = self.react().json()["reactions"]
+        self.assertEqual(reactions, [
+            {"kind": "like", "count": 2, "mine": True},
+            {"kind": "fire", "count": 1, "mine": False},
+        ])
+        self.assertEqual(ChatReaction.objects.count(), 3)
+
+    def test_taking_a_reaction_back(self):
+        self.client.force_login(self.viewer)
+        self.react("love")
+        self.assertEqual(self.react("love", on=False).json()["reactions"], [])
+        self.assertEqual(self.react("love", on=False).status_code, 200)
+        self.assertFalse(ChatReaction.objects.exists())
+
+    def test_unknown_kinds_hidden_messages_and_closed_chats_are_refused(self):
+        self.client.force_login(self.viewer)
+        self.assertEqual(self.react("angry").status_code, 400)
+        ChatMessage.objects.filter(pk=self.message.pk).update(is_hidden=True)
+        self.assertEqual(self.react().status_code, 404)
+        ChatMessage.objects.filter(pk=self.message.pk).update(is_hidden=False)
+        Live.objects.filter(pk=self.live.pk).update(status=Live.Status.ENDED)
+        self.assertEqual(self.react().status_code, 403)
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+
+    def test_reacting_is_rate_limited(self):
+        self.client.force_login(self.viewer)
+        codes = [self.react(on=bool(n % 2 == 0)).status_code for n in range(25)]
+        self.assertIn(429, codes)
+        self.assertEqual(codes[0], 200)
+
+    def test_a_new_page_gets_the_reactions_with_the_messages(self):
+        ChatReaction.objects.create(message=self.message, user=self.viewer, kind="clap")
+        self.client.force_login(self.viewer)
+        chat = self.client.get(self.state_url).json()["chat"]
+        self.assertEqual(chat["messages"][0]["reactions"], [{"kind": "clap", "count": 1, "mine": True}])
+        self.assertTrue(chat["can_react"])
+        self.assertIn("reactions_rev", chat)
+
+    def test_open_pages_catch_up_only_when_something_changed(self):
+        self.client.force_login(self.other)
+        chat = self.client.get(self.state_url).json()["chat"]
+        rev = chat["reactions_rev"]
+        after = self.message.id
+        quiet = self.client.get(self.state_url, {"after": after, "rrev": rev}).json()["chat"]
+        self.assertNotIn("reactions", quiet)
+
+        self.client.force_login(self.viewer)
+        self.react("wow")
+        self.client.force_login(self.other)
+        news = self.client.get(self.state_url, {"after": after, "rrev": rev}).json()["chat"]
+        self.assertEqual(news["reactions"], {str(self.message.id): [{"kind": "wow", "count": 1, "mine": False}]})
+        self.assertEqual(news["reactions_from"], self.message.id)
+        self.assertGreater(news["reactions_rev"], rev)
+
+        # Taken back: the message is left out of the map, which means none.
+        self.client.force_login(self.viewer)
+        self.react("wow", on=False)
+        self.client.force_login(self.other)
+        gone = self.client.get(self.state_url, {"after": after, "rrev": news["reactions_rev"]}).json()["chat"]
+        self.assertEqual(gone["reactions"], {})
+        self.assertEqual(gone["reactions_from"], self.message.id)
+
+    def test_signed_out_viewers_see_reactions_but_cannot_react(self):
+        ChatReaction.objects.create(message=self.message, user=self.viewer, kind="like")
+        chat = self.client.get(self.state_url).json()["chat"]
+        self.assertFalse(chat["can_react"])
+        self.assertEqual(chat["messages"][0]["reactions"], [{"kind": "like", "count": 1, "mine": False}])
 
 
 class PresenceTests(LiveTestCase):

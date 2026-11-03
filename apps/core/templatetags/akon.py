@@ -4,7 +4,7 @@
     {% icon "play" %}                  inline SVG from the sprite
     {{ media.views_count|compact }}   1234 -> 1.2K
     {{ chapter.start_seconds|clock }} 75 -> 1:15
-    {% avatar user "lg" %}            initials on a colour derived from the account
+    {% avatar user "lg" %}            the account's picture, or its initials on a colour
     {{ comment.body|timestamps }}     "see 1:23" -> a link that seeks the player
 """
 import hashlib
@@ -16,6 +16,8 @@ from django.utils.formats import get_format, number_format
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import pgettext
+
+from apps.users.avatars import image_url as avatar_image_url
 
 register = template.Library()
 
@@ -128,14 +130,34 @@ AVATAR_TONES = (
 )
 
 
+#: Sizes the stylesheet knows (see .avatar-* in app.css).
+AVATAR_SIZES = ("xs", "sm", "md", "lg", "xl")
+
+
 @register.simple_tag
-def avatar(user, size: str = "md"):
-    key = str(getattr(user, "pk", "") or getattr(user, "email", "") or "anonymous")
+def avatar(user, size: str = "md", show: str = ""):
+    """The account's picture: its photo or gallery character, else its initials.
+
+    ``show="initials"`` draws the initials whatever the account picked (the
+    account page offers them as one of the choices). Every other avatar is
+    marked with the account's id, so that page can swap them all in place
+    when the picture changes.
+    """
+    pk = getattr(user, "pk", "") or ""
+    mark = format_html(' data-avatar-of="{}"', pk) if pk and show != "initials" else ""
+    url = "" if show == "initials" else avatar_image_url(user)
+    if url:
+        return format_html(
+            '<span class="avatar avatar-{} avatar-pic"{} aria-hidden="true">'
+            '<img src="{}" alt="" loading="lazy" decoding="async"></span>',
+            size, mark, url,
+        )
+    key = str(pk or getattr(user, "email", "") or "anonymous")
     digest = int(hashlib.sha1(key.encode("utf-8")).hexdigest()[:8], 16)
     first, second = AVATAR_TONES[digest % len(AVATAR_TONES)]
     return format_html(
-        '<span class="avatar avatar-{}" style="--av-a:{};--av-b:{}" aria-hidden="true">{}</span>',
-        size, first, second, initials(user),
+        '<span class="avatar avatar-{}" style="--av-a:{};--av-b:{}"{} aria-hidden="true">{}</span>',
+        size, first, second, mark, initials(user),
     )
 
 

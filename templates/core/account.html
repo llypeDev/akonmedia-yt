@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load akon humanize i18n %}
+{% load akon humanize i18n static %}
 
 {% block title %}{% translate "Account" %} — {{ PORTAL_NAME }}{% endblock %}
 
@@ -26,6 +26,48 @@
           <span class="badge badge-role mt-1">{{ user.get_role_display }}</span>
         </div>
       </div>
+
+      {# Without JavaScript: pick, choose a file, save. With it, a pick is saved at once and a photo is framed before it is sent (js/avatar.js). #}
+      <form class="avatar-picker" method="post" action="{% url 'core:account_avatar' %}" enctype="multipart/form-data" data-avatar-picker data-photo-limit="{{ photo_limit_mb }}" data-user="{{ user.pk }}">
+        {% csrf_token %}
+        <fieldset class="avatar-fieldset">
+          <legend class="field-label">{% translate "Profile picture" %} <span class="hint">{% translate "a character, your photo or your initials" %}</span></legend>
+          <div class="avatar-grid">
+            <label class="avatar-option" title="{% translate 'Initials' %}">
+              <input class="sr-only" type="radio" name="choice" value="initials"{% if not user.avatar %} checked{% endif %}>
+              {% avatar user "lg" "initials" %}
+              <span class="sr-only">{% translate "Initials" %}</span>
+            </label>
+            <label class="avatar-option" title="{% translate 'Your photo' %}" data-avatar-photo-option{% if not user.avatar_photo %} hidden{% endif %}>
+              <input class="sr-only" type="radio" name="choice" value="photo"{% if user.avatar == "photo" %} checked{% endif %}{% if not user.avatar_photo %} disabled{% endif %}>
+              <span class="avatar avatar-lg avatar-pic" aria-hidden="true" data-avatar-photo>{% if user.avatar_photo %}<img src="{{ user.avatar_photo.url }}" alt="">{% endif %}</span>
+              <span class="sr-only">{% translate "Your photo" %}</span>
+            </label>
+            {% for key, label, url in characters %}
+              <label class="avatar-option" title="{{ label }}">
+                <input class="sr-only" type="radio" name="choice" value="{{ key }}"{% if user.avatar == key %} checked{% endif %}>
+                <span class="avatar avatar-lg avatar-pic" aria-hidden="true"><img src="{{ url }}" alt="" loading="lazy" decoding="async"></span>
+                <span class="sr-only">{{ label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        <div class="avatar-actions">
+          <label class="btn btn-sm avatar-upload">
+            {% icon "camera" "icon-sm" %}<span>{% translate "Upload a photo" %}</span>
+            <input class="sr-only" type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" data-avatar-file>
+          </label>
+          <button class="btn btn-ghost btn-sm" type="submit" form="avatar-remove" data-avatar-remove{% if not user.avatar_photo %} hidden{% endif %}>{% icon "trash" "icon-sm" %}{% translate "Remove photo" %}</button>
+          <button class="btn btn-primary btn-sm" type="submit" data-avatar-save>{% icon "check" "icon-sm" %}{% translate "Save picture" %}</button>
+        </div>
+        <p class="avatar-note">{% blocktranslate with limit=photo_limit_mb %}JPEG, PNG, WebP or GIF up to {{ limit }} MB. It is cropped to a square, and the location and other data a camera adds are removed.{% endblocktranslate %}</p>
+      </form>
+      <form id="avatar-remove" method="post" action="{% url 'core:account_avatar' %}" data-confirm="{% translate 'Remove your photo? You can upload another one at any time.' %}" hidden>
+        {% csrf_token %}
+        <input type="hidden" name="remove_photo" value="1">
+      </form>
+
+      <hr class="divider">
       <form class="form-grid" method="post">
         {% csrf_token %}
         <label class="field">
@@ -57,3 +99,5 @@
     </section>
   </div>
 {% endblock %}
+
+{% block scripts %}<script src="{% static 'js/avatar.js' %}" defer></script>{% endblock %}

@@ -6,8 +6,8 @@ directory is original work and is licensed MIT (see `LICENSE`).
 
 ## Status
 
-Phase 3 of 6 — public surface. Upload, encoding, library pages, media pages and
-comments work end to end; search, playlists UI and moderation queues come next.
+Phase 4 of 6 — playback and contribution. The player is adaptive, media can be
+embedded anywhere, and uploads happen from the browser with resume.
 
 | Area | State |
 |---|---|
@@ -16,11 +16,13 @@ comments work end to end; search, playlists UI and moderation queues come next.
 | Five-level role ladder with a single policy module | done |
 | Session API (`/api/v1/whoami/`) and health probe | done |
 | Media domain models: media, category, playlist, comment, subtitle, chapter | done |
-| Resumable chunked upload (`/api/v1/uploads/`) | done |
+| Resumable chunked upload API and browser upload page | done |
 | ffprobe/ffmpeg pipeline: duration, dimensions, poster, HLS | done |
 | Media REST API with visibility rules | done |
 | API for comments, playlists and categories | done |
-| Public library page, media page with player, comments, search | done |
+| Public library page, media page, comments, search | done |
+| Adaptive HLS player with progressive fallback (vendored hls.js) | done |
+| Embed page with iframe snippet, start time and title options | done |
 | Playlist UI, moderation queues, subtitle editor | next |
 
 ## Requirements

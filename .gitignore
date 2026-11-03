@@ -20,3 +20,8 @@ media/
 .idea/
 .DS_Store
 Thumbs.db
+
+# local rehearsal data
+.demo-import/
+.test-media/
+.test-import/

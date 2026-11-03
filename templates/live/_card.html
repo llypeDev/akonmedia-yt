@@ -1,0 +1,34 @@
+{% load akon humanize i18n %}{% url 'live:watch' live.uid as live_url %}
+<article class="media-card live-card live-card-{{ live.status }}">
+  <a class="thumb thumb-live" href="{{ live_url }}" tabindex="-1" aria-hidden="true">
+    {% if live.recording and live.recording.thumbnail_url %}
+      <img src="{{ live.recording.thumbnail_url }}" alt="" loading="lazy" decoding="async">
+    {% else %}
+      <span class="live-thumb-art">{% icon "radio" %}</span>
+    {% endif %}
+    {% if live.is_on_air %}
+      <span class="thumb-badge live-flag">{% translate "LIVE" %}</span>
+    {% elif live.status == "scheduled" %}
+      <span class="thumb-badge live-flag-soon">{% icon "calendar" %}{% if live.scheduled_for %}<time datetime="{{ live.scheduled_for|date:'c' }}" data-local>{{ live.scheduled_for|date:"SHORT_DATETIME_FORMAT" }}</time>{% else %}{% translate "Coming up" %}{% endif %}</span>
+    {% else %}
+      {% if live.recording.duration_seconds %}<span class="thumb-badge thumb-duration">{{ live.recording.duration_label }}</span>{% endif %}
+      <span class="thumb-badge thumb-kind">{% icon "radio" %}{% translate "Streamed" %}</span>
+    {% endif %}
+  </a>
+  <div class="media-card-body">
+    <a href="{% url 'core:channel' live.owner_id %}" title="{{ live.owner.get_short_name }}">{% avatar live.owner "md" %}</a>
+    <div class="media-card-text">
+      <h3 class="media-title"><a href="{{ live_url }}">{{ live.title }}</a></h3>
+      <p class="media-meta"><a href="{% url 'core:channel' live.owner_id %}">{{ live.owner.get_short_name }}</a>{% if live.category %} <span class="meta-sep">·</span> {{ live.category.name }}{% endif %}</p>
+      <p class="media-meta meta-row">
+        {% if live.is_on_air %}
+          <span>{% blocktranslate with when=live.started_at|time:"H:i" iso=live.started_at|date:"c" %}on air since <time datetime="{{ iso }}" data-local="time">{{ when }}</time>{% endblocktranslate %}</span>
+        {% elif live.status == "scheduled" %}
+          <span>{% if live.scheduled_for %}{% translate "Scheduled" %}{% else %}{% translate "Starts when the host goes live" %}{% endif %}</span>
+        {% else %}
+          <span>{% blocktranslate with when=live.ended_at|default:live.updated_at|naturaltime %}streamed {{ when }}{% endblocktranslate %}</span>
+        {% endif %}
+      </p>
+    </div>
+  </div>
+</article>

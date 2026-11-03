@@ -11,6 +11,10 @@ Em dois volumes do Docker. Se eles se perderem, a biblioteca se perde junto.
 | `akonmedia_postgres` | contas, registros de mídia, comentários, playlists, legendas |
 | `akonmedia_media` | uploads originais, pôsteres, segmentos HLS |
 
+Um terceiro volume, `akonmedia_live`, guarda só o que está em andamento: o HLS
+das lives no ar e as gravações que ainda não viraram vídeo. Ele não precisa de
+backup, mas não o apague durante uma live.
+
 ## Backup
 
 Os dois, juntos, com a stack rodando:
@@ -41,7 +45,7 @@ restaurar um dump feito antes de uma atualização.
 ## Verificação depois da restauração
 
 ```bash
-docker compose ps                      # cinco serviços, web e worker com status Up
+docker compose ps                      # seis serviços, web, worker e live com status Up
 curl -s localhost:8000/health/         # {"status": "ok"}
 ```
 
@@ -57,6 +61,12 @@ e faixa de legenda.
   fila sem aviso.
 - **A chave secreta** do `.env` assina as sessões. Trocá-la desconecta todo
   mundo.
+- **Gravações de live que falharam ficam guardadas.** Se uma gravação não puder
+  ser publicada, a sala de controle da live mostra o motivo, e os arquivos de
+  cada conexão continuam em `akonmedia_live`, na pasta `recordings`. Apague-os
+  depois de recuperar o que precisar.
+- **O segredo das lives** (`LIVE_HOOK_SECRET`) precisa ser o mesmo no portal e
+  no serviço `live`. Depois de trocá-lo, reinicie os dois.
 
 ## Uma coisa que não é uma tarefa
 

@@ -52,6 +52,7 @@ urlpatterns = [
     # Language switcher (set_language) and the catalog the scripts translate with.
     path("i18n/", include("django.conf.urls.i18n")),
     path("jsi18n/", JavaScriptCatalog.as_view(packages=["apps.core"]), name="javascript-catalog"),
+    path("", include("apps.live.urls")),
     path("", include("apps.core.urls")),
 ]
 

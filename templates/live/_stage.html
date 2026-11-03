@@ -1,0 +1,40 @@
+{% load akon i18n %}{% with rec=state.recording.state|default:"" %}
+<div class="live-stage" data-live-stage>
+  <div class="live-screen live-screen-waiting" data-stage="scheduled"{% if live.status != "scheduled" %} hidden{% endif %}>
+    <div class="live-screen-inner">
+      <span class="live-screen-icon">{% icon "radio" %}</span>
+      {% if mode == "control" %}
+        <h2>{% translate "Waiting for your encoder" %}</h2>
+        <p>{% translate "Start streaming in OBS with the settings below. The preview appears here a few seconds later." %}</p>
+      {% else %}
+        <h2>{% translate "This live has not started yet" %}</h2>
+        {% if live.scheduled_for %}
+          <p class="live-countdown" data-live-countdown>{% translate "Starting soon" %}</p>
+          <p>{% blocktranslate with when=live.scheduled_for|date:"SHORT_DATETIME_FORMAT" iso=live.scheduled_for|date:"c" %}Scheduled for <time datetime="{{ iso }}" data-local>{{ when }}</time>.{% endblocktranslate %}</p>
+        {% endif %}
+        <p>{% translate "This page switches to the stream by itself as soon as it starts." %}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="live-screen live-screen-player" data-stage="on-air"{% if not live.is_on_air %} hidden{% endif %}>
+    <div class="live-player" data-live-player></div>
+    <div class="live-interrupted" role="status" data-when-status="interrupted"{% if live.status != "interrupted" %} hidden{% endif %}>
+      {% icon "alert" "icon-sm" %}<span><strong>{% translate "The stream was interrupted." %}</strong> {% translate "Waiting for it to come back…" %}</span>
+    </div>
+    <noscript><p class="live-noscript">{% translate "Watching a live stream needs JavaScript." %}</p></noscript>
+  </div>
+
+  <div class="live-screen live-screen-ended" data-stage="ended"{% if not live.is_ended %} hidden{% endif %}>
+    <div class="live-screen-inner">
+      <span class="live-screen-icon">{% icon "check-circle" %}</span>
+      <h2>{% translate "This live has ended" %}</h2>
+      <p data-when-recording="pending processing"{% if rec != "pending" and rec != "processing" %} hidden{% endif %}>{% icon "loader" "icon-sm icon-spin" %} {% translate "The recording is being prepared. It appears here as soon as it is ready." %}</p>
+      <p data-when-recording="ready"{% if rec != "ready" %} hidden{% endif %}>{% translate "The recording is ready." %}</p>
+      <a class="btn btn-primary" data-when-recording="ready" data-recording-link href="{{ state.recording.url|default:'#' }}"{% if mode == "embed" %} target="_blank" rel="noopener"{% endif %}{% if rec != "ready" %} hidden{% endif %}>{% icon "play" "icon-sm" %}{% translate "Watch the recording" %}</a>
+      <p data-when-recording="none"{% if rec != "none" %} hidden{% endif %}>{% translate "There is no recording of this live." %}</p>
+      <p data-when-recording="failed"{% if rec != "failed" %} hidden{% endif %}>{% translate "The recording could not be published." %}</p>
+    </div>
+  </div>
+</div>
+{% endwith %}

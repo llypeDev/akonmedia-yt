@@ -65,6 +65,15 @@ def process_media(self, media_id: str) -> str:
     return "ready"
 
 
+def encode_timeout(duration: float) -> int:
+    """Seconds one rendition may take: an hour, or longer for long sources.
+
+    A two-hour class on a small machine encodes slower than real time, and a
+    timeout that ignores the length would fail it every time.
+    """
+    return max(60 * 60, int((duration or 0) * 4))
+
+
 def _relative(path: Path) -> str:
     return str(path.relative_to(settings.MEDIA_ROOT)).replace("\\", "/")
 
@@ -113,6 +122,7 @@ def _run(media: Media) -> None:
         folder / "hls",
         width=info.width,
         height=info.height,
+        timeout=encode_timeout(info.duration),
     )
     media.hls_playlist = _relative(master)
 

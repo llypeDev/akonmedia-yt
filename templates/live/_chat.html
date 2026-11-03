@@ -1,0 +1,20 @@
+{% load akon i18n %}{% with chat=state.chat %}{% url 'account_login' as login_url %}
+<section class="panel live-chat" data-chat aria-label="{% translate "Live chat" %}">
+  <div class="panel-head row-between">
+    <h2><span class="panel-title-icon">{% icon "message" %}</span>{% translate "Live chat" %}</h2>
+    <span class="live-viewers" data-live-viewers hidden></span>
+  </div>
+  <ol class="chat-list" data-chat-list aria-live="polite" aria-relevant="additions"></ol>
+  <div class="chat-empty" data-chat-empty>{% icon "message" %}<span>{% translate "No messages yet." %}</span></div>
+  <form class="chat-form" data-chat-form data-chat-when="can-post"{% if not chat.can_post %} hidden{% endif %}>
+    <textarea class="textarea" name="body" rows="2" maxlength="500" placeholder="{% translate "Say something…" %}" aria-label="{% translate "Chat message" %}"></textarea>
+    <div class="chat-form-foot">
+      <span class="chat-left" data-chat-left aria-hidden="true">500</span>
+      <button type="submit" class="btn btn-primary btn-sm">{% icon "send" "icon-sm" %}{% translate "Send" %}</button>
+    </div>
+  </form>
+  <p class="chat-note" data-chat-when="sign-in"{% if not chat.open or chat.can_post %} hidden{% endif %}>{% blocktranslate with url=login_url|add:"?next="|add:request.path %}<a href="{{ url }}">Sign in</a> to take part in the chat.{% endblocktranslate %}</p>
+  <p class="chat-note" data-chat-when="closed"{% if chat.open or not chat.enabled %} hidden{% endif %}>{% translate "The chat is closed." %}</p>
+  <p class="chat-note" data-chat-when="disabled"{% if chat.enabled %} hidden{% endif %}>{% translate "The chat is turned off for this live." %}</p>
+</section>
+{% endwith %}

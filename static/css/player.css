@@ -1436,6 +1436,76 @@
   padding: 0 24px 14px;
 }
 
+/* -------------------------------------------------------------- live */
+
+.pl-live-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  margin-left: 6px;
+  padding: 0 11px 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 59, 92, 0.16);
+  color: #fff;
+  font: 800 11px/1 var(--pl-font);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--pl-fast, 140ms) ease, color var(--pl-fast, 140ms) ease;
+}
+
+.pl-live-btn[hidden] {
+  display: none;
+}
+
+.pl-live-btn:hover {
+  background: rgba(255, 59, 92, 0.28);
+}
+
+.pl-live-btn:focus-visible {
+  outline: 2px solid var(--pl-accent);
+  outline-offset: 2px;
+}
+
+.pl-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff3b5c;
+  box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.6);
+  animation: pl-live-pulse 1.8s infinite;
+}
+
+/* Rewound: the button reads as "go back to live" and the delay shows. */
+.player.pl-behind-live .pl-live-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--pl-dim);
+}
+
+.player.pl-behind-live .pl-live-dot {
+  background: var(--pl-dim);
+  box-shadow: none;
+  animation: none;
+}
+
+.player.pl-live .pl-sep,
+.player.pl-live .pl-dur {
+  display: none;
+}
+
+.player.pl-live:not(.pl-behind-live) .pl-time {
+  display: none;
+}
+
+@keyframes pl-live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 59, 92, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 59, 92, 0); }
+}
+
 /* ------------------------------------------------------------- small sizes */
 
 .player.pl-w-sm .pl-chapter {

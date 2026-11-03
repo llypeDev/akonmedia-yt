@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static akon i18n %}
+
+{% block title %}{{ live.title }} — {{ PORTAL_NAME }}{% endblock %}
+{% block description %}{{ live.description|default:live.title|truncatechars:180 }}{% endblock %}
+{% block body_class %}live-page{% endblock %}
+
+{% block og %}
+  <meta property="og:site_name" content="{{ PORTAL_NAME }}">
+  <meta property="og:type" content="video.other">
+  <meta property="og:title" content="{{ live.title }}">
+  <meta property="og:description" content="{{ live.description|default:PORTAL_NAME|truncatechars:200 }}">
+  <meta property="og:url" content="{{ page_url }}">
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'brand/og-image.png' %}">
+  <meta name="twitter:card" content="summary_large_image">
+  {% if live.visibility != "public" %}<meta name="robots" content="noindex">{% endif %}
+{% endblock %}
+
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/player.css' %}">{% endblock %}
+
+{% block content %}
+<div class="live-watch" data-live data-mode="watch"
+     data-state-url="{% url 'live:state' live.uid %}"
+     data-chat-url="{% url 'live:chat' live.uid %}"
+     data-hide-url="{% url 'live:chat_hide' live.uid 0 %}"
+     data-title="{{ live.title }}"
+     data-sprite="{% static 'icons/sprite.svg' %}">
+  <script type="application/json" data-live-state>{{ state_json|safe }}</script>
+
+  <div class="live-main">
+    {% include "live/_stage.html" with mode="watch" %}
+
+    <div class="watch-info">
+      <div class="live-meta-row">
+        <span class="live-status live-status-{{ live.status }}" data-live-status>{{ live.get_status_display }}</span>
+        <span class="live-elapsed" data-live-elapsed hidden></span>
+        <span class="live-viewers" data-live-viewers hidden></span>
+      </div>
+      <h1 class="watch-title">{{ live.title }}</h1>
+
+      <div class="watch-bar">
+        <a class="creator" href="{% url 'core:channel' live.owner_id %}">
+          {% avatar live.owner "lg" %}
+          <span>
+            <span class="creator-name">{{ live.owner.get_short_name }}</span>
+            <span class="creator-sub">{% if live.category %}{{ live.category.name }}{% else %}{% translate "Live stream" %}{% endif %}</span>
+          </span>
+        </a>
+        <div class="watch-actions">
+          <details class="dropdown" data-dropdown>
+            <summary class="btn btn-sm">{% icon "share" "icon-sm" %}{% translate "Share" %}</summary>
+            <div class="dropdown-menu" style="width: min(380px, 86vw)">
+              <div class="menu-label">{% translate "Link" %}</div>
+              <div class="menu-form">
+                <div class="copy-field">
+                  <input class="input input-sm" id="share-url" readonly value="{{ page_url }}" aria-label="{% translate "Link to this page" %}">
+                  <button type="button" class="btn btn-sm" data-copy-target="#share-url" data-copied="{% translate "Link copied" %}">{% icon "copy" "icon-sm" %}{% translate "Copy" %}</button>
+                </div>
+              </div>
+              <div class="menu-sep"></div>
+              <div class="menu-label">{% translate "Embed" %}</div>
+              <div class="menu-form">
+                <textarea class="textarea embed-code" id="embed-code" readonly aria-label="{% translate "Embed code" %}">{{ embed_snippet }}</textarea>
+                <span class="field-help">{% translate "The same code plays the recording once the live is over." %}</span>
+                <button type="button" class="btn btn-primary btn-sm" data-copy-target="#embed-code" data-copied="{% translate "Embed code copied" %}">{% icon "code" "icon-sm" %}{% translate "Copy embed code" %}</button>
+              </div>
+            </div>
+          </details>
+          {% if can_edit %}
+            <a class="btn btn-sm" href="{% url 'live:control' live.uid %}">{% icon "sliders" "icon-sm" %}{% translate "Control room" %}</a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if live.description %}
+        <div class="description"><div class="prose">{{ live.description|urlize|linebreaksbr }}</div></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <aside class="live-side">{% include "live/_chat.html" %}</aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'vendor/hls.min.js' %}"></script>
+  <script src="{% static 'js/player.js' %}"></script>
+  <script src="{% static 'js/live.js' %}"></script>
+{% endblock %}

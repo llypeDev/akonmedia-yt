@@ -27,6 +27,7 @@ Thumbs.db
 /.test-media/
 /.test-import/
 /.verify/
+/.live/
 
 # build and render artifacts
 /.render/

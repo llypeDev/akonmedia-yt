@@ -12,6 +12,7 @@
     </div>
     <div class="btn-group">
       <a class="btn" href="{% url 'core:channel' user.pk %}">{% icon "tv" "icon-sm" %}{% translate "Channel" %}</a>
+      <a class="btn" href="{% url 'live:studio' %}">{% icon "radio" "icon-sm" %}{% translate "Lives" %}</a>
       <a class="btn btn-primary" href="{% url 'core:upload' %}">{% icon "upload" "icon-sm" %}{% translate "Upload" %}</a>
     </div>
   </header>

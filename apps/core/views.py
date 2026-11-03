@@ -1,5 +1,6 @@
 """Public pages and operational endpoints."""
 import json
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -11,12 +12,14 @@ from django.db.models import Count, Exists, F, OuterRef, Prefetch, Q, Sum
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.live.models import Live
 from apps.media import access, pipeline
 from apps.media.models import Category, Comment, Media, Playlist, PlaylistItem
 from apps.rbac import permissions as policy
@@ -98,8 +101,14 @@ def index(request):
 
     filtered = bool(kind or category or sort != "latest")
     first_page = page_obj.number == 1
-    stats = trending = None
+    stats = trending = live_now = upcoming_lives = None
     if first_page and not filtered:
+        lives = Live.objects.filter(access.live_listed_q()).select_related("owner", "category", "recording")
+        live_now = list(lives.filter(status__in=Live.ON_AIR).order_by("-started_at")[:4])
+        upcoming_lives = list(
+            lives.filter(status=Live.Status.SCHEDULED, scheduled_for__gte=timezone.now() - timedelta(hours=1))
+            .order_by("scheduled_for")[:4]
+        )
         listed = access.listed_media()
         stats = listed.aggregate(
             items=Count("id"), seconds=Sum("duration_seconds"), views=Sum("views_count")
@@ -124,6 +133,8 @@ def index(request):
             "sorts": SORT_LABELS,
             "stats": stats,
             "trending": trending,
+            "live_now": live_now,
+            "upcoming_lives": upcoming_lives,
             "show_hero": first_page and not filtered,
         },
     )

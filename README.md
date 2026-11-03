@@ -230,10 +230,24 @@ em todo lugar, exceto em aparelhos Apple, então o menu de qualidade e o painel
 de estatísticas funcionam em qualquer navegador, e ele volta para o arquivo
 original se o stream falhar.
 
+**A escada cabe em dois núcleos.** Um único ffmpeg lê e decodifica a origem uma
+vez e gera todas as versões. A versão mais alta é a própria origem, copiada sem
+recodificar, quando o navegador já consegue tocá-la (H.264 de 8 bits em 4:2:0,
+na altura exata, com quadro-chave a cada 10 s no máximo e taxa que dê para
+assistir), como costumam ser as gravações do OBS, do Zoom e das lives do portal.
+As outras usam qualidade constante com teto (CRF 21, preset `veryfast`): aula
+com slides gasta muito menos que o teto, e cena agitada recebe o teto. Numa aula
+de teste em 1080p isso cortou o processamento em 56% e o disco em 47%, com a
+versão de cima idêntica à origem e SSIM de 0,998 nas outras; num vídeo agitado,
+que não se qualifica para a cópia, o corte foi de 22%, com a mesma qualidade. Os
+quadros-chave das versões codificadas caem a cada 6 s, nas bordas dos
+segmentos, e o `master.m3u8` anuncia a banda medida nos próprios segmentos.
+
 **A prévia da barra de progresso é uma requisição só.** O pipeline também grava
 um storyboard — uma única folha de sprites com até 100 miniaturas — e os
 metadados da grade. Passar o mouse sobre a barra de progresso mostra o quadro
-certo sem buscar mais nada.
+certo sem buscar mais nada. Nos vídeos longos, as miniaturas vêm só dos
+quadros-chave: numa aula de 15 minutos, um nono do processamento.
 
 **Nada na biblioteca parece quebrado.** O áudio ganha a capa embutida ou, na
 falta dela, uma forma de onda desenhada nas cores da marca; as imagens ganham

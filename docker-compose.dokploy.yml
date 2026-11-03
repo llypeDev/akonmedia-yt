@@ -1,0 +1,159 @@
+# QQplay on Dokploy, or on any machine where another reverse proxy already
+# answers on ports 80 and 443: see deploy/dokploy/README.md.
+#
+# The same stack as docker-compose.yml with docker-compose.prod.yml, in a
+# single file. Dokploy deploys one compose file, and it reads that file and
+# writes it back with the Traefik labels of the domain added to the service
+# the domain points at. So this file stands on its own (no second file, no
+# `extends` of another one) and uses no !reset or !override tags, which would
+# not survive that round trip.
+#
+# What changes from docker-compose.prod.yml:
+#
+# - Caddy publishes no port. Dokploy's Traefik gets the certificate, answers on
+#   80 and 443 and passes the requests to caddy:80 (the domain in Dokploy
+#   points at the "caddy" service, port 80). Caddy still sends /hls to the
+#   ingest server and the media files from the volume (deploy/Caddyfile.proxy).
+# - Port 1935 is the only one published, for OBS.
+# - Settings come from .env.docker, then from the .env that Dokploy writes from
+#   its Environment tab, next to this file.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-app: &app
+  build:
+    context: .
+  image: qqplay:local
+  restart: unless-stopped
+  env_file:
+    - .env.docker
+    - path: .env
+      required: false
+  volumes:
+    - media:/app/media
+    # The ingest server's recordings, joined into a video when a live ends.
+    - live:/app/live
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  logging: *logging
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    volumes:
+      - ./deploy/Caddyfile.proxy:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data   # the proxy keeps the certificates; this is Caddy's own state
+      - caddy_config:/config
+      - media:/srv/_media:ro
+    depends_on:
+      - web
+      - live
+    logging: *logging
+
+  web:
+    <<: *app
+    environment:
+      # Threads, so page views and the lives' polling do not queue behind
+      # one another.
+      GUNICORN_CMD_ARGS: "--threads 4"
+    networks:
+      default:
+        aliases:
+          - qqplay-web
+
+  worker:
+    <<: *app
+    command: celery -A config worker -Q media --concurrency=1 --prefetch-multiplier=1 --loglevel=info
+    environment:
+      RUN_MIGRATIONS: "0"
+    # The HTTP health check in the image is for the web process only.
+    healthcheck:
+      disable: true
+    # A quarter of the default weight: when the processor is busy, a live
+    # keeps its share and the encoding waits.
+    cpu_shares: 256
+
+  tasks:
+    <<: *app
+    # Quick jobs, such as the lives' housekeeping, never wait behind an
+    # encoding.
+    command: celery -A config worker -Q celery --concurrency=2 --loglevel=info
+    environment:
+      RUN_MIGRATIONS: "0"
+    healthcheck:
+      disable: true
+
+  beat:
+    <<: *app
+    # Runs the hourly purge of abandoned uploads (CELERY_BEAT_SCHEDULE).
+    command: celery -A config beat --loglevel=info --schedule /tmp/celerybeat-schedule
+    environment:
+      RUN_MIGRATIONS: "0"
+    healthcheck:
+      disable: true
+
+  live:
+    # nginx with the RTMP module: encoders publish here, viewers watch the HLS
+    # through Caddy.
+    build:
+      context: docker/live
+    image: qqplay-live:local
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+      - path: .env
+        required: false
+    ports:
+      - "1935:1935"   # RTMP from OBS and other encoders
+    volumes:
+      - live:/var/lib/akon-live
+    depends_on:
+      - web
+    networks:
+      default:
+        aliases:
+          - qqplay-live
+    logging: *logging
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    # Only used when the volume is first created: set the password in
+    # Dokploy's Environment tab before the first deploy, and never change it.
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-qqplay}
+      POSTGRES_USER: ${POSTGRES_USER:-qqplay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the Environment tab of Dokploy (deploy/dokploy/README.md)}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    logging: *logging
+
+volumes:
+  postgres:
+  media:
+  live:
+  caddy_data:
+  caddy_config:

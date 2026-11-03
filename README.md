@@ -95,6 +95,11 @@ O `deploy/configure.sh` escreve o `.env` de produção a partir do domínio, com
 senhas geradas na hora. O passo a passo completo, numa máquina gratuita da
 Oracle Cloud, está em [deploy/oracle/README.md](deploy/oracle/README.md).
 
+Numa máquina que já roda o [Dokploy](https://dokploy.com), o Traefik dele ocupa
+as portas 80 e 443. Nesse caso, o `docker-compose.dokploy.yml` põe a mesma stack
+atrás desse Traefik, e o passo a passo está em
+[deploy/dokploy/README.md](deploy/dokploy/README.md).
+
 ## Rodando sem Docker
 
 ```bash
@@ -196,8 +201,10 @@ apps/
 docker/live/            servidor de ingestão das lives (nginx + módulo RTMP)
 docker-compose.prod.yml a stack para a internet: Caddy com HTTPS, workers
                         ajustados para dois núcleos
+docker-compose.dokploy.yml  a mesma stack atrás do Traefik do Dokploy
 deploy/                 Caddyfile, .env de produção (configure.sh), backup
-                        do banco e o guia da Oracle Cloud (oracle/)
+                        do banco e os guias da Oracle Cloud (oracle/) e do
+                        Dokploy (dokploy/)
 templates/              HTML escrito só para este projeto (allauth incluído)
 locale/pt_BR/           catálogos em português (fontes .po e .mo compilados)
 static/css/app.css      o design system: tokens, temas, layout, componentes

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}{{ media.title }} — {{ PORTAL_NAME }}{% endblock %}
+{% block title %}{{ media.title }} â€” {{ PORTAL_NAME }}{% endblock %}
 
 {% block content %}
   <div class="player-shell">
@@ -14,8 +15,10 @@
         <audio class="player-audio" controls preload="metadata" src="{{ media.file.url }}"></audio>
       </div>
     {% else %}
-      <video class="player" controls preload="metadata"
+      <video class="player" controls preload="metadata" playsinline
              {% if media.poster %}poster="{{ media.poster.url }}"{% endif %}
+             {% if media.hls_url %}data-hls="{{ media.hls_url }}"{% endif %}
+             data-fallback="{{ media.file.url }}"
              src="{{ media.file.url }}"></video>
     {% endif %}
   </div>
@@ -24,14 +27,20 @@
     <article class="detail-main">
       <h1>{{ media.title }}</h1>
       <p class="detail-meta">
-        {{ media.owner.get_short_name }} · {{ media.created_at|date:"j M Y" }}
-        {% if media.views_count %}· {{ media.views_count }} views{% endif %}
+        {{ media.owner.get_short_name }} Â· {{ media.created_at|date:"j M Y" }}
+        {% if media.views_count %}Â· {{ media.views_count }} views{% endif %}
         {% if media.state != "ready" %}<span class="state state-{{ media.state }}">{{ media.get_state_display }}</span>{% endif %}
       </p>
 
       {% if media.description %}
         <div class="prose">{{ media.description|linebreaks }}</div>
       {% endif %}
+
+      <section class="share">
+        <h2>Embed</h2>
+        <p class="muted">Paste this into any page that accepts HTML.</p>
+        <textarea class="embed-code" rows="3" readonly onclick="this.select()">&lt;iframe src="{{ request.scheme }}://{{ request.get_host }}{% url 'core:embed' media.uid %}" width="640" height="360" frameborder="0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"&gt;&lt;/iframe&gt;</textarea>
+      </section>
 
       {% if media.chapters.all %}
         <section class="chapters">
@@ -71,4 +80,9 @@
       </ul>
     </aside>
   </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'vendor/hls.min.js' %}"></script>
+<script src="{% static 'js/player.js' %}"></script>
 {% endblock %}

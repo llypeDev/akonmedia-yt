@@ -117,6 +117,43 @@ def search(request):
     )
 
 
+def _flag(raw: str | None, default: bool) -> bool:
+    if raw is None or raw == "":
+        return default
+    return raw.strip().lower() not in {"0", "false", "no", "off"}
+
+
+def embed(request, uid: str):
+    """Bare player for iframes: no header, no navigation, nothing to click away."""
+    media = get_object_or_404(Media.objects.select_related("owner"), uid=uid)
+    if not can_view(request.user, media):
+        raise Http404("media not found")
+
+    try:
+        start = max(0, int(float(request.GET.get("start", 0))))
+    except (TypeError, ValueError):
+        start = 0
+
+    context = {
+        "media": media,
+        "autoplay": _flag(request.GET.get("autoplay"), False),
+        "controls": _flag(request.GET.get("controls"), True),
+        "show_title": _flag(request.GET.get("title"), False),
+        "start": start,
+        "is_public_media": media.visibility == Media.Visibility.PUBLIC
+        and media.state == Media.State.READY,
+    }
+    response = render(request, "core/embed.html", context)
+    # Embeds are designed to live inside other sites.
+    response["X-Frame-Options"] = "ALLOWALL"
+    return response
+
+
+@login_required
+def upload(request):
+    return render(request, "core/upload.html")
+
+
 @never_cache
 def health(request):
     """Liveness probe. Deliberately dumb: it must answer even when the

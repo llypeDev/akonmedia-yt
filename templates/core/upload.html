@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Upload — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <section class="intro">
+    <h1>Upload</h1>
+    <p class="lede">Video, audio, images and PDFs. Large files are sent in chunks, so a dropped connection resumes instead of starting over.</p>
+  </section>
+
+  <form class="upload-form" id="upload-form" method="post" enctype="multipart/form-data" action="#">
+    {% csrf_token %}
+
+    <label class="dropzone" id="dropzone" for="file-input">
+      <input type="file" id="file-input" name="file" hidden>
+      <strong>Choose a file</strong>
+      <span class="muted">or drop it here</span>
+      <span class="dropzone-name" id="file-name"></span>
+    </label>
+
+    <label class="field">
+      <span>Title</span>
+      <input type="text" id="title-input" name="title" maxlength="255" placeholder="Leave empty to use the file name">
+    </label>
+
+    <label class="field">
+      <span>Visibility</span>
+      <select id="visibility-input" name="visibility">
+        <option value="public">Public</option>
+        <option value="unlisted">Unlisted</option>
+        <option value="private">Private</option>
+      </select>
+    </label>
+
+    <div class="progress" id="progress" hidden>
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <p class="upload-status" id="status" role="status"></p>
+
+    <button type="submit" class="button" id="submit-button">Upload</button>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/upload.js' %}"></script>
+{% endblock %}

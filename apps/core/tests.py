@@ -149,3 +149,69 @@ class CommentPageTests(TestCase):
         response = self.client.get(f"/view/{self.media.uid}/")
         self.assertContains(response, "VISIBLE_MARKER")
         self.assertNotContains(response, "HIDDEN_MARKER")
+
+
+class EmbedTests(TestCase):
+    def setUp(self):
+        self.media_root = Path(settings.BASE_DIR) / ".test-media" / uuid.uuid4().hex
+        self.override = override_settings(MEDIA_ROOT=str(self.media_root))
+        self.override.enable()
+
+        self.owner = User.objects.create_user(email="emb@example.com", password="x" * 20)
+        self.media = make_media(self.owner, title="Embeddable")
+        self.media.file.save("clip.mp4", SimpleUploadedFile("clip.mp4", b"0" * 32), save=True)
+
+        self.private = make_media(
+            self.owner, title="Hidden", visibility=Media.Visibility.PRIVATE
+        )
+
+    def tearDown(self):
+        self.override.disable()
+        import shutil
+
+        shutil.rmtree(self.media_root, ignore_errors=True)
+
+    def test_embed_renders_a_bare_player(self):
+        response = self.client.get(f"/embed/{self.media.uid}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "<video")
+        self.assertNotContains(response, "site-header")
+
+    def test_embed_allows_framing(self):
+        response = self.client.get(f"/embed/{self.media.uid}/")
+        self.assertEqual(response["X-Frame-Options"], "ALLOWALL")
+
+    def test_private_media_cannot_be_embedded(self):
+        response = self.client.get(f"/embed/{self.private.uid}/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_start_parameter_is_passed_to_the_player(self):
+        response = self.client.get(f"/embed/{self.media.uid}/?start=42")
+        self.assertContains(response, 'data-start="42"')
+
+    def test_title_overlay_is_opt_in(self):
+        without = self.client.get(f"/embed/{self.media.uid}/")
+        with_title = self.client.get(f"/embed/{self.media.uid}/?title=1")
+        self.assertNotContains(without, 'class="embed-title"')
+        self.assertContains(with_title, 'class="embed-title"')
+
+    def test_media_page_shows_the_embed_snippet(self):
+        response = self.client.get(f"/view/{self.media.uid}/")
+        self.assertContains(response, "iframe src=")
+
+
+class UploadPageTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(email="upl@example.com", password="x" * 20)
+
+    def test_anonymous_is_sent_to_sign_in(self):
+        response = self.client.get("/upload/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])
+
+    def test_signed_in_user_sees_the_dropzone(self):
+        self.client.force_login(self.user)
+        response = self.client.get("/upload/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "dropzone")
+        self.assertContains(response, "csrf-token")

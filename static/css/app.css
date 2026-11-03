@@ -249,3 +249,60 @@ a:hover { color: var(--accent); }
 .comment-author { font-weight: 600; font-size: 0.9375rem; }
 .comment-time { color: var(--muted); font-size: 0.8125rem; margin-left: 0.5rem; }
 .comments p { margin: 0.3rem 0 0; color: #c8ced8; font-size: 0.9375rem; }
+
+
+/* ---------- upload ---------- */
+
+.upload-form { display: flex; flex-direction: column; gap: 1.25rem; max-width: 40rem; }
+
+.dropzone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.35rem;
+  padding: 3rem 1.5rem;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.dropzone:hover, .dropzone.over { border-color: var(--accent); background: var(--accent-soft); }
+.dropzone strong { font-size: 1.0625rem; }
+.dropzone-name { color: var(--accent); font-size: 0.875rem; margin-top: 0.4rem; }
+
+.field { display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.9375rem; }
+.field span { color: var(--muted); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.07em; }
+
+.field input, .field select {
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+
+.progress { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.progress-bar { height: 100%; width: 0; background: var(--accent); transition: width 140ms ease; }
+
+.upload-status { margin: 0; color: var(--muted); font-size: 0.875rem; min-height: 1.25rem; }
+.upload-status.error { color: #ef6a6a; }
+
+/* ---------- share / embed ---------- */
+
+.share { margin-top: 2rem; }
+.share h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.embed-code {
+  width: 100%;
+  resize: vertical;
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: #c8ced8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  outline: none;
+}

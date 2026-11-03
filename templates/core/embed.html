@@ -1,0 +1,57 @@
+{% load static %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ media.title }} — {{ PORTAL_NAME }}</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #000; }
+    body { display: flex; flex-direction: column; font-family: ui-sans-serif, system-ui, sans-serif; }
+    video { width: 100%; height: 100%; display: block; background: #000; object-fit: contain; }
+    .embed-title {
+      position: absolute; left: 0; right: 0; top: 0;
+      padding: 0.75rem 1rem;
+      background: linear-gradient(rgba(0,0,0,0.7), transparent);
+      color: #fff; font-size: 0.9375rem; font-weight: 600;
+      pointer-events: none;
+    }
+    .missing { color: #8c97a6; margin: auto; font-size: 0.9375rem; }
+  </style>
+</head>
+<body>
+  {% if media.file and media.kind != "image" %}
+    <div style="position: relative; flex: 1; min-height: 0;">
+      {% if show_title %}<div class="embed-title">{{ media.title }}</div>{% endif %}
+      <video
+        controls="{% if controls %}1{% endif %}"
+        {% if not controls %}controlslist="nodownload"{% endif %}
+        preload="metadata"
+        playsinline
+        {% if autoplay %}autoplay{% endif %}
+        {% if media.poster %}poster="{{ media.poster.url }}"{% endif %}
+        {% if media.hls_url %}data-hls="{{ media.hls_url }}"{% endif %}
+        data-fallback="{{ media.file.url }}"
+        src="{{ media.file.url }}"
+        {% if start %}data-start="{{ start }}"{% endif %}></video>
+    </div>
+  {% elif media.kind == "image" and media.file %}
+    <img src="{{ media.file.url }}" alt="{{ media.title }}" style="width:100%;height:100%;object-fit:contain">
+  {% else %}
+    <p class="missing">This media is not available.</p>
+  {% endif %}
+
+  <script src="{% static 'vendor/hls.min.js' %}"></script>
+  <script src="{% static 'js/player.js' %}"></script>
+  {% if start %}
+  <script>
+    (function () {
+      var v = document.querySelector("video");
+      if (!v) return;
+      var start = parseInt(v.getAttribute("data-start"), 10) || 0;
+      var seek = function () { if (start > 0) v.currentTime = start; };
+      v.addEventListener("loadedmetadata", seek, { once: true });
+    })();
+  </script>
+  {% endif %}
+</body>
+</html>

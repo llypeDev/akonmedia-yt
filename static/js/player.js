@@ -1,4 +1,4 @@
-/* AkonMedia player.
+/* QQplay player.
  *
  * Progressive enhancement over a native <video controls> element. Without
  * JavaScript the browser's own controls stay in place. With it, the element

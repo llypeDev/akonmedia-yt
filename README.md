@@ -1,6 +1,6 @@
-# AkonMedia — núcleo
+# QQplay — núcleo
 
-O núcleo do AkonMedia, desenvolvido em clean room: uma plataforma de mídia
+O núcleo do QQplay, desenvolvido em clean room: uma plataforma de mídia
 auto-hospedada construída do zero, sem nenhum código aproveitado de
 implementações anteriores. O código da aplicação é trabalho original sob a
 licença MIT (veja `LICENSE`); os recursos de terceiros estão listados em

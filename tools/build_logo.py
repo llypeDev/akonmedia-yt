@@ -1,4 +1,4 @@
-"""Build the AkonMedia brand kit: logo, app icons, web fonts and icon sprite.
+"""Build the QQplay brand kit: logo, app icons, web fonts and icon sprite.
 
 Every file this script writes is generated and committed; none is hand-edited.
 
@@ -88,6 +88,12 @@ LUCIDE_CDN = f"https://cdn.jsdelivr.net/npm/lucide-static@{LUCIDE_VERSION}"
 # palette
 # --------------------------------------------------------------------------
 
+#: The name on the wordmark, in the SVG titles, the web manifest and the social
+#: card. The wordmark sets the first BRAND_SPLIT letters in the text colour and
+#: the rest in the aurora gradient: "QQ" + "play".
+BRAND_NAME = "QQplay"
+BRAND_SPLIT = 2
+
 INK = "#050A12"
 NIGHT = "#05070C"
 AURORA = ("#2EE6A6", "#22D3EE", "#7C6CFF")       # mint, cyan, violet
@@ -141,7 +147,7 @@ def write_bytes(path: pathlib.Path, data: bytes) -> None:
 
 
 def fetch(url: str) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": "akonmedia-build"})
+    request = urllib.request.Request(url, headers={"User-Agent": "qqplay-build"})
     with urllib.request.urlopen(request, timeout=60) as response:
         return response.read()
 
@@ -458,7 +464,7 @@ def mark_layers(prefix: str, size: float, *, x: float = 0, y: float = 0,
 
 
 def svg_document(width: float, height: float, defs: str, body: str, *,
-                 label: str | None = "AkonMedia", extra: str = "") -> str:
+                 label: str | None = BRAND_NAME, extra: str = "") -> str:
     accessible = (
         f' role="img" aria-label="{label}"' if label else ' aria-hidden="true"'
     )
@@ -480,20 +486,20 @@ def wordmark_parts(variant: str) -> tuple[float, str, str]:
     # Centre the capitals on the tile: Space Grotesk caps are 0.7 em tall.
     baseline = WORDMARK_HEIGHT / 2 + WORDMARK_SIZE * 0.7 / 2
     text_x = WORDMARK_HEIGHT + WORDMARK_GAP
-    (akon, _, _), (media, media_start, media_end) = set_type(
-        "space-grotesk", "AkonMedia", size=WORDMARK_SIZE, weight=700, x=text_x,
-        baseline=baseline, tracking=WORDMARK_TRACKING, splits=(4,),
+    (head, _, _), (tail, tail_start, tail_end) = set_type(
+        "space-grotesk", BRAND_NAME, size=WORDMARK_SIZE, weight=700, x=text_x,
+        baseline=baseline, tracking=WORDMARK_TRACKING, splits=(BRAND_SPLIT,),
     )
     colors = AURORA if on_dark else AURORA_DEEP
     defs += gradient(
         f"{prefix}-type", colors, user_space=True,
-        x1=num(media_start), y1="0", x2=num(media_end), y2="0",
+        x1=num(tail_start), y1="0", x2=num(tail_end), y2="0",
     )
     body += (
-        f'<path d="{akon}" fill="{TEXT_ON_DARK if on_dark else TEXT_ON_LIGHT}"/>'
-        f'<path d="{media}" fill="url(#{prefix}-type)"/>'
+        f'<path d="{head}" fill="{TEXT_ON_DARK if on_dark else TEXT_ON_LIGHT}"/>'
+        f'<path d="{tail}" fill="url(#{prefix}-type)"/>'
     )
-    width = math.ceil(media_end + 1)
+    width = math.ceil(tail_end + 1)
     return width, defs, body
 
 
@@ -568,8 +574,8 @@ def build_brand() -> None:
     write_bytes(BRAND / "og-image.png", png(og_image_svg(), 1200, 630))
 
     manifest = {
-        "name": "AkonMedia",
-        "short_name": "AkonMedia",
+        "name": BRAND_NAME,
+        "short_name": BRAND_NAME,
         "description": "Stream, curate and deliver video, audio and images.",
         "start_url": "/",
         "scope": "/",
@@ -658,7 +664,7 @@ def og_image_svg() -> str:
         f'<path d="{path}" fill="{MUTED}"/></g>'
     )
 
-    return svg_document(width, height, "".join(defs), "".join(body), label="AkonMedia")
+    return svg_document(width, height, "".join(defs), "".join(body))
 
 
 # --------------------------------------------------------------------------

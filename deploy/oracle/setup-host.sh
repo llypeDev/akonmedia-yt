@@ -1,6 +1,6 @@
 #!/bin/sh
 # Prepares a new Oracle Cloud instance with Ubuntu (22.04 or 24.04, Ampere A1
-# or x86) to run AkonMedia. Safe to run again:
+# or x86) to run QQplay. Safe to run again:
 #
 #   1. opens ports 80 and 443 (TCP, and UDP for HTTP/3) and 1935 (RTMP) in the
 #      instance's own firewall. Oracle's Ubuntu images block everything but

@@ -1,9 +1,9 @@
-name: akonmedia
+name: qqplay
 
 x-app: &app
   build:
     context: .
-  image: akonmedia:local
+  image: qqplay:local
   restart: unless-stopped
   # Defaults first, then your own .env (copied from .env.docker and edited),
   # whose values win. A missing .env is fine for a first local run.
@@ -25,14 +25,17 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    # The same names and password the portal uses: your .env wins, and the
+    # defaults match .env.docker. They only take effect when the volume is
+    # first created.
     environment:
-      POSTGRES_DB: akonmedia
-      POSTGRES_USER: akonmedia
-      POSTGRES_PASSWORD: akonmedia
+      POSTGRES_DB: ${POSTGRES_DB:-qqplay}
+      POSTGRES_USER: ${POSTGRES_USER:-qqplay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qqplay}
     volumes:
       - postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U akonmedia -d akonmedia"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -64,7 +67,7 @@ services:
     # nginx with the RTMP module: encoders publish here, viewers watch the HLS.
     build:
       context: docker/live
-    image: akonmedia-live:local
+    image: qqplay-live:local
     restart: unless-stopped
     env_file:
       - .env.docker

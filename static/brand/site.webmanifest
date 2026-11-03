@@ -1,6 +1,6 @@
 {
-  "name": "AkonMedia",
-  "short_name": "AkonMedia",
+  "name": "QQplay",
+  "short_name": "QQplay",
   "description": "Stream, curate and deliver video, audio and images.",
   "start_url": "/",
   "scope": "/",

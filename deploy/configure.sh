@@ -63,7 +63,7 @@ cat > .env <<EOF
 COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
 
 # The certificate: Caddy gets it from Let's Encrypt for this name.
-AKON_DOMAIN=$domain
+PORTAL_DOMAIN=$domain
 ACME_EMAIL=$email
 
 SECRET_KEY=$(secret 32)
@@ -91,10 +91,10 @@ LIVE_HLS_URL=https://$domain/hls
 #EMAIL_PORT=587
 #EMAIL_HOST_USER=
 #EMAIL_HOST_PASSWORD=
-#DEFAULT_FROM_EMAIL=AkonMedia <no-reply@$domain>
+#DEFAULT_FROM_EMAIL=QQplay <no-reply@$domain>
 
 # The portal's name, shown in the header, in e-mails and in shared links.
-#PORTAL_NAME=AkonMedia
+#PORTAL_NAME=QQplay
 EOF
 
 echo "Wrote .env for https://$domain"

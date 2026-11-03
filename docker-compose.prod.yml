@@ -31,7 +31,7 @@ services:
       - "443:443"
       - "443:443/udp"   # HTTP/3
     environment:
-      AKON_DOMAIN: ${AKON_DOMAIN:?set AKON_DOMAIN in .env (deploy/configure.sh writes it)}
+      PORTAL_DOMAIN: ${PORTAL_DOMAIN:?set PORTAL_DOMAIN in .env (deploy/configure.sh writes it)}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env (deploy/configure.sh writes it)}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro

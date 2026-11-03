@@ -50,7 +50,7 @@ DEBUG = env_bool("DEBUG", False)
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ["localhost", "127.0.0.1"])
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", [])
 
-PORTAL_NAME = env("PORTAL_NAME", "AkonMedia")
+PORTAL_NAME = env("PORTAL_NAME", "QQplay")
 PORTAL_DESCRIPTION = env("PORTAL_DESCRIPTION", "")
 SITE_URL = env("SITE_URL", "http://localhost:8000").rstrip("/")
 
@@ -123,8 +123,8 @@ if env("POSTGRES_HOST"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": env("POSTGRES_DB", "akonmedia"),
-            "USER": env("POSTGRES_USER", "akonmedia"),
+            "NAME": env("POSTGRES_DB", "qqplay"),
+            "USER": env("POSTGRES_USER", "qqplay"),
             "PASSWORD": env("POSTGRES_PASSWORD", ""),
             "HOST": env("POSTGRES_HOST", "localhost"),
             "PORT": env_int("POSTGRES_PORT", 5432),

@@ -1,12 +1,12 @@
-# Brazilian Portuguese translation of AkonMedia.
-# This file is distributed under the same license as AkonMedia (MIT).
+# Brazilian Portuguese translation of QQplay.
+# This file is distributed under the same license as QQplay (MIT).
 msgid ""
 msgstr ""
-"Project-Id-Version: AkonMedia\n"
+"Project-Id-Version: QQplay\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-11-03 16:06+0000\n"
 "PO-Revision-Date: 2026-11-03 16:07+0000\n"
-"Last-Translator: AkonMedia\n"
+"Last-Translator: QQplay\n"
 "Language-Team: Português (Brasil)\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"

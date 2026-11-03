@@ -1,4 +1,4 @@
-# Live ingest for AkonMedia: RTMP in from encoders such as OBS, HLS out for
+# Live ingest for QQplay: RTMP in from encoders such as OBS, HLS out for
 # viewers. Nothing is transcoded: the encoder's own stream is repackaged, which
 # keeps a small machine (two cores) comfortable. entrypoint.sh fills in the
 # ${...} values from the environment.

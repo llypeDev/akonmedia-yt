@@ -2,7 +2,8 @@
 
 The task is written so a failure always leaves the record in a terminal state:
 either ``ready`` or ``failed`` with a reason. Nothing stays stuck in
-``processing``.
+``processing``: an encoding cut short by a restart is marked failed when the
+encoding worker starts again (``fail_interrupted``), so it can be retried.
 
 What each kind gets:
 
@@ -18,6 +19,7 @@ import logging
 from pathlib import Path
 
 from celery import shared_task
+from celery.signals import worker_ready
 from django.conf import settings
 from django.utils import timezone
 
@@ -63,6 +65,46 @@ def process_media(self, media_id: str) -> str:
     media.published_at = media.published_at or timezone.now()
     media.save(update_fields=SAVED_FIELDS)
     return "ready"
+
+
+#: Recorded on items whose encoding a restart cut short; they can be retried.
+INTERRUPTED = "interrupted: the encoder restarted while this item was being processed"
+
+
+@worker_ready.connect
+def fail_interrupted(sender=None, **kwargs) -> int:
+    """Release the items a restart left marked as processing.
+
+    An encoding worker that has just started is not running anything yet, so
+    an item still marked as processing was cut short: an update, a crash, the
+    machine rebooting. Marking it failed, with the reason, gives it a Retry
+    button instead of a spinner forever. Workers that do not encode skip this,
+    and items another running worker is encoding are left alone.
+    """
+    app = getattr(sender, "app", None)
+    if app is None or "media" not in app.amqp.queues.consume_from:
+        return 0
+    busy = _encoding_elsewhere(app)
+    stuck = Media.objects.filter(state=Media.State.PROCESSING).exclude(pk__in=busy)
+    count = stuck.update(state=Media.State.FAILED, failure_reason=INTERRUPTED)
+    if count:
+        logger.warning("%s interrupted encoding(s) marked as failed", count)
+    return count
+
+
+def _encoding_elsewhere(app) -> list[str]:
+    """Ids of the items other workers are encoding right now."""
+    try:
+        replies = app.control.inspect(timeout=1.0).active() or {}
+    except Exception:  # noqa: BLE001 - no answer: there is no other worker
+        return []
+    busy = []
+    for tasks in replies.values():
+        for task in tasks or []:
+            args = task.get("args") or []
+            if task.get("name") == "media.process" and isinstance(args, (list, tuple)) and args:
+                busy.append(str(args[0]))
+    return busy
 
 
 def encode_timeout(duration: float) -> int:

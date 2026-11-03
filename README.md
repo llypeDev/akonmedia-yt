@@ -77,8 +77,23 @@ em vez de disputar com ele. Os valores do `.env` sobrepõem os padrões do
 
 A imagem já traz ffmpeg e poppler, então a codificação funciona sem configuração
 extra. A mídia enviada fica no volume `media`, e as lives em andamento no volume
-`live`; para tráfego real, coloque nginx ou um armazenamento de objetos na
-frente e defina `SERVE_MEDIA=False`.
+`live`.
+
+### Em produção
+
+O `docker-compose.prod.yml` vai por cima do `docker-compose.yml` e transforma a
+mesma stack numa instalação para a internet, numa máquina só:
+
+- o Caddy atende nas portas 80 e 443 com certificado automático e entrega o
+  portal, o HLS das lives e os arquivos de mídia (o portal só decide como cada
+  arquivo sai, via `MEDIA_ACCEL_REDIRECT`);
+- a codificação roda uma por vez, com prioridade menor que a das lives, e as
+  tarefas rápidas ganham um worker próprio (`tasks`);
+- só as portas 80, 443 e 1935 ficam abertas, e os logs são rotacionados.
+
+O `deploy/configure.sh` escreve o `.env` de produção a partir do domínio, com
+senhas geradas na hora. O passo a passo completo, numa máquina gratuita da
+Oracle Cloud, está em [deploy/oracle/README.md](deploy/oracle/README.md).
 
 ## Rodando sem Docker
 
@@ -179,6 +194,10 @@ apps/
                         sala de controle, transmissão pelo navegador (relay.py)
                         e a gravação publicada como vídeo
 docker/live/            servidor de ingestão das lives (nginx + módulo RTMP)
+docker-compose.prod.yml a stack para a internet: Caddy com HTTPS, workers
+                        ajustados para dois núcleos
+deploy/                 Caddyfile, .env de produção (configure.sh), backup
+                        do banco e o guia da Oracle Cloud (oracle/)
 templates/              HTML escrito só para este projeto (allauth incluído)
 locale/pt_BR/           catálogos em português (fontes .po e .mo compilados)
 static/css/app.css      o design system: tokens, temas, layout, componentes
@@ -336,10 +355,12 @@ não foi testado. Câmera e tela no mesmo quadro ainda pedem o OBS.
 
 **Em produção.** Libere a porta TCP 1935 para o OBS. Sirva o HLS (porta 8080 do
 serviço `live`, caminho `/hls/`) pelo mesmo proxy HTTPS do site: com o site em
-HTTPS, o navegador bloqueia um HLS em HTTP. As chamadas do nginx para o portal
-chegam com o host `web`, que precisa estar em `ALLOWED_HOSTS` (o `.env.docker`
-já o inclui). Aulas longas demoram para processar numa máquina pequena: a tarefa
-que publica a gravação ganha um limite de tempo proporcional à duração.
+HTTPS, o navegador bloqueia um HLS em HTTP. O `docker-compose.prod.yml` já faz
+as duas coisas (veja [Em produção](#em-produção)). As chamadas do nginx para o
+portal chegam com o host `web`, que precisa estar em `ALLOWED_HOSTS` (o
+`.env.docker` e o `deploy/configure.sh` já o incluem). Aulas longas demoram para
+processar numa máquina pequena: a tarefa que publica a gravação ganha um limite
+de tempo proporcional à duração.
 
 **Sem Docker**, para desenvolver: instale o nginx com o módulo
 (`apt install nginx-light libnginx-mod-rtmp`) e rode o mesmo modelo de
@@ -373,7 +394,8 @@ python tools/build_logo.py                 # ou: brand | fonts | icons
 
 Veja o `.env.example`. Nada é obrigatório para desenvolvimento local; em
 produção são necessários, no mínimo, `SECRET_KEY`, `ALLOWED_HOSTS` e um banco de
-dados.
+dados. O `deploy/configure.sh` escreve um `.env` de produção completo a partir
+do domínio.
 
 ## Licenças
 

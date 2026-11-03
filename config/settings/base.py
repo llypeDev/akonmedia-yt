@@ -6,6 +6,8 @@ same image runs in development, staging and production without edits.
 import os
 from pathlib import Path
 
+from kombu import Queue
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
@@ -156,17 +158,29 @@ CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", REDIS_URL or "cache+memory:
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", False)
 CELERY_TASK_TIME_LIMIT = env_int("CELERY_TASK_TIME_LIMIT", 60 * 60)
 
-#: Periodic housekeeping, run by the ``beat`` service.
+#: Encoding goes to its own queue, so a long class being encoded never holds up
+#: the quick housekeeping. A worker started without ``-Q`` consumes both; on a
+#: small server, docker-compose.prod.yml gives each queue its own worker.
+CELERY_TASK_QUEUES = (Queue("celery"), Queue("media"))
+CELERY_TASK_ROUTES = {
+    "media.process": {"queue": "media"},
+    "live.finalize": {"queue": "media"},
+}
+
+#: Periodic housekeeping, run by the ``beat`` service. A run that could not
+#: start in time is dropped instead of piling up behind a stopped worker.
 CELERY_BEAT_SCHEDULE = {
     "purge-stale-uploads": {
         "task": "uploads.purge_stale",
         "schedule": 60 * 60,
+        "options": {"expires": 30 * 60},
     },
     # Ends lives whose encoder never came back and finishes any that slipped
     # through; the ingest server's callbacks handle the usual case at once.
     "live-housekeeping": {
         "task": "live.housekeeping",
         "schedule": 30,
+        "options": {"expires": 25},
     },
 }
 
@@ -290,6 +304,12 @@ MEDIA_ROOT = Path(env("MEDIA_ROOT", str(BASE_DIR / "media")))
 #: When true, Django serves uploaded media itself. Fine for a single container or
 #: a demo; put nginx or object storage in front of it for real traffic.
 SERVE_MEDIA = env_bool("SERVE_MEDIA", False)
+
+#: Behind a web server that understands X-Accel-Redirect (Caddy in
+#: docker-compose.prod.yml, or nginx), Django only checks the file and sets its
+#: headers, and the server sends the bytes from this internal prefix. Empty:
+#: Django streams the file itself.
+MEDIA_ACCEL_REDIRECT = env("MEDIA_ACCEL_REDIRECT", "")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

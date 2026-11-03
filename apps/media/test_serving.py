@@ -170,3 +170,46 @@ class MalformedRangeTests(TestCase):
         self.assertEqual(content_type_for("a.mkv"), "video/x-matroska")
         self.assertEqual(content_type_for("a.m4a"), "audio/mp4")
         self.assertEqual(content_type_for("a.flac"), "audio/flac")
+
+
+@override_settings(DEBUG=False, MEDIA_ACCEL_REDIRECT="/_media/")
+class AcceleratedServingTests(TestCase):
+    """Behind Caddy or nginx the view decides, and the server sends the bytes."""
+
+    def setUp(self):
+        self.root = Path(settings.BASE_DIR) / ".test-media" / uuid.uuid4().hex
+        (self.root / "videos" / "abc").mkdir(parents=True, exist_ok=True)
+        (self.root / "videos" / "abc" / "index.m3u8").write_text("#EXTM3U\n", encoding="utf-8")
+        (self.root / "aula 1 – revisão.mp4").write_bytes(PAYLOAD)
+        (self.root / "page.html").write_text("<script>alert(1)</script>", encoding="utf-8")
+        self.override = override_settings(MEDIA_ROOT=str(self.root))
+        self.override.enable()
+
+    def tearDown(self):
+        self.override.disable()
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_hands_the_file_to_the_server_with_an_empty_body(self):
+        response = self.client.get("/media/videos/abc/index.m3u8")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["X-Accel-Redirect"], "/_media/videos/abc/index.m3u8")
+        self.assertEqual(response["Content-Type"], "application/vnd.apple.mpegurl")
+        self.assertEqual(response.content, b"")
+
+    def test_ranges_are_left_to_the_server(self):
+        response = self.client.get("/media/aula%201%20%E2%80%93%20revis%C3%A3o.mp4", headers={"Range": "bytes=0-9"})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("Content-Range", response)
+        self.assertEqual(response["X-Accel-Redirect"], "/_media/aula%201%20%E2%80%93%20revis%C3%A3o.mp4")
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+
+    def test_safety_headers_travel_with_the_hand_over(self):
+        response = self.client.get("/media/page.html")
+        self.assertTrue(response["Content-Disposition"].startswith("attachment"))
+        self.assertIn("sandbox", response["Content-Security-Policy"])
+
+    def test_missing_or_outside_files_are_never_handed_over(self):
+        for url in ("/media/nope.mp4", "/media/../../manage.py", "/media/videos/abc"):
+            response = self.client.get(url)
+            self.assertIn(response.status_code, (400, 404), url)
+            self.assertNotIn("X-Accel-Redirect", response)

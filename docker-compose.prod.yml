@@ -1,0 +1,86 @@
+# Production on a single server, such as the free Ampere A1 machine of Oracle
+# Cloud (2 cores, 12 GB): see deploy/oracle/README.md.
+#
+# Used on top of docker-compose.yml. The .env written by deploy/configure.sh
+# sets COMPOSE_FILE to both files, so a plain `docker compose up -d --build`
+# picks this one up. What changes:
+#
+# - Caddy answers on 80 and 443 with an automatic certificate and is the only
+#   way in for browsers: the portal (8000) and the HLS (8080) are no longer
+#   published. Port 1935 stays open for OBS.
+# - One encoding at a time, at a lower processor priority than the services
+#   that work in real time (browser streams are encoded by the web service).
+# - Quick jobs, such as the lives' housekeeping, get a worker of their own and
+#   never wait behind an encoding.
+# - The database password comes from .env, and the logs are rotated.
+#
+# Needs Docker Compose 2.24.4 or later (the !reset and !override tags).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    environment:
+      AKON_DOMAIN: ${AKON_DOMAIN:?set AKON_DOMAIN in .env (deploy/configure.sh writes it)}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env (deploy/configure.sh writes it)}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data   # the certificates
+      - caddy_config:/config
+      - media:/srv/_media:ro
+    depends_on:
+      - web
+      - live
+    logging: *logging
+
+  web:
+    ports: !reset []
+    environment:
+      # Threads, so page views and the lives' polling do not queue behind
+      # one another.
+      GUNICORN_CMD_ARGS: "--threads 4"
+    logging: *logging
+
+  worker:
+    command: celery -A config worker -Q media --concurrency=1 --prefetch-multiplier=1 --loglevel=info
+    # A quarter of the default weight: when the processor is busy, a live
+    # keeps its share and the encoding waits.
+    cpu_shares: 256
+    logging: *logging
+
+  tasks:
+    extends:
+      file: docker-compose.yml
+      service: worker
+    command: celery -A config worker -Q celery --concurrency=2 --loglevel=info
+    logging: *logging
+
+  beat:
+    logging: *logging
+
+  live:
+    ports: !override
+      - "1935:1935"   # RTMP from OBS; the HLS goes out through Caddy
+    logging: *logging
+
+  db:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    logging: *logging
+
+  redis:
+    logging: *logging
+
+volumes:
+  caddy_data:
+  caddy_config:

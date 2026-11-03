@@ -111,13 +111,28 @@ def _iso(value):
     return value.isoformat() if value else None
 
 
+def _embed_grants(request, live: Live) -> bool:
+    """A site's frame whose integration opens this live (see apps.integrations)."""
+    embed = getattr(request, "embed", None)
+    return bool(embed is not None and embed.grants_live(live))
+
+
 def _viewable(request, uid: str) -> Live:
     live = get_object_or_404(
         Live.objects.select_related("owner", "category", "recording"), uid=uid
     )
-    if not access.can_view_live(request.user, live):
+    if not (access.can_view_live(request.user, live) or _embed_grants(request, live)):
         raise Http404("live not found")
     return live
+
+
+def can_moderate(request, live: Live) -> bool:
+    """Hide chat messages: the host and curators here, and on a site's frame
+    the teachers its tokens mark as moderators."""
+    embed = getattr(request, "embed", None)
+    if embed is not None:
+        return embed.moderates(live)
+    return access.can_moderate_live_chat(request.user, live)
 
 
 def _editable(request, uid: str) -> Live:
@@ -181,7 +196,7 @@ def chat_payload(request, live: Live, after: int = 0, reactions_rev: int = -1) -
     """The chat for a page that has every message up to ``after`` and the
     reactions as of ``reactions_rev`` (-1: none yet)."""
     user = request.user
-    can_moderate = access.can_moderate_live_chat(user, live)
+    moderator = can_moderate(request, live)
     visible = live.messages.filter(is_hidden=False).select_related("author")
     if after > 0:
         batch = list(visible.filter(id__gt=after).order_by("id")[:CHAT_BATCH])
@@ -209,8 +224,8 @@ def chat_payload(request, live: Live, after: int = 0, reactions_rev: int = -1) -
         "open": chat_open(live),
         "can_post": can_post(user, live),
         "can_react": can_post(user, live),
-        "can_moderate": can_moderate,
-        "messages": [message_payload(m, user, live, can_moderate, summary.get(m.id)) for m in batch],
+        "can_moderate": moderator,
+        "messages": [message_payload(m, user, live, moderator, summary.get(m.id)) for m in batch],
         "hidden": hidden,
         "reactions_rev": live.reactions_rev,
     }
@@ -337,28 +352,65 @@ def watch(request, uid: str):
     )
 
 
-def embed(request, uid: str):
-    """The live's player for other sites: no header, no chat.
+EMBED_LAYOUTS = ("player", "chat", "both")
+EMBED_THEMES = ("dark", "light")
 
-    Once the recording is ready the same embed code plays it, so a page that
-    embedded a class keeps working after the class is over.
+
+def embed(request, uid: str):
+    """The live for other sites: the player, its chat, or both side by side.
+
+        ?layout=player|chat|both    what the frame shows (the player by default)
+        ?school=<integration key>   people sign in through that site to talk
+                                    (apps.integrations); a private live of the
+                                    integration's owner shows once they have
+        ?theme=dark|light           the chat's colours (the system's otherwise)
+
+    Once the recording is ready the player's embed code plays it, so a page
+    that embedded a class keeps working after the class is over.
+
+    The frame never speaks for whoever is signed in to QQplay in this browser:
+    on another site that could be anybody. Its chat is read-only until the
+    site signs the person in.
     """
-    live = get_object_or_404(Live.objects.select_related("recording"), uid=uid)
+    from django.contrib.auth.models import AnonymousUser
+
+    from apps.integrations.models import Integration
+
+    live = get_object_or_404(Live.objects.select_related("recording", "owner"), uid=uid)
+    layout = request.GET.get("layout", "player")
+    layout = layout if layout in EMBED_LAYOUTS else "player"
+    theme = request.GET.get("theme", "")
+    theme = theme if theme in EMBED_THEMES else ""
+    school = (request.GET.get("school") or "")[:40]
+    integration = Integration.objects.filter(key=school, is_active=True).first() if school else None
+
     available = access.can_view_live(request.user, live)
-    if available and live.is_ended and live.recording and live.recording.is_ready \
+    # A private live opens to the site's people once one of them signs in.
+    awaiting = not available and integration is not None and integration.grants_live(live)
+    if available and layout == "player" and live.is_ended and live.recording and live.recording.is_ready \
             and access.can_view_media(request.user, live.recording):
         target = reverse("core:embed", args=[live.recording.uid])
         query = request.META.get("QUERY_STRING", "")
         return redirect(f"{target}?{query}" if query else target)
-    page_state, page_json = _page_state(request, live) if available else ({}, "{}")
+
+    viewer = request.user
+    request.user = AnonymousUser()
+    try:
+        page_state, page_json = _page_state(request, live) if available else ({}, "{}")
+    finally:
+        request.user = viewer
     context = {
         "live": live,
-        "available": available,
+        "available": available or awaiting,
+        "awaiting": awaiting,
+        "layout": layout,
+        "theme": theme,
+        "integration": integration,
         "state": page_state,
         "state_json": page_json,
         "page_url": request.build_absolute_uri(live.get_absolute_url()),
     }
-    response = render(request, "live/embed.html", context, status=200 if available else 404)
+    response = render(request, "live/embed.html", context, status=200 if available or awaiting else 404)
     response["X-Frame-Options"] = "ALLOWALL"
     response["Content-Security-Policy"] = "frame-ancestors *"
     return response
@@ -401,8 +453,9 @@ def chat_post(request, uid: str):
     if not cache.add(f"live:chat:{request.user.pk}", 1, timeout=CHAT_RATE_SECONDS):
         return JsonResponse({"detail": _("Slow down a little: one message every two seconds.")}, status=429)
     message = ChatMessage.objects.create(live=live, author=request.user, body=body)
-    can_moderate = access.can_moderate_live_chat(request.user, live)
-    return JsonResponse({"message": message_payload(message, request.user, live, can_moderate)}, status=201)
+    return JsonResponse(
+        {"message": message_payload(message, request.user, live, can_moderate(request, live))}, status=201
+    )
 
 
 @require_POST
@@ -454,7 +507,7 @@ def chat_react(request, uid: str, message_id: int):
 @require_POST
 def chat_hide(request, uid: str, message_id: int):
     live = _viewable(request, uid)
-    if not access.can_moderate_live_chat(request.user, live):
+    if not can_moderate(request, live):
         return JsonResponse({"detail": _("You cannot moderate this chat.")}, status=403)
     message = get_object_or_404(ChatMessage, pk=message_id, live=live)
     if not message.is_hidden:

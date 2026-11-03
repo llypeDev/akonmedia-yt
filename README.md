@@ -138,6 +138,7 @@ os recursos de terceiros estão listados em [Licenças](#licenças).
         <li>Transmissão pelo OBS ou pelo navegador, entregue em HLS</li>
         <li>Chat com reações e embed</li>
         <li>A gravação publicada como vídeo quando a live termina</li>
+        <li>A live e o chat dentro do site da sua escola, com o login da escola (<a href="#integração-com-a-sua-escola">veja como</a>)</li>
       </ul>
     </td>
     <td width="50%" valign="top">
@@ -623,6 +624,68 @@ LIVE_HOOK_SECRET=dev-secret python manage.py runserver
 
 </details>
 
+## Integração com a sua escola
+
+A live e o chat dela podem aparecer dentro do site da sua escola virtual, com
+os alunos comentando e reagindo com o nome e a foto que já têm lá, sem criar
+conta aqui. Mensagens e reações são as mesmas da página da live: quem assiste
+pelo portal e quem assiste pela escola conversa no mesmo chat.
+
+No portal, em **Estúdio › Integrações**, crie uma integração com o endereço do
+site (por exemplo `https://escola.com.br`). Ela tem uma **chave** (pública) e um
+**segredo** (só no servidor da escola). A página da integração traz os exemplos
+prontos em PHP, Node.js e Python, gera o código de cada live e abre uma prévia
+com um aluno de teste.
+
+1. **No servidor da escola**, para o aluno logado, gere um JSON Web Token HS256
+   assinado com o segredo e com a chave no cabeçalho (`kid`):
+
+   | Campo | | |
+   | --- | --- | --- |
+   | `sub` | obrigatório | id do aluno na escola (texto ou número) |
+   | `name` | obrigatório | nome mostrado no chat |
+   | `exp` | obrigatório | validade; no máximo 24 h à frente (10 min é o bastante) |
+   | `picture` | opcional | foto do aluno, só `https`; vira o avatar dele |
+   | `moderator` | opcional | `true` para professores: podem ocultar mensagens |
+   | `email` | opcional | só para referência no Admin |
+
+2. **Na página da aula**, cole:
+
+   ```html
+   <div data-qqplay-live="ID_DA_LIVE" data-layout="both" data-token="TOKEN"></div>
+   <script src="https://SEU_PORTAL/embed/sdk.js" async></script>
+   ```
+
+   `data-layout` é `both` (live e chat), `player` ou `chat`; `data-theme` é
+   `dark` ou `light`. Em aulas longas, use `data-token-url="/qqplay-token"` no
+   lugar de `data-token`: um endereço do site que responde `{"token": "…"}`
+   para o aluno logado, chamado de novo quando a sessão do quadro termina.
+   Pelo script, `QQplay.mount(elemento, {live, layout, token, tokenUrl})`.
+
+<details>
+<summary><b>Como funciona por dentro</b> (<code>apps/integrations/</code>)</summary>
+
+<br>
+
+- O token nunca passa pelo endereço da página: o script o entrega ao quadro
+  com `postMessage`, e o quadro o troca por uma sessão própria
+  (`/embed/api/session/`, válida por 12 h) que vai num cabeçalho em cada
+  pedido. Não depende de cookies de terceiros, que Safari e Firefox bloqueiam
+  em quadros de outros sites.
+- Cada aluno ganha uma conta própria, ligada ao par integração + id na escola,
+  sem senha e com um e-mail que não existe. Contas nunca são ligadas pelo
+  e-mail do token, então um site não consegue falar em nome de uma conta do
+  portal.
+- Só páginas dos sites listados na integração conectam alunos. Desligar a
+  integração ou trocar o segredo encerra na hora as sessões abertas.
+- Uma live **privada** do dono da integração aparece no site da escola para os
+  alunos conectados, e em nenhum outro lugar. Públicas e não listadas aparecem
+  para todos (o chat, sem login, fica só para leitura).
+- A foto do aluno é baixada em segundo plano só de endereços públicos (nada da
+  rede interna do servidor) e passa pelo mesmo tratamento de uma foto enviada.
+
+</details>
+
 ## Desenvolvimento
 
 ### Testes
@@ -765,6 +828,8 @@ apps/
   live/                 lives: chamadas do servidor de ingestão, estado, chat,
                         sala de controle, transmissão pelo navegador (relay.py)
                         e a gravação publicada como vídeo
+  integrations/         lives e chat no site de uma escola: token assinado pelo
+                        site, sessão do quadro, script de incorporação
 docker/live/            servidor de ingestão das lives (nginx + módulo RTMP)
 docker-compose.prod.yml a stack para a internet: Caddy com HTTPS, workers
                         ajustados para dois núcleos
@@ -776,7 +841,8 @@ templates/              HTML escrito só para este projeto (allauth incluído)
 locale/pt_BR/           catálogos em português (fontes .po e .mo compilados)
 static/css/app.css      o design system: tokens, temas, layout, componentes
 static/css/player.css   a aparência do player
-static/js/              app.js, player.js, upload.js, live.js, cast.js, avatar.js
+static/js/              app.js, player.js, upload.js, live.js, cast.js, avatar.js,
+                        integrations.js
 static/brand/           símbolo, logotipos, favicons, ícones de app, imagem OG
 static/avatars/         os personagens que se pode escolher para o perfil
 static/icons/sprite.svg sprite de ícones (Lucide, veja Licenças)

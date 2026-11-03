@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load static akon i18n %}
+
+{% block title %}{% translate "Integrations" %} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">{% icon "link" "icon-xs" %}{% translate "Creator studio" %}</span>
+      <h1>{% translate "Integrations" %}</h1>
+      <p class="lede">{% blocktranslate %}Put your lives and their chat on your own site, such as your online school. People take part with the account they already have there: no {{ PORTAL_NAME }} sign-up.{% endblocktranslate %}</p>
+    </div>
+    <div class="btn-group">
+      <a class="btn" href="{% url 'live:studio' %}">{% icon "radio" "icon-sm" %}{% translate "Your lives" %}</a>
+    </div>
+  </header>
+
+  <div class="split">
+    <section class="panel panel-flush">
+      {% if integrations %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Site" %}</th>
+                <th>{% translate "Status" %}</th>
+                <th class="num">{% translate "People" %}</th>
+                <th>{% translate "Last used" %}</th>
+                <th class="actions"><span class="sr-only">{% translate "Actions" %}</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for integration in integrations %}
+                <tr>
+                  <td>
+                    <a class="row-title" href="{% url 'integrations:detail' integration.pk %}">{{ integration.name }}</a>
+                    <div class="row-sub">{% for origin in integration.origin_list %}{{ origin }}{% if not forloop.last %} · {% endif %}{% empty %}{% translate "Any site" %}{% endfor %}</div>
+                  </td>
+                  <td>{% if integration.is_active %}<span class="badge badge-public">{% translate "On" %}</span>{% else %}<span class="badge badge-private">{% translate "Off" %}</span>{% endif %}</td>
+                  <td class="num">{{ integration.identities.count }}</td>
+                  <td class="muted nowrap">{% if integration.last_used_at %}<time datetime="{{ integration.last_used_at|date:'c' }}" data-local>{{ integration.last_used_at|date:"SHORT_DATETIME_FORMAT" }}</time>{% else %}{% translate "Never" %}{% endif %}</td>
+                  <td class="actions"><a class="btn btn-sm" href="{% url 'integrations:detail' integration.pk %}">{% icon "settings" "icon-sm" %}{% translate "Set up" %}</a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">{% icon "link" %}</div>
+          <h3>{% translate "No integrations yet" %}</h3>
+          <p>{% translate "Create one for your school's site. You get a key for its server to sign people in, and the code to paste on a lesson's page." %}</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2><span class="panel-title-icon">{% icon "plus" %}</span>{% translate "New integration" %}</h2>
+      </div>
+      <form class="form-grid" method="post">
+        {% csrf_token %}
+        <label class="field">
+          <span class="field-label">{% translate "Name" %} <span class="hint">{% translate "shown to the people who sign in" %}</span></span>
+          <input class="input" type="text" name="name" maxlength="120" required value="{{ form.name.value|default:'' }}" placeholder="{% translate 'My online school' %}">
+          {% for error in form.name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </label>
+        <label class="field">
+          <span class="field-label">{% translate "Sites" %} <span class="hint">{% translate "one per line" %}</span></span>
+          <textarea class="textarea" name="origins" rows="3" spellcheck="false" placeholder="https://escola.com.br&#10;https://www.escola.com.br">{{ form.origins.value|default:'' }}</textarea>
+          <span class="field-help">{% translate "The addresses of the site where the lives will appear. Only pages there can sign people in." %}</span>
+          {% for error in form.origins.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </label>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">{% icon "plus" "icon-sm" %}{% translate "Create integration" %}</button></div>
+      </form>
+    </section>
+  </div>
+{% endblock %}

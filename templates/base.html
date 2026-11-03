@@ -148,6 +148,7 @@
           <a class="nav-link {% if NAV_NS == 'core' and NAV == 'studio' or NAV == 'media_edit' %}active{% endif %}" href="{% url 'core:studio' %}">{% icon "dashboard" %}<span>{% translate "Studio" %}</span></a>
           <a class="nav-link {% if NAV == 'upload' %}active{% endif %}" href="{% url 'core:upload' %}">{% icon "upload" %}<span>{% translate "Upload" %}</span></a>
           <a class="nav-link {% if NAV_NS == 'live' and NAV != 'lives' and NAV != 'watch' %}active{% endif %}" href="{% url 'live:studio' %}">{% icon "radio" %}<span>{% translate "Go live" %}</span></a>
+          <a class="nav-link {% if NAV_NS == 'integrations' %}active{% endif %}" href="{% url 'integrations:list' %}">{% icon "link" %}<span>{% translate "Integrations" %}</span></a>
           <a class="nav-link {% if NAV == 'channel' and is_self %}active{% endif %}" href="{% url 'core:channel' user.pk %}">{% icon "tv" %}<span>{% translate "Your channel" %}</span></a>
           <a class="nav-link {% if NAV == 'account' %}active{% endif %}" href="{% url 'core:account' %}">{% icon "settings" %}<span>{% translate "Account" %}</span></a>
         </nav>

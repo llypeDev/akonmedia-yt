@@ -80,7 +80,45 @@
   }
 
   function toast(text, kind) {
-    if (window.AkonApp && window.AkonApp.toast) window.AkonApp.toast(text, kind);
+    if (window.AkonApp && window.AkonApp.toast) {
+      window.AkonApp.toast(text, kind);
+      return;
+    }
+    // In an embed frame, where app.js does not load: a short note at the bottom.
+    if (!text || !document.body) return;
+    var list = document.querySelector(".toasts");
+    if (!list) {
+      list = document.createElement("ul");
+      list.className = "toasts";
+      list.setAttribute("role", "status");
+      list.setAttribute("aria-live", "polite");
+      document.body.appendChild(list);
+    }
+    var item = document.createElement("li");
+    item.className = "toast " + (kind || "info");
+    var label = document.createElement("span");
+    label.className = "toast-text";
+    label.textContent = text;
+    item.appendChild(label);
+    list.appendChild(item);
+    window.setTimeout(function () { item.remove(); }, kind === "error" ? 7000 : 3500);
+  }
+
+  /* The page's site, for a frame opened there (see apps/integrations). */
+  function parentOrigin() {
+    try {
+      if (location.ancestorOrigins && location.ancestorOrigins.length) return location.ancestorOrigins[0];
+    } catch (e) { /* not available */ }
+    try {
+      return document.referrer ? new URL(document.referrer).origin : "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function tellParent(message) {
+    // Never anything secret: any page could be the parent.
+    if (window.parent && window.parent !== window) window.parent.postMessage(message, "*");
   }
 
   function lang() {
@@ -123,6 +161,12 @@
     this.chatUrl = root.getAttribute("data-chat-url");
     this.hideUrl = root.getAttribute("data-hide-url");
     this.reactUrl = root.getAttribute("data-react-url");
+    // A frame on a site with an integration: the site signs the person in.
+    this.school = root.getAttribute("data-school") || "";
+    this.sessionUrl = root.getAttribute("data-session-url") || "";
+    this.awaiting = root.hasAttribute("data-awaiting");
+    this.session = "";
+    this.signingIn = false;
     this.reactionsRev = -1;
     this.pendingReactions = {};
     this.canReact = false;
@@ -147,6 +191,7 @@
     this.apply(state, true);
     this.startClock();
     this.schedule();
+    if (this.school && this.sessionUrl) this.bootSchool();
 
     var self = this;
     document.addEventListener("visibilitychange", function () {
@@ -176,6 +221,7 @@
       this.stopped = true;
       return;
     }
+    this.stopped = false;
     if (document.hidden) wait *= 3;
     this.timer = window.setTimeout(function () { self.poll(); }, wait);
   };
@@ -190,8 +236,9 @@
     var url = this.stateUrl + "?after=" + this.lastId + "&rrev=" + this.reactionsRev;
     // The host's control room is not an audience.
     if (this.mode !== "control") url += "&client=" + encodeURIComponent(this.client);
-    fetch(url, { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } })
+    fetch(url, { credentials: "same-origin", cache: "no-store", headers: this.headers() })
       .then(function (response) {
+        self.checkSession(response);
         if (!response.ok) throw new Error("HTTP " + response.status);
         return response.json();
       })
@@ -202,6 +249,12 @@
 
   LivePage.prototype.apply = function (data, first) {
     if (!data || !data.status) return;
+    if (this.awaiting) {
+      // A private live, shown now that the site has signed the person in.
+      this.awaiting = false;
+      each(this.root, "[data-awaiting-screen]", function (node) { node.remove(); });
+      each(this.root, "[data-stage-wrap]", function (node) { node.hidden = false; });
+    }
     var previous = this.state.status;
     this.state = data;
     var root = this.root;
@@ -437,10 +490,11 @@
     fetch(this.chatUrl, {
       method: "POST",
       credentials: "same-origin",
-      headers: { Accept: "application/json", "X-CSRFToken": csrf() },
+      headers: this.headers(),
       body: data,
     })
       .then(function (response) {
+        self.checkSession(response);
         return response.json().catch(function () { return {}; }).then(function (payload) {
           if (!response.ok) throw new Error(payload.detail || gettext("The message could not be sent."));
           return payload;
@@ -468,9 +522,10 @@
     fetch(url, {
       method: "POST",
       credentials: "same-origin",
-      headers: { Accept: "application/json", "X-CSRFToken": csrf() },
+      headers: this.headers(),
     })
       .then(function (response) {
+        self.checkSession(response);
         if (!response.ok) throw new Error();
         self.removeMessages([Number(id)]);
         toast(gettext("Message hidden."), "success");
@@ -499,6 +554,105 @@
     this.removeMessages(chat.hidden || []);
     if (chat.reactions_from) this.applyReactionWindow(chat.reactions || {}, chat.reactions_from);
     if (typeof chat.reactions_rev === "number") this.reactionsRev = chat.reactions_rev;
+  };
+
+  // ------------------------------------------------------ site sign-in
+
+  LivePage.prototype.headers = function () {
+    var headers = { Accept: "application/json", "X-CSRFToken": csrf() };
+    if (this.session) headers.Authorization = "Bearer " + this.session;
+    return headers;
+  };
+
+  LivePage.prototype.checkSession = function (response) {
+    if (!this.session || response.headers.get("X-QQplay-Session") !== "expired") return;
+    this.session = "";
+    this.showWho(null);
+    tellParent({ type: "qqplay:token-needed" });
+  };
+
+  LivePage.prototype.bootSchool = function () {
+    var self = this;
+    if (this.awaiting) each(this.root, "[data-chat-when]", function (node) { node.hidden = true; });
+    window.addEventListener("message", function (event) {
+      if (event.source !== window.parent || !event.data || event.data.type !== "qqplay:token") return;
+      self.signIn(String(event.data.token || ""), event.origin);
+    });
+    // A plain frame may carry the token in its address instead.
+    var match = window.location.search.match(/[?&]token=([^&]+)/);
+    if (match) this.signIn(decodeURIComponent(match[1]), parentOrigin());
+    if (window.parent !== window) tellParent({ type: "qqplay:ready" });
+    else if (!match) this.signInFailed(gettext("Open this live from your school's site."), "frame");
+  };
+
+  LivePage.prototype.signIn = function (token, origin) {
+    if (!token || this.signingIn) return;
+    var self = this;
+    this.signingIn = true;
+    fetch(this.sessionUrl, {
+      method: "POST",
+      credentials: "omit",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ token: token, origin: origin || "" }),
+    })
+      .then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (payload) {
+          if (!response.ok) {
+            var error = new Error(payload.detail || gettext("You could not be signed in."));
+            error.code = payload.code || "";
+            throw error;
+          }
+          return payload;
+        });
+      })
+      .then(function (payload) {
+        self.session = payload.session;
+        self.showWho(payload.user);
+        self.resetChat();
+        tellParent({ type: "qqplay:signed-in", name: (payload.user && payload.user.name) || "" });
+        self.pollNow();
+      })
+      .catch(function (error) {
+        self.signInFailed(error.message, error.code || "network");
+        tellParent({ type: "qqplay:error", message: error.message, code: error.code || "network" });
+      })
+      .then(function () { self.signingIn = false; });
+  };
+
+  LivePage.prototype.signInFailed = function (message, code) {
+    each(this.root, "[data-school-note]", function (node) { node.textContent = message; });
+    if (this.awaiting) {
+      each(this.root, "[data-awaiting-title]", function (node) {
+        node.textContent = gettext("This live is only for the school's people");
+      });
+      each(this.root, "[data-awaiting-text]", function (node) { node.textContent = message; });
+    }
+  };
+
+  LivePage.prototype.showWho = function (user) {
+    each(this.root, "[data-chat-who]", function (node) {
+      node.textContent = "";
+      node.hidden = !user;
+      if (!user) return;
+      var face = document.createElement("span");
+      face.innerHTML = user.avatar || ""; // built and escaped by the server
+      var name = document.createElement("strong");
+      name.textContent = user.name || "";
+      node.appendChild(face);
+      node.appendChild(name);
+      node.title = user.moderator
+        ? interpolate(gettext("Signed in as %(name)s, moderator"), { name: user.name }, true)
+        : interpolate(gettext("Signed in as %(name)s"), { name: user.name }, true);
+    });
+  };
+
+  /* Start the chat over as the person now signed in: their own messages
+     and reactions are marked from the server's answer. */
+  LivePage.prototype.resetChat = function () {
+    if (this.chatList) this.chatList.textContent = "";
+    this.lastId = 0;
+    this.reactionsRev = -1;
+    this.pendingReactions = {};
   };
 
   // ----------------------------------------------------------- reactions
@@ -587,10 +741,11 @@
     fetch(url, {
       method: "POST",
       credentials: "same-origin",
-      headers: { Accept: "application/json", "X-CSRFToken": csrf() },
+      headers: this.headers(),
       body: data,
     })
       .then(function (response) {
+        self.checkSession(response);
         return response.json().catch(function () { return {}; }).then(function (payload) {
           if (!response.ok) throw new Error(payload.detail || gettext("The reaction could not be saved."));
           return payload;

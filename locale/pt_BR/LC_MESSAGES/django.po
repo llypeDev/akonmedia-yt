@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: QQplay\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 22:40+0000\n"
+"POT-Creation-Date: 2026-11-03 23:09+0000\n"
 "PO-Revision-Date: 2026-11-03 16:07+0000\n"
 "Last-Translator: QQplay\n"
 "Language-Team: Português (Brasil)\n"
@@ -441,6 +441,199 @@ msgstr "Todos os sistemas operando"
 msgid "The portal is ready for visits, uploads and lives."
 msgstr "O portal está pronto para visitas, envios e lives."
 
+#: apps/integrations/apps.py:8 templates/base.html:151
+#: templates/integrations/detail.html:4 templates/integrations/detail.html:9
+#: templates/integrations/list.html:4 templates/integrations/list.html:10
+msgid "Integrations"
+msgstr "Integrações"
+
+#: apps/integrations/models.py:54 apps/live/models.py:66
+#: apps/media/models.py:102 apps/media/models.py:246
+#: apps/uploader/models.py:21
+msgid "owner"
+msgstr "dono"
+
+#: apps/integrations/models.py:56 apps/integrations/models.py:117
+#: apps/media/models.py:38
+msgid "name"
+msgstr "nome"
+
+#: apps/integrations/models.py:57
+msgid "key"
+msgstr "chave"
+
+#: apps/integrations/models.py:58
+msgid "secret"
+msgstr "segredo"
+
+#: apps/integrations/models.py:61
+msgid "allowed sites"
+msgstr "sites autorizados"
+
+#: apps/integrations/models.py:62 apps/users/models.py:35
+msgid "active"
+msgstr "ativo"
+
+#: apps/integrations/models.py:63 apps/integrations/models.py:121
+#: apps/live/models.py:119 apps/live/models.py:174 apps/live/models.py:198
+#: apps/live/models.py:245 apps/media/models.py:45 apps/media/models.py:131
+#: apps/media/models.py:252 apps/media/models.py:307 apps/media/models.py:330
+#: apps/uploader/models.py:34
+msgid "created at"
+msgstr "data de criação"
+
+#: apps/integrations/models.py:64
+msgid "last used at"
+msgstr "usada por último em"
+
+#: apps/integrations/models.py:67 apps/integrations/models.py:109
+msgid "integration"
+msgstr "integração"
+
+#: apps/integrations/models.py:68
+msgid "integrations"
+msgstr "integrações"
+
+#: apps/integrations/models.py:86
+#, python-format
+msgid "Not a site address: %(value)s"
+msgstr "Não é o endereço de um site: %(value)s"
+
+#: apps/integrations/models.py:112
+msgid "id on the site"
+msgstr "id no site"
+
+#: apps/integrations/models.py:115
+msgid "account"
+msgstr "conta"
+
+#: apps/integrations/models.py:118 apps/users/models.py:25
+msgid "email address"
+msgstr "endereço de e-mail"
+
+#: apps/integrations/models.py:119
+msgid "picture address"
+msgstr "endereço da foto"
+
+#: apps/integrations/models.py:120
+msgid "moderator"
+msgstr "moderador"
+
+#: apps/integrations/models.py:122
+msgid "last seen at"
+msgstr "visto por último em"
+
+#: apps/integrations/models.py:125
+msgid "person from an integration"
+msgstr "pessoa de uma integração"
+
+#: apps/integrations/models.py:126
+msgid "people from integrations"
+msgstr "pessoas de integrações"
+
+#: apps/integrations/tokens.py:82 apps/integrations/tokens.py:89
+#: apps/integrations/tokens.py:91
+msgid "This is not a token."
+msgstr "Isto não é um token."
+
+#: apps/integrations/tokens.py:93
+msgid "Tokens must be signed with HS256."
+msgstr "Os tokens precisam ser assinados com HS256."
+
+#: apps/integrations/tokens.py:98
+msgid "No active integration has this key."
+msgstr "Nenhuma integração ativa tem esta chave."
+
+#: apps/integrations/tokens.py:101
+msgid "The signature does not match: check the integration's secret."
+msgstr "A assinatura não confere: verifique o segredo da integração."
+
+#: apps/integrations/tokens.py:105
+msgid "The token needs an expiry (exp)."
+msgstr "O token precisa de uma validade (exp)."
+
+#: apps/integrations/tokens.py:107
+msgid "The token has expired."
+msgstr "O token expirou."
+
+#: apps/integrations/tokens.py:109
+msgid "The token is valid for too long: at most a day."
+msgstr "O token vale por tempo demais: no máximo um dia."
+
+#: apps/integrations/tokens.py:112
+msgid "The token is not valid yet."
+msgstr "O token ainda não está valendo."
+
+#: apps/integrations/tokens.py:119
+msgid "The token needs the person's id (sub)."
+msgstr "O token precisa do id da pessoa (sub)."
+
+#: apps/integrations/tokens.py:122
+msgid "The token needs the person's name (name)."
+msgstr "O token precisa do nome da pessoa (name)."
+
+#: apps/integrations/views.py:53
+msgid "Too many sign-ins: wait a minute."
+msgstr "Entradas demais: espere um minuto."
+
+#: apps/integrations/views.py:71
+#, python-format
+msgid ""
+"This site is not allowed to use the integration: add %(origin)s to its "
+"sites."
+msgstr ""
+"Este site não está autorizado a usar a integração: adicione %(origin)s aos "
+"sites dela."
+
+#: apps/integrations/views.py:80
+msgid "This account is blocked."
+msgstr "Esta conta está bloqueada."
+
+#: apps/integrations/views.py:117 templates/integrations/detail.html:162
+#: templates/integrations/detail.html:218 templates/integrations/list.html:64
+msgid "Name"
+msgstr "Nome"
+
+#: apps/integrations/views.py:117 templates/integrations/detail.html:223
+#: templates/integrations/list.html:69
+msgid "Sites"
+msgstr "Sites"
+
+#: apps/integrations/views.py:140
+msgid ""
+"Integration created. Follow the steps below to put your lives on your site."
+msgstr ""
+"Integração criada. Siga os passos abaixo para colocar suas lives no seu "
+"site."
+
+#: apps/integrations/views.py:155
+msgid "Integration turned on."
+msgstr "Integração ligada."
+
+#: apps/integrations/views.py:155
+msgid "Integration turned off."
+msgstr "Integração desligada."
+
+#: apps/integrations/views.py:160
+msgid "Integration saved."
+msgstr "Integração salva."
+
+#: apps/integrations/views.py:195
+msgid ""
+"New secret created. Update it on your site's server: the old one no longer "
+"works."
+msgstr ""
+"Novo segredo criado. Atualize-o no servidor do seu site: o antigo não "
+"funciona mais."
+
+#: apps/integrations/views.py:204
+msgid "Integration deleted."
+msgstr "Integração excluída."
+
+#: apps/integrations/views.py:221
+msgid "Test student"
+msgstr "Aluno de teste"
+
 #: apps/live/admin.py:45
 msgid "reactions"
 msgstr "reações"
@@ -453,7 +646,8 @@ msgstr "Transmissões ao vivo"
 msgid "Scheduled"
 msgstr "Agendada"
 
-#: apps/live/models.py:43 templates/base.html:141 templates/live/lives.html:4
+#: apps/live/models.py:43 templates/base.html:141
+#: templates/integrations/detail.html:111 templates/live/lives.html:4
 #: templates/live/lives.html:9
 msgid "Live"
 msgstr "Ao vivo"
@@ -477,11 +671,6 @@ msgstr "ID de reprodução"
 #: apps/live/models.py:61
 msgid "stream key"
 msgstr "chave de transmissão"
-
-#: apps/live/models.py:66 apps/media/models.py:102 apps/media/models.py:246
-#: apps/uploader/models.py:21
-msgid "owner"
-msgstr "dono"
 
 #: apps/live/models.py:68 apps/media/models.py:85 apps/media/models.py:236
 #: apps/media/models.py:390
@@ -556,13 +745,6 @@ msgstr "gravação publicada em"
 #: apps/live/models.py:116
 msgid "recording error"
 msgstr "erro na gravação"
-
-#: apps/live/models.py:119 apps/live/models.py:174 apps/live/models.py:198
-#: apps/live/models.py:245 apps/media/models.py:45 apps/media/models.py:131
-#: apps/media/models.py:252 apps/media/models.py:307 apps/media/models.py:330
-#: apps/uploader/models.py:34
-msgid "created at"
-msgstr "data de criação"
 
 #: apps/live/models.py:120 apps/media/models.py:132 apps/media/models.py:331
 #: apps/uploader/models.py:35
@@ -653,76 +835,76 @@ msgstr "reação no chat"
 msgid "chat reactions"
 msgstr "reações no chat"
 
-#: apps/live/views.py:390
+#: apps/live/views.py:442
 msgid "Sign in to take part in the chat."
 msgstr "Entre para participar do chat."
 
-#: apps/live/views.py:392 apps/live/views.py:420 templates/live/_chat.html:17
+#: apps/live/views.py:444 apps/live/views.py:473 templates/live/_chat.html:24
 msgid "The chat is closed."
 msgstr "O chat está fechado."
 
-#: apps/live/views.py:395
+#: apps/live/views.py:447
 msgid "Write a message first."
 msgstr "Escreva uma mensagem primeiro."
 
-#: apps/live/views.py:398
+#: apps/live/views.py:450
 #, python-format
 msgid "Messages are limited to %(limit)d characters."
 msgstr "As mensagens têm no máximo %(limit)d caracteres."
 
-#: apps/live/views.py:402
+#: apps/live/views.py:454
 msgid "Slow down a little: one message every two seconds."
 msgstr "Calma: uma mensagem a cada dois segundos."
 
-#: apps/live/views.py:418
+#: apps/live/views.py:471
 msgid "Sign in to react."
 msgstr "Entre para reagir."
 
-#: apps/live/views.py:423
+#: apps/live/views.py:476
 msgid "Unknown reaction."
 msgstr "Reação desconhecida."
 
-#: apps/live/views.py:434
+#: apps/live/views.py:487
 msgid "Slow down a little with the reactions."
 msgstr "Calma com as reações: espere um pouco."
 
-#: apps/live/views.py:458
+#: apps/live/views.py:511
 msgid "You cannot moderate this chat."
 msgstr "Você não pode moderar este chat."
 
-#: apps/live/views.py:494
+#: apps/live/views.py:547
 msgid "Live created. Point your encoder at it to go on air."
 msgstr "Live criada. Configure o seu codificador para entrar no ar."
 
-#: apps/live/views.py:526
+#: apps/live/views.py:579
 msgid "Live details saved."
 msgstr "Detalhes da live salvos."
 
-#: apps/live/views.py:536
+#: apps/live/views.py:589
 msgid "The live has ended."
 msgstr "A live foi encerrada."
 
-#: apps/live/views.py:538
+#: apps/live/views.py:591
 msgid "This live had already ended."
 msgstr "Esta live já tinha sido encerrada."
 
-#: apps/live/views.py:547
+#: apps/live/views.py:600
 msgid "Stop the encoder before changing the stream key."
 msgstr "Pare o codificador antes de trocar a chave de transmissão."
 
-#: apps/live/views.py:549
+#: apps/live/views.py:602
 msgid "This live has ended; its key no longer works."
 msgstr "Esta live foi encerrada; a chave dela não funciona mais."
 
-#: apps/live/views.py:553
+#: apps/live/views.py:606
 msgid "New stream key created. The old one no longer works."
 msgstr "Nova chave de transmissão criada. A anterior não funciona mais."
 
-#: apps/live/views.py:562
+#: apps/live/views.py:615
 msgid "End the live before deleting it."
 msgstr "Encerre a live antes de excluí-la."
 
-#: apps/live/views.py:568
+#: apps/live/views.py:621
 #, python-format
 msgid ""
 "“%(title)s” was deleted. Its recording, if there is one, stays in your "
@@ -730,34 +912,34 @@ msgid ""
 msgstr ""
 "“%(title)s” foi excluída. A gravação, se houver, continua nas suas mídias."
 
-#: apps/live/views.py:612
+#: apps/live/views.py:665
 msgid "This live has ended."
 msgstr "Esta live foi encerrada."
 
-#: apps/live/views.py:614
+#: apps/live/views.py:667
 msgid "Live ingest is not configured on this server."
 msgstr "A recepção de lives não está configurada neste servidor."
 
-#: apps/live/views.py:621
+#: apps/live/views.py:674
 msgid ""
 "The previous stream from a browser is stopping. Try again in a few seconds."
 msgstr ""
 "A transmissão anterior pelo navegador está sendo encerrada. Tente de novo em"
 " alguns segundos."
 
-#: apps/live/views.py:626
+#: apps/live/views.py:679
 msgid "An encoder is already streaming to this live. Stop it first."
 msgstr "Um codificador já está transmitindo nesta live. Pare-o antes."
 
-#: apps/live/views.py:638
+#: apps/live/views.py:691
 msgid "The stream could not be started on the server."
 msgstr "Não foi possível iniciar a transmissão no servidor."
 
-#: apps/live/views.py:657
+#: apps/live/views.py:710
 msgid "The stream from this browser has stopped."
 msgstr "A transmissão por este navegador parou."
 
-#: apps/media/apps.py:8 templates/base.html:186 templates/core/index.html:87
+#: apps/media/apps.py:8 templates/base.html:187 templates/core/index.html:87
 #: templates/core/status.html:104
 msgid "Library"
 msgstr "Biblioteca"
@@ -777,10 +959,6 @@ msgstr "Responda a um comentário da mesma mídia."
 #: apps/media/community.py:73
 msgid "Not your comment."
 msgstr "Este comentário não é seu."
-
-#: apps/media/models.py:38
-msgid "name"
-msgstr "nome"
 
 #: apps/media/models.py:39
 msgid "address name"
@@ -1124,7 +1302,7 @@ msgstr "Imagem"
 msgid "Initials"
 msgstr "Iniciais"
 
-#: apps/users/apps.py:8
+#: apps/users/apps.py:8 templates/integrations/list.html:27
 msgid "People"
 msgstr "Pessoas"
 
@@ -1218,10 +1396,6 @@ msgstr "Escolha uma das imagens mostradas."
 msgid "Upload a photo first."
 msgstr "Envie uma foto primeiro."
 
-#: apps/users/models.py:25
-msgid "email address"
-msgstr "endereço de e-mail"
-
 #: apps/users/models.py:26
 msgid "display name"
 msgstr "nome de exibição"
@@ -1233,10 +1407,6 @@ msgstr "Define o que a conta pode fazer no portal."
 #: apps/users/models.py:32
 msgid "role"
 msgstr "papel"
-
-#: apps/users/models.py:35
-msgid "active"
-msgstr "ativo"
 
 #: apps/users/models.py:38
 msgid "admin access"
@@ -1276,7 +1446,7 @@ msgstr "Já tem uma conta? Então, por favor, %(link)sentre%(end_link)s."
 msgid "{portal} administration"
 msgstr "Administração do {portal}"
 
-#: config/urls.py:19 templates/base.html:156 templates/core/manage.html:9
+#: config/urls.py:19 templates/base.html:157 templates/core/manage.html:9
 msgid "Operations"
 msgstr "Operações"
 
@@ -1363,7 +1533,7 @@ msgstr "Site de administração do Django"
 msgid "Django administration"
 msgstr "Administração do Django"
 
-#: templates/admin/base_site.html:49 templates/base.html:158
+#: templates/admin/base_site.html:49 templates/base.html:159
 msgid "Admin"
 msgstr "Admin"
 
@@ -1458,7 +1628,7 @@ msgstr "Alternar tema"
 msgid "Account menu"
 msgstr "Menu da conta"
 
-#: templates/base.html:96 templates/base.html:151
+#: templates/base.html:96 templates/base.html:152
 msgid "Your channel"
 msgstr "Seu canal"
 
@@ -1469,7 +1639,7 @@ msgstr "Seu canal"
 msgid "Studio"
 msgstr "Estúdio"
 
-#: templates/base.html:98 templates/base.html:140 templates/base.html:187
+#: templates/base.html:98 templates/base.html:140 templates/base.html:188
 #: templates/core/channel.html:55 templates/core/playlist_edit.html:9
 #: templates/core/playlists.html:4 templates/core/playlists.html:9
 msgid "Playlists"
@@ -1479,7 +1649,7 @@ msgstr "Playlists"
 msgid "Account settings"
 msgstr "Configurações da conta"
 
-#: templates/base.html:102 templates/base.html:157
+#: templates/base.html:102 templates/base.html:158
 #: templates/core/manage.html:4 templates/core/manage.html:10
 msgid "Manage"
 msgstr "Gerenciar"
@@ -1521,34 +1691,34 @@ msgstr "Você"
 msgid "Go live"
 msgstr "Transmitir"
 
-#: templates/base.html:152 templates/core/account.html:4
+#: templates/base.html:153 templates/core/account.html:4
 #: templates/core/account.html:9 templates/core/manage.html:185
 msgid "Account"
 msgstr "Conta"
 
-#: templates/base.html:165
+#: templates/base.html:166
 msgid "Categories"
 msgstr "Categorias"
 
-#: templates/base.html:173
+#: templates/base.html:174
 msgid "Self-hosted · HLS · ABR"
 msgstr "Auto-hospedado · HLS · ABR"
 
-#: templates/base.html:174 templates/base.html:188
+#: templates/base.html:175 templates/base.html:189
 #: templates/core/manage.html:185 templates/core/status.html:14
-#: templates/live/studio_lives.html:32
+#: templates/integrations/list.html:26 templates/live/studio_lives.html:32
 msgid "Status"
 msgstr "Status"
 
-#: templates/base.html:184
+#: templates/base.html:185
 msgid "stream, curate, deliver."
 msgstr "transmita, organize, entregue."
 
-#: templates/base.html:189
+#: templates/base.html:190
 msgid "search"
 msgstr "buscar"
 
-#: templates/base.html:202
+#: templates/base.html:203
 msgid "Dismiss"
 msgstr "Dispensar"
 
@@ -1591,12 +1761,12 @@ msgstr "Excluir este comentário e as respostas?"
 
 #: templates/core/_comment.html:30 templates/core/manage.html:54
 #: templates/core/manage.html:90 templates/core/manage.html:118
-#: templates/core/manage.html:141
+#: templates/core/manage.html:141 templates/integrations/detail.html:252
 msgid "Delete"
 msgstr "Excluir"
 
 #: templates/core/_comment.html:38 templates/core/manage.html:140
-#: templates/live/control.html:79
+#: templates/integrations/detail.html:198 templates/live/control.html:79
 msgid "Hide"
 msgstr "Ocultar"
 
@@ -1638,7 +1808,7 @@ msgstr[1] "itens"
 msgid "Edit playlist"
 msgstr "Editar playlist"
 
-#: templates/core/account.html:10
+#: templates/core/account.html:10 templates/integrations/detail.html:213
 msgid "Settings"
 msgstr "Configurações"
 
@@ -1818,8 +1988,13 @@ msgid "JSON copied"
 msgstr "JSON copiado"
 
 #: templates/core/api_browser.html:132 templates/core/media_detail.html:140
-#: templates/live/control.html:72 templates/live/control.html:80
-#: templates/live/control.html:114 templates/live/watch.html:58
+#: templates/integrations/detail.html:61 templates/integrations/detail.html:82
+#: templates/integrations/detail.html:103
+#: templates/integrations/detail.html:136
+#: templates/integrations/detail.html:191
+#: templates/integrations/detail.html:199 templates/live/control.html:72
+#: templates/live/control.html:80 templates/live/control.html:114
+#: templates/live/watch.html:58
 msgid "Copy"
 msgstr "Copiar"
 
@@ -1867,7 +2042,7 @@ msgstr "Este criador ainda não publicou nada."
 msgid "This media is not available for embedding."
 msgstr "Esta mídia não está disponível para incorporação."
 
-#: templates/core/embed.html:68 templates/live/embed.html:48
+#: templates/core/embed.html:68 templates/live/embed.html:93
 #, python-format
 msgid "Open it on %(PORTAL_NAME)s"
 msgstr "Abrir no %(PORTAL_NAME)s"
@@ -2362,7 +2537,7 @@ msgstr "Código de incorporação copiado"
 msgid "Copy embed code"
 msgstr "Copiar código de incorporação"
 
-#: templates/core/media_detail.html:164
+#: templates/core/media_detail.html:164 templates/integrations/detail.html:228
 msgid "Save"
 msgstr "Salvar"
 
@@ -2606,8 +2781,8 @@ msgstr "Idioma (en, pt-BR)"
 msgid "Upload .srt / .vtt"
 msgstr "Enviar .srt / .vtt"
 
-#: templates/core/media_edit.html:116 templates/live/_cast.html:26
-#: templates/live/control.html:44
+#: templates/core/media_edit.html:116 templates/integrations/preview.html:7
+#: templates/live/_cast.html:26 templates/live/control.html:44
 msgid "Preview"
 msgstr "Pré-visualização"
 
@@ -2946,7 +3121,8 @@ msgstr ""
 "Processo no ar: 200 enquanto o processo responde, mesmo com o banco de dados"
 " fora do ar."
 
-#: templates/core/studio.html:9 templates/live/studio_lives.html:9
+#: templates/core/studio.html:9 templates/integrations/list.html:9
+#: templates/live/studio_lives.html:9
 msgid "Creator studio"
 msgstr "Estúdio do criador"
 
@@ -3038,7 +3214,8 @@ msgstr "Filtrar por título"
 msgid "Date"
 msgstr "Data"
 
-#: templates/core/studio.html:51 templates/live/studio_lives.html:36
+#: templates/core/studio.html:51 templates/integrations/list.html:29
+#: templates/live/studio_lives.html:36
 msgid "Actions"
 msgstr "Ações"
 
@@ -3272,6 +3449,400 @@ msgstr ""
 "Quando fica pronto, a página se atualiza sozinha e o player escolhe a melhor"
 " qualidade para cada pessoa."
 
+#: templates/integrations/detail.html:11
+msgid "On: your site can sign people in and show your lives."
+msgstr "Ligada: seu site pode conectar as pessoas e mostrar suas lives."
+
+#: templates/integrations/detail.html:11
+msgid "Off: the site's frames show nothing and nobody can sign in through it."
+msgstr ""
+"Desligada: os quadros no site não mostram nada e ninguém consegue entrar por"
+" ele."
+
+#: templates/integrations/detail.html:18
+msgid "Turn off"
+msgstr "Desligar"
+
+#: templates/integrations/detail.html:21
+msgid "Turn on"
+msgstr "Ligar"
+
+#: templates/integrations/detail.html:32
+msgid "Put it on your site"
+msgstr "Coloque no seu site"
+
+#: templates/integrations/detail.html:37
+msgid "Sign the student in, on your server"
+msgstr "Identifique o aluno, no seu servidor"
+
+#: templates/integrations/detail.html:38
+msgid ""
+"When a lesson's page is opened, your server makes a token for the person "
+"signed in: their id and name (a picture and a moderator flag are optional), "
+"signed with the secret. It is a standard JSON Web Token (HS256): any JWT "
+"library makes it too."
+msgstr ""
+"Quando a página da aula é aberta, o seu servidor cria um token para a pessoa"
+" logada: o id e o nome dela (foto e indicação de moderador são opcionais), "
+"assinados com o segredo. É um JSON Web Token padrão (HS256): qualquer "
+"biblioteca de JWT também cria."
+
+#: templates/integrations/detail.html:45 templates/integrations/detail.html:62
+#: templates/integrations/detail.html:83
+msgid ""
+"Your server, for the student signed in. Keep the secret out of the page."
+msgstr ""
+"No seu servidor, para o aluno logado. O segredo nunca vai para a página."
+
+#: templates/integrations/detail.html:54 templates/integrations/detail.html:72
+#: templates/integrations/detail.html:96 templates/live/form.html:39
+msgid "optional"
+msgstr "opcional"
+
+#: templates/integrations/detail.html:55 templates/integrations/detail.html:73
+#: templates/integrations/detail.html:97
+msgid "may hide messages"
+msgstr "pode ocultar mensagens"
+
+#: templates/integrations/detail.html:61 templates/integrations/detail.html:82
+#: templates/integrations/detail.html:103
+#: templates/integrations/detail.html:136
+msgid "Code copied"
+msgstr "Código copiado"
+
+#: templates/integrations/detail.html:107
+msgid "Paste the live on the lesson's page"
+msgstr "Cole a live na página da aula"
+
+#: templates/integrations/detail.html:117
+#: templates/integrations/detail.html:198 templates/live/control.html:79
+msgid "Show"
+msgstr "Mostrar"
+
+#: templates/integrations/detail.html:119
+msgid "The live and its chat"
+msgstr "A live e o chat"
+
+#: templates/integrations/detail.html:120
+msgid "Only the live"
+msgstr "Só a live"
+
+#: templates/integrations/detail.html:121
+msgid "Only the chat"
+msgstr "Só o chat"
+
+#: templates/integrations/detail.html:125
+msgid "Colours"
+msgstr "Cores"
+
+#: templates/integrations/detail.html:127
+msgid "The student's system"
+msgstr "As do sistema do aluno"
+
+#: templates/integrations/detail.html:128
+msgid "Dark"
+msgstr "Escuras"
+
+#: templates/integrations/detail.html:129
+msgid "Light"
+msgstr "Claras"
+
+#: templates/integrations/detail.html:132
+msgid "Update the code"
+msgstr "Atualizar o código"
+
+#: templates/integrations/detail.html:137
+msgid ""
+"<code>data-token</code> takes the token from step 1 (the example is PHP; use"
+" your language's way of printing it). For classes longer than a few hours, "
+"use <code>data-token-url</code> instead: an address on your site that "
+"answers <code>{\"token\": \"…\"}</code> for the student signed in; the frame"
+" asks it again when the session runs out."
+msgstr ""
+"<code>data-token</code> recebe o token do passo 1 (o exemplo é em PHP; use o"
+" jeito de imprimir da sua linguagem). Para aulas de mais de algumas horas, "
+"use <code>data-token-url</code>: um endereço do seu site que responde "
+"<code>{\"token\": \"…\"}</code> para o aluno logado; o quadro pede de novo "
+"quando a sessão acaba."
+
+#: templates/integrations/detail.html:139
+msgid "Create a live first: its code appears here."
+msgstr "Crie uma live primeiro: o código dela aparece aqui."
+
+#: templates/integrations/detail.html:139 templates/live/form.html:4
+#: templates/live/form.html:15 templates/live/studio_lives.html:15
+#: templates/live/studio_lives.html:77
+msgid "New live"
+msgstr "Nova live"
+
+#: templates/integrations/detail.html:144
+msgid "Try it"
+msgstr "Teste"
+
+#: templates/integrations/detail.html:145
+msgid ""
+"See it as your students will, signed in as a test student, before you change"
+" your site."
+msgstr ""
+"Veja como seus alunos vão ver, entrando como um aluno de teste, antes de "
+"mexer no seu site."
+
+#: templates/integrations/detail.html:147
+msgid "Open the preview"
+msgstr "Abrir a prévia"
+
+#: templates/integrations/detail.html:156
+msgid "People from this site"
+msgstr "Pessoas deste site"
+
+#: templates/integrations/detail.html:162
+msgid "Id on the site"
+msgstr "Id no site"
+
+#: templates/integrations/detail.html:162
+msgid "Last seen"
+msgstr "Visto por último"
+
+#: templates/integrations/detail.html:166
+msgid "Moderator"
+msgstr "Moderador"
+
+#: templates/integrations/detail.html:175
+msgid "Nobody has signed in through this site yet."
+msgstr "Ninguém entrou por este site ainda."
+
+#: templates/integrations/detail.html:184
+msgid "Keys"
+msgstr "Chaves"
+
+#: templates/integrations/detail.html:188
+#: templates/integrations/detail.html:190
+msgid "Key"
+msgstr "Chave"
+
+#: templates/integrations/detail.html:188
+msgid "public: goes in the token"
+msgstr "pública: vai no token"
+
+#: templates/integrations/detail.html:191
+msgid "Key copied"
+msgstr "Chave copiada"
+
+#: templates/integrations/detail.html:195
+#: templates/integrations/detail.html:197
+msgid "Secret"
+msgstr "Segredo"
+
+#: templates/integrations/detail.html:195
+msgid "only on your server"
+msgstr "só no seu servidor"
+
+#: templates/integrations/detail.html:199
+msgid "Secret copied"
+msgstr "Segredo copiado"
+
+#: templates/integrations/detail.html:201
+msgid ""
+"Whoever has it can sign in as any of your students. Store it in your "
+"server's settings (QQPLAY_SECRET in the examples), never in a page."
+msgstr ""
+"Quem tiver o segredo pode entrar como qualquer aluno seu. Guarde nas "
+"configurações do seu servidor (QQPLAY_SECRET nos exemplos), nunca em uma "
+"página."
+
+#: templates/integrations/detail.html:203
+msgid ""
+"Create a new secret? The current one stops working at once, and everyone "
+"signed in through the site is signed out until your server uses the new one."
+msgstr ""
+"Criar um novo segredo? O atual para de funcionar na hora, e todos que "
+"entraram pelo site saem até o seu servidor usar o novo."
+
+#: templates/integrations/detail.html:205
+msgid "Create a new secret"
+msgstr "Criar um novo segredo"
+
+#: templates/integrations/detail.html:223 templates/integrations/list.html:69
+msgid "one per line"
+msgstr "um por linha"
+
+#: templates/integrations/detail.html:225
+msgid ""
+"Only pages on these sites can sign people in. List both addresses if yours "
+"works with and without www."
+msgstr ""
+"Só páginas destes sites podem conectar as pessoas. Coloque os dois endereços"
+" se o seu funciona com e sem www."
+
+#: templates/integrations/detail.html:225
+msgid ""
+"Empty: any site with a valid token can sign people in. List your site to be "
+"safe."
+msgstr ""
+"Vazio: qualquer site com um token válido pode conectar as pessoas. Coloque o"
+" seu site por segurança."
+
+#: templates/integrations/detail.html:235 templates/live/form.html:70
+msgid "How it works"
+msgstr "Como funciona"
+
+#: templates/integrations/detail.html:238
+msgid ""
+"Students talk and react under the name and picture your site sends, with no "
+"account to create here."
+msgstr ""
+"Os alunos comentam e reagem com o nome e a foto que o seu site envia, sem "
+"criar conta aqui."
+
+#: templates/integrations/detail.html:239
+msgid ""
+"Your private lives show on your site to the people it signs in, and nowhere "
+"else. Public and unlisted lives show to everyone."
+msgstr ""
+"Suas lives privadas aparecem no seu site para as pessoas que ele conecta, e "
+"em nenhum outro lugar. Lives públicas e não listadas aparecem para todos."
+
+#: templates/integrations/detail.html:240
+msgid ""
+"People marked as moderators (your teachers) can hide messages in the chat of"
+" your lives."
+msgstr ""
+"Quem vier marcado como moderador (seus professores) pode ocultar mensagens "
+"no chat das suas lives."
+
+#: templates/integrations/detail.html:241
+msgid ""
+"Messages and reactions are the same as on the live's page here: whoever "
+"watches on either side sees them all."
+msgstr ""
+"As mensagens e reações são as mesmas da página da live aqui: quem assiste de"
+" qualquer lado vê todas."
+
+#: templates/integrations/detail.html:247
+msgid "Delete the integration"
+msgstr "Excluir a integração"
+
+#: templates/integrations/detail.html:249
+msgid ""
+"Your site's frames stop working and nobody can sign in through it. Messages "
+"already sent stay in the chats."
+msgstr ""
+"Os quadros no seu site param de funcionar e ninguém mais entra por ele. As "
+"mensagens já enviadas continuam nos chats."
+
+#: templates/integrations/detail.html:250
+msgid "Delete this integration? Your site stops showing your lives."
+msgstr "Excluir esta integração? Seu site deixa de mostrar suas lives."
+
+#: templates/integrations/list.html:11
+#, python-format
+msgid ""
+"Put your lives and their chat on your own site, such as your online school. "
+"People take part with the account they already have there: no "
+"%(PORTAL_NAME)s sign-up."
+msgstr ""
+"Coloque suas lives e o chat delas no seu próprio site, como a sua escola "
+"virtual. As pessoas participam com a conta que já têm lá: sem cadastro na "
+"%(PORTAL_NAME)s."
+
+#: templates/integrations/list.html:14 templates/live/control.html:20
+#: templates/live/form.html:14 templates/live/studio_lives.html:4
+#: templates/live/studio_lives.html:10
+msgid "Your lives"
+msgstr "Suas lives"
+
+#: templates/integrations/list.html:25
+msgid "Site"
+msgstr "Site"
+
+#: templates/integrations/list.html:28
+msgid "Last used"
+msgstr "Último uso"
+
+#: templates/integrations/list.html:37
+msgid "Any site"
+msgstr "Qualquer site"
+
+#: templates/integrations/list.html:39
+msgid "On"
+msgstr "Ligada"
+
+#: templates/integrations/list.html:39
+msgid "Off"
+msgstr "Desligada"
+
+#: templates/integrations/list.html:41
+msgid "Never"
+msgstr "Nunca"
+
+#: templates/integrations/list.html:42
+msgid "Set up"
+msgstr "Configurar"
+
+#: templates/integrations/list.html:51
+msgid "No integrations yet"
+msgstr "Nenhuma integração ainda"
+
+#: templates/integrations/list.html:52
+msgid ""
+"Create one for your school's site. You get a key for its server to sign "
+"people in, and the code to paste on a lesson's page."
+msgstr ""
+"Crie uma para o site da sua escola. Você recebe uma chave para o servidor "
+"dela identificar as pessoas e o código para colar na página da aula."
+
+#: templates/integrations/list.html:59
+msgid "New integration"
+msgstr "Nova integração"
+
+#: templates/integrations/list.html:64
+msgid "shown to the people who sign in"
+msgstr "aparece para quem entra"
+
+#: templates/integrations/list.html:65
+msgid "My online school"
+msgstr "Minha escola virtual"
+
+#: templates/integrations/list.html:71
+msgid ""
+"The addresses of the site where the lives will appear. Only pages there can "
+"sign people in."
+msgstr ""
+"Os endereços do site onde as lives vão aparecer. Só páginas de lá podem "
+"conectar as pessoas."
+
+#: templates/integrations/list.html:74
+msgid "Create integration"
+msgstr "Criar integração"
+
+#: templates/integrations/preview.html:30
+msgid "Preview: this is how your site will show it"
+msgstr "Prévia: é assim que o seu site vai mostrar"
+
+#: templates/integrations/preview.html:35
+msgid "Signed in as"
+msgstr "Conectado como"
+
+#: templates/integrations/preview.html:36
+msgid "teacher (moderator)"
+msgstr "professor (moderador)"
+
+#: templates/integrations/preview.html:37
+msgid "Sign in again"
+msgstr "Entrar de novo"
+
+#: templates/integrations/preview.html:42
+msgid ""
+"Messages and reactions sent here are real: they appear in the live's chat "
+"for everyone."
+msgstr ""
+"As mensagens e reações enviadas aqui são de verdade: aparecem no chat da "
+"live para todos."
+
+#: templates/integrations/preview.html:48
+msgid "Waiting for the frame…"
+msgstr "Aguardando o quadro…"
+
 #: templates/live/_card.html:10
 msgid "LIVE"
 msgstr "AO VIVO"
@@ -3378,12 +3949,26 @@ msgstr "Mensagem do chat"
 msgid "Send"
 msgstr "Enviar"
 
-#: templates/live/_chat.html:16
+#: templates/live/_chat.html:17
 #, python-format
 msgid "<a href=\"%(url)s\">Sign in</a> to take part in the chat."
 msgstr "<a href=\"%(url)s\">Entre</a> para participar do chat."
 
-#: templates/live/_chat.html:18
+#: templates/live/_chat.html:20
+#, python-format
+msgid "Sign in to %(site)s to take part in the chat."
+msgstr "Entre na %(site)s para participar do chat."
+
+#: templates/live/_chat.html:22
+#, python-format
+msgid ""
+"<a href=\"%(url)s\" target=\"_blank\" rel=\"noopener\">Open the live</a> to "
+"take part in the chat."
+msgstr ""
+"<a href=\"%(url)s\" target=\"_blank\" rel=\"noopener\">Abra a live</a> para "
+"participar do chat."
+
+#: templates/live/_chat.html:25
 msgid "The chat is turned off for this live."
 msgstr "O chat está desativado nesta live."
 
@@ -3459,11 +4044,6 @@ msgstr "Não foi possível publicar a gravação."
 msgid "Control room: %(title)s"
 msgstr "Sala de controle: %(title)s"
 
-#: templates/live/control.html:20 templates/live/form.html:14
-#: templates/live/studio_lives.html:4 templates/live/studio_lives.html:10
-msgid "Your lives"
-msgstr "Suas lives"
-
 #: templates/live/control.html:25
 msgid "Managing as curator"
 msgstr "Gerenciando como curador"
@@ -3532,10 +4112,6 @@ msgstr "Servidor copiado"
 #: templates/live/control.html:76 templates/live/control.html:78
 msgid "Stream key"
 msgstr "Chave de transmissão"
-
-#: templates/live/control.html:79
-msgid "Show"
-msgstr "Mostrar"
 
 #: templates/live/control.html:80
 msgid "Stream key copied"
@@ -3617,14 +4193,18 @@ msgstr ""
 msgid "Delete this live and its chat for good?"
 msgstr "Excluir esta live e o chat dela de vez?"
 
-#: templates/live/embed.html:48
+#: templates/live/embed.html:78
+msgid "Signing you in…"
+msgstr "Conectando você…"
+
+#: templates/live/embed.html:79
+#, python-format
+msgid "This live is for the people of %(site)s."
+msgstr "Esta live é para as pessoas de %(site)s."
+
+#: templates/live/embed.html:93
 msgid "This live is not available for embedding."
 msgstr "Esta live não está disponível para incorporação."
-
-#: templates/live/form.html:4 templates/live/form.html:15
-#: templates/live/studio_lives.html:15 templates/live/studio_lives.html:77
-msgid "New live"
-msgstr "Nova live"
 
 #: templates/live/form.html:10 templates/live/studio_lives.html:66
 #: templates/live/watch.html:71
@@ -3647,10 +4227,6 @@ msgstr ""
 msgid "Starts at"
 msgstr "Início"
 
-#: templates/live/form.html:39
-msgid "optional"
-msgstr "opcional"
-
 #: templates/live/form.html:42
 msgid "Shown as a countdown. The live starts whenever your encoder connects."
 msgstr ""
@@ -3672,10 +4248,6 @@ msgstr "Chat ao vivo para espectadores conectados"
 #: templates/live/form.html:64
 msgid "Create live"
 msgstr "Criar live"
-
-#: templates/live/form.html:70
-msgid "How it works"
-msgstr "Como funciona"
 
 #: templates/live/form.html:72
 msgid ""

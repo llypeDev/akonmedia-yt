@@ -53,12 +53,17 @@
         <p class="notice mt-2" data-control-error{% if not live.recording_error %} hidden{% endif %}>{{ live.recording_error }}</p>
       </section>
 
-      <section class="panel">
-        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "key" %}</span>{% translate "Connect your encoder" %}</h2></div>
+      <section class="panel" id="go-on-air">
+        <div class="panel-head"><h2><span class="panel-title-icon">{% icon "radio" %}</span>{% translate "Go on air" %}</h2></div>
         {% if not ingest_ready %}
           <p class="notice">{% icon "alert" "icon-sm" %}<span>{% translate "Live ingest is not configured on this server yet (LIVE_HOOK_SECRET is empty), so the encoder will be refused. See “Lives” in the README." %}</span></p>
         {% endif %}
-        <div class="form-grid mt-2">
+        <div class="tabs source-tabs" role="tablist" data-source-tabs>
+          <button type="button" class="tab active" role="tab" id="source-tab-encoder" aria-controls="source-encoder" aria-selected="true" data-source-tab="encoder">{% icon "key" "icon-sm" %}{% translate "OBS or another app" %}</button>
+          <button type="button" class="tab" role="tab" id="source-tab-browser" aria-controls="source-browser" aria-selected="false" tabindex="-1" data-source-tab="browser">{% icon "video" "icon-sm" %}{% translate "From this browser" %}</button>
+        </div>
+        <div role="tabpanel" id="source-encoder" aria-labelledby="source-tab-encoder" data-source-panel="encoder">
+        <div class="form-grid">
           <div class="field">
             <span class="field-label">{% translate "Server" %}</span>
             <div class="copy-field">
@@ -88,6 +93,10 @@
             <button type="submit" class="btn btn-sm"{% if live.publishing %} disabled title="{% translate "Stop the encoder first" %}"{% endif %}>{% icon "refresh" "icon-sm" %}{% translate "New stream key" %}</button>
           </form>
         {% endif %}
+        </div>
+        <div role="tabpanel" id="source-browser" aria-labelledby="source-tab-browser" data-source-panel="browser" hidden>
+          {% include "live/_cast.html" %}
+        </div>
       </section>
     </div>
 
@@ -132,4 +141,5 @@
   <script src="{% static 'vendor/hls.min.js' %}"></script>
   <script src="{% static 'js/player.js' %}"></script>
   <script src="{% static 'js/live.js' %}"></script>
+  <script src="{% static 'js/cast.js' %}"></script>
 {% endblock %}

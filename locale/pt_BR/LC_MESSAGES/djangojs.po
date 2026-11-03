@@ -4,8 +4,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: AkonMedia\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 15:44+0000\n"
-"PO-Revision-Date: 2026-11-03 15:44+0000\n"
+"POT-Creation-Date: 2026-11-03 16:07+0000\n"
+"PO-Revision-Date: 2026-11-03 16:07+0000\n"
 "Last-Translator: AkonMedia\n"
 "Language-Team: Português (Brasil)\n"
 "Language: pt_BR\n"
@@ -53,6 +53,59 @@ msgstr "Processamento concluído — carregando o player."
 #: static/js/app.js:319
 msgid "Processing failed."
 msgstr "O processamento falhou."
+
+#: static/js/cast.js:146 static/js/cast.js:456
+msgid "Streaming stopped."
+msgstr "Transmissão parada."
+
+#: static/js/cast.js:219
+msgid "Screen sharing ended, so streaming stopped."
+msgstr "O compartilhamento de tela terminou, então a transmissão parou."
+
+#: static/js/cast.js:294
+msgid ""
+"The browser did not get permission to use the camera, the microphone or the "
+"screen."
+msgstr ""
+"O navegador não recebeu permissão para usar a câmera, o microfone ou a tela."
+
+#: static/js/cast.js:295
+msgid "Could not start: %(reason)s"
+msgstr "Não foi possível começar: %(reason)s"
+
+#: static/js/cast.js:316
+msgid "Starting…"
+msgstr "Iniciando…"
+
+#: static/js/cast.js:327
+msgid "The server did not accept the stream."
+msgstr "O servidor não aceitou a transmissão."
+
+#: static/js/cast.js:366
+msgid "Recording failed: %(reason)s"
+msgstr "A gravação falhou: %(reason)s"
+
+#: static/js/cast.js:373
+msgid "Connecting to the server…"
+msgstr "Conectando ao servidor…"
+
+#: static/js/cast.js:398
+msgid "The stream stopped on the server."
+msgstr "A transmissão parou no servidor."
+
+#: static/js/cast.js:430
+msgid "Your connection is not keeping up: %(seconds)s s waiting to be sent."
+msgstr ""
+"A sua conexão não está dando conta: %(seconds)s s esperando para serem "
+"enviados."
+
+#: static/js/cast.js:435
+msgid "On air · %(time)s · sending %(rate)s Mbps"
+msgstr "No ar · %(time)s · enviando %(rate)s Mbps"
+
+#: static/js/cast.js:448
+msgid "Stopping…"
+msgstr "Parando…"
 
 #. Translators: countdown pieces; d = days, h = hours, min = minutes, s =
 #. seconds.

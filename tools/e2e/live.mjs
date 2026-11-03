@@ -5,8 +5,10 @@
 // the encoder connects and the page switches to the stream by itself, a
 // signed-in viewer and the host chat, the host hides a message, the encoder
 // drops and comes back, the host ends the live, and its recording becomes a
-// video that the same embed code then plays. Text selectors follow the default
-// interface language, Brazilian Portuguese.
+// video that the same embed code then plays. Then a second live goes on air
+// from the control room itself, streaming Chromium's fake camera and
+// microphone from the browser. Text selectors follow the default interface
+// language, Brazilian Portuguese.
 //
 // Needs the portal with its LIVE_* settings pointing at the ingest server
 // (docker/live), the ingest server itself, ffmpeg on PATH and two accounts
@@ -100,14 +102,21 @@ async function playing(page, timeout = 30000) {
 
 async function main() {
   const errors = [];
-  const browser = await chromium.launch();
+  // A fake camera and microphone, granted without asking, for the browser
+  // streaming part.
+  const browser = await chromium.launch({
+    args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
+  });
   const source = clip();
   let encoderProcess = null;
   console.log(`AkonMedia live test against ${BASE} — host ${HOST}, viewer ${VIEWER}`);
 
   try {
     // ---------------------------------------------------------- the host
-    const hostContext = await browser.newContext({ viewport: { width: 1440, height: 960 } });
+    const hostContext = await browser.newContext({
+      viewport: { width: 1440, height: 960 },
+      permissions: ["camera", "microphone"],
+    });
     const host = await hostContext.newPage();
     watchErrors(host, errors);
     host.on("dialog", (dialog) => dialog.accept());
@@ -235,6 +244,36 @@ async function main() {
     await host.goto(`${BASE}/studio/lives/`);
     expect(await host.isVisible(`tr:has-text("${TITLE}")`), "the live is listed in the studio with its recording");
     await shot(host, "studio-lives");
+
+    // ------------------------------------------- streaming from the browser
+    await host.goto(`${BASE}/studio/lives/new/`);
+    await host.fill('input[name="title"]', `${TITLE} — pelo navegador`);
+    await Promise.all([host.waitForNavigation(), host.click('form.form-grid button[type="submit"]')]);
+    const castUid = host.url().split("/").filter(Boolean).pop();
+    await host.click('[data-source-tab="browser"]');
+    expect(await host.isVisible("[data-cast-start]"), "the control room offers streaming from the browser");
+    await host.click("[data-cast-start]");
+    await host.waitForFunction(() => /No ar/.test(document.querySelector("[data-cast-status]").textContent),
+      null, { timeout: 30000 });
+    ok("the host goes on air from the browser with the camera and microphone");
+    await host.waitForFunction(() => document.querySelector("[data-control-publishing]").classList.contains("is-on"),
+      null, { timeout: 30000 });
+    ok("the ingest server receives the browser's stream like an encoder's");
+
+    await viewer.goto(`${BASE}/live/${castUid}/`);
+    await viewer.waitForSelector('[data-stage="on-air"]:not([hidden])', { timeout: 30000 });
+    await playing(viewer, 40000);
+    ok("viewers watch the stream sent by the browser");
+    await shot(host, "control-browser");
+
+    await host.click("[data-cast-stop]");
+    await host.waitForFunction(() => /parada/i.test(document.querySelector("[data-cast-status]").textContent),
+      null, { timeout: 20000 });
+    await viewer.waitForSelector('[data-when-status="interrupted"]:not([hidden])', { timeout: 30000 });
+    ok("stopping in the browser interrupts the live, as stopping OBS would");
+    await Promise.all([host.waitForNavigation(), host.click('form[action$="/end/"] button')]);
+    await viewer.waitForSelector("[data-recording-link]:not([hidden])", { timeout: 180000 });
+    ok("the recording of the browser stream is published as a video too");
 
     await hostContext.close();
     await anonContext.close();

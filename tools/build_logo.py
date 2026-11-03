@@ -785,6 +785,7 @@ ICON_MAP = {
     "folder": "folder", "grid": "layout-grid", "rows": "rows-3",
     "skip-forward": "skip-forward", "image-up": "image-up", "heart": "heart",
     "bell": "bell", "radio": "radio", "tv": "tv", "mic": "mic",
+    "video": "video", "screen-share": "screen-share", "stop": "circle-stop",
 }
 
 SVG_NS = "http://www.w3.org/2000/svg"

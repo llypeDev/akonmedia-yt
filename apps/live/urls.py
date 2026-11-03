@@ -22,4 +22,8 @@ urlpatterns = [
     path("studio/lives/<str:uid>/end/", views.live_end, name="end"),
     path("studio/lives/<str:uid>/key/", views.rotate_key, name="rotate_key"),
     path("studio/lives/<str:uid>/delete/", views.live_delete, name="delete"),
+    # streaming from the browser
+    path("studio/lives/<str:uid>/cast/", views.cast_start, name="cast_start"),
+    path("studio/lives/<str:uid>/cast/<str:session>/<int:seq>/", views.cast_chunk, name="cast_chunk"),
+    path("studio/lives/<str:uid>/cast/<str:session>/stop/", views.cast_stop, name="cast_stop"),
 ]

@@ -4,8 +4,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: AkonMedia\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 15:44+0000\n"
-"PO-Revision-Date: 2026-11-03 15:44+0000\n"
+"POT-Creation-Date: 2026-11-03 16:06+0000\n"
+"PO-Revision-Date: 2026-11-03 16:07+0000\n"
 "Last-Translator: AkonMedia\n"
 "Language-Team: Português (Brasil)\n"
 "Language: pt_BR\n"
@@ -84,7 +84,7 @@ msgstr "Detalhes da playlist salvos."
 msgid "Playlist “%(title)s” deleted."
 msgstr "Playlist “%(title)s” excluída."
 
-#: apps/core/studio_views.py:34 apps/live/views.py:66
+#: apps/core/studio_views.py:34 apps/live/views.py:73
 #: templates/core/upload.html:96
 msgid "No category"
 msgstr "Sem categoria"
@@ -309,69 +309,96 @@ msgstr "publicar a gravação"
 msgid "chat"
 msgstr "chat"
 
-#: apps/live/views.py:316
+#: apps/live/views.py:323
 msgid "Sign in to take part in the chat."
 msgstr "Entre para participar do chat."
 
-#: apps/live/views.py:318 templates/live/_chat.html:17
+#: apps/live/views.py:325 templates/live/_chat.html:17
 msgid "The chat is closed."
 msgstr "O chat está fechado."
 
-#: apps/live/views.py:321
+#: apps/live/views.py:328
 msgid "Write a message first."
 msgstr "Escreva uma mensagem primeiro."
 
-#: apps/live/views.py:324
+#: apps/live/views.py:331
 #, python-format
 msgid "Messages are limited to %(limit)d characters."
 msgstr "As mensagens têm no máximo %(limit)d caracteres."
 
-#: apps/live/views.py:328
+#: apps/live/views.py:335
 msgid "Slow down a little: one message every two seconds."
 msgstr "Calma: uma mensagem a cada dois segundos."
 
-#: apps/live/views.py:338
+#: apps/live/views.py:345
 msgid "You cannot moderate this chat."
 msgstr "Você não pode moderar este chat."
 
-#: apps/live/views.py:374
+#: apps/live/views.py:381
 msgid "Live created. Point your encoder at it to go on air."
 msgstr "Live criada. Configure o seu codificador para entrar no ar."
 
-#: apps/live/views.py:406
+#: apps/live/views.py:413
 msgid "Live details saved."
 msgstr "Detalhes da live salvos."
 
-#: apps/live/views.py:416
+#: apps/live/views.py:423
 msgid "The live has ended."
 msgstr "A live foi encerrada."
 
-#: apps/live/views.py:418
+#: apps/live/views.py:425
 msgid "This live had already ended."
 msgstr "Esta live já tinha sido encerrada."
 
-#: apps/live/views.py:427
+#: apps/live/views.py:434
 msgid "Stop the encoder before changing the stream key."
 msgstr "Pare o codificador antes de trocar a chave de transmissão."
 
-#: apps/live/views.py:429
+#: apps/live/views.py:436
 msgid "This live has ended; its key no longer works."
 msgstr "Esta live foi encerrada; a chave dela não funciona mais."
 
-#: apps/live/views.py:433
+#: apps/live/views.py:440
 msgid "New stream key created. The old one no longer works."
 msgstr "Nova chave de transmissão criada. A anterior não funciona mais."
 
-#: apps/live/views.py:442
+#: apps/live/views.py:449
 msgid "End the live before deleting it."
 msgstr "Encerre a live antes de excluí-la."
 
-#: apps/live/views.py:448
+#: apps/live/views.py:455
 #, python-format
 msgid ""
 "“%(title)s” was deleted. Its recording, if there is one, stays in your media."
 msgstr ""
 "“%(title)s” foi excluída. A gravação, se houver, continua nas suas mídias."
+
+#: apps/live/views.py:499
+msgid "This live has ended."
+msgstr "Esta live foi encerrada."
+
+#: apps/live/views.py:501
+msgid "Live ingest is not configured on this server."
+msgstr "A recepção de lives não está configurada neste servidor."
+
+#: apps/live/views.py:508
+msgid ""
+"The previous stream from a browser is stopping. Try again in a few seconds."
+msgstr ""
+"A transmissão anterior pelo navegador está sendo encerrada. Tente de novo em "
+"alguns segundos."
+
+#: apps/live/views.py:513
+msgid "An encoder is already streaming to this live. Stop it first."
+msgstr "Um codificador já está transmitindo nesta live. Pare-o antes."
+
+#: apps/live/views.py:525
+msgid "The stream could not be started on the server."
+msgstr "Não foi possível iniciar a transmissão no servidor."
+
+#: apps/live/views.py:544
+msgid "The stream from this browser has stopped."
+msgstr "A transmissão por este navegador parou."
 
 #: apps/media/community.py:56
 msgid "That media is not published yet."
@@ -795,7 +822,7 @@ msgid "Delete"
 msgstr "Excluir"
 
 #: templates/core/_comment.html:38 templates/core/manage.html:140
-#: templates/live/control.html:73
+#: templates/live/control.html:78
 msgid "Hide"
 msgstr "Ocultar"
 
@@ -1381,7 +1408,7 @@ msgstr[0] "%(shown)s envio público"
 msgstr[1] "%(shown)s envios públicos"
 
 #: templates/core/media_detail.html:134 templates/core/playlist_detail.html:27
-#: templates/live/control.html:98 templates/live/watch.html:51
+#: templates/live/control.html:107 templates/live/watch.html:51
 msgid "Share"
 msgstr "Compartilhar"
 
@@ -1389,18 +1416,18 @@ msgstr "Compartilhar"
 msgid "Link"
 msgstr "Link"
 
-#: templates/core/media_detail.html:139 templates/live/control.html:103
+#: templates/core/media_detail.html:139 templates/live/control.html:112
 #: templates/live/watch.html:56
 msgid "Link to this page"
 msgstr "Link para esta página"
 
-#: templates/core/media_detail.html:140 templates/live/control.html:104
+#: templates/core/media_detail.html:140 templates/live/control.html:113
 #: templates/live/watch.html:57
 msgid "Link copied"
 msgstr "Link copiado"
 
-#: templates/core/media_detail.html:140 templates/live/control.html:66
-#: templates/live/control.html:74 templates/live/control.html:104
+#: templates/core/media_detail.html:140 templates/live/control.html:71
+#: templates/live/control.html:79 templates/live/control.html:113
 #: templates/live/watch.html:57
 msgid "Copy"
 msgstr "Copiar"
@@ -1413,12 +1440,12 @@ msgstr "Link no momento atual copiado"
 msgid "Copy link at current time"
 msgstr "Copiar link no momento atual"
 
-#: templates/core/media_detail.html:148 templates/live/control.html:108
+#: templates/core/media_detail.html:148 templates/live/control.html:117
 #: templates/live/watch.html:61
 msgid "Embed"
 msgstr "Incorporar"
 
-#: templates/core/media_detail.html:150 templates/live/control.html:109
+#: templates/core/media_detail.html:150 templates/live/control.html:118
 #: templates/live/watch.html:63
 msgid "Embed code"
 msgstr "Código de incorporação"
@@ -1435,12 +1462,12 @@ msgstr "Reprodução automática (sem som)"
 msgid "Show the title"
 msgstr "Mostrar o título"
 
-#: templates/core/media_detail.html:156 templates/live/control.html:111
+#: templates/core/media_detail.html:156 templates/live/control.html:120
 #: templates/live/watch.html:65
 msgid "Embed code copied"
 msgstr "Código de incorporação copiado"
 
-#: templates/core/media_detail.html:156 templates/live/control.html:111
+#: templates/core/media_detail.html:156 templates/live/control.html:120
 #: templates/live/watch.html:65
 msgid "Copy embed code"
 msgstr "Copiar código de incorporação"
@@ -1687,7 +1714,8 @@ msgstr "Idioma (en, pt-BR)"
 msgid "Upload .srt / .vtt"
 msgstr "Enviar .srt / .vtt"
 
-#: templates/core/media_edit.html:116 templates/live/control.html:43
+#: templates/core/media_edit.html:116 templates/live/_cast.html:26
+#: templates/live/control.html:43
 msgid "Preview"
 msgstr "Pré-visualização"
 
@@ -2338,6 +2366,66 @@ msgstr "Começa quando o apresentador entrar no ar"
 msgid "streamed %(when)s"
 msgstr "transmitida %(when)s"
 
+#: templates/live/_cast.html:3
+msgid ""
+"Streaming from the browser needs the site on HTTPS (or opened as localhost)."
+msgstr ""
+"Transmitir pelo navegador exige o site em HTTPS (ou aberto como localhost)."
+
+#: templates/live/_cast.html:4
+msgid "This browser cannot stream. Use a recent Chrome, Edge or Firefox."
+msgstr ""
+"Este navegador não consegue transmitir. Use uma versão recente do Chrome, do "
+"Edge ou do Firefox."
+
+#: templates/live/_cast.html:7 templates/live/_cast.html:8
+msgid "Source"
+msgstr "Fonte"
+
+#: templates/live/_cast.html:9
+msgid "Camera"
+msgstr "Câmera"
+
+#: templates/live/_cast.html:10
+msgid "Screen"
+msgstr "Tela"
+
+#: templates/live/_cast.html:12
+msgid ""
+"With Screen, your voice goes through the microphone; the computer's sound "
+"joins in when the browser offers to share it."
+msgstr ""
+"Na opção Tela, a sua voz vai pelo microfone; o som do computador entra junto "
+"quando o navegador oferecer compartilhá-lo."
+
+#: templates/live/_cast.html:19
+msgid "Your camera or screen appears here before you go on air."
+msgstr "A sua câmera ou tela aparece aqui antes de você entrar no ar."
+
+#: templates/live/_cast.html:21
+msgid "On air from this browser"
+msgstr "No ar por este navegador"
+
+#: templates/live/_cast.html:22
+msgid "Microphone level"
+msgstr "Nível do microfone"
+
+#: templates/live/_cast.html:27
+msgid "Start streaming"
+msgstr "Iniciar transmissão"
+
+#: templates/live/_cast.html:28
+msgid "Stop streaming"
+msgstr "Parar transmissão"
+
+#: templates/live/_cast.html:31
+msgid ""
+"Keep this tab open while you are on air: you can switch to other windows. "
+"Stopping here interrupts the live; when you are done, use “End live”."
+msgstr ""
+"Mantenha esta aba aberta enquanto estiver no ar; você pode usar outras "
+"janelas. Parar aqui interrompe a live; quando terminar, use “Encerrar live”."
+
 #: templates/live/_chat.html:2 templates/live/_chat.html:4
 msgid "Live chat"
 msgstr "Chat ao vivo"
@@ -2485,8 +2573,8 @@ msgid "Connections"
 msgstr "Conexões"
 
 #: templates/live/control.html:57
-msgid "Connect your encoder"
-msgstr "Conecte o seu codificador"
+msgid "Go on air"
+msgstr "Entrar no ar"
 
 #: templates/live/control.html:59
 msgid ""
@@ -2497,27 +2585,35 @@ msgstr ""
 "(LIVE_HOOK_SECRET está vazio), então o codificador será recusado. Veja "
 "“Lives” no README."
 
-#: templates/live/control.html:63 templates/live/control.html:65
+#: templates/live/control.html:62
+msgid "OBS or another app"
+msgstr "OBS ou outro programa"
+
+#: templates/live/control.html:63
+msgid "From this browser"
+msgstr "Por este navegador"
+
+#: templates/live/control.html:68 templates/live/control.html:70
 msgid "Server"
 msgstr "Servidor"
 
-#: templates/live/control.html:66
+#: templates/live/control.html:71
 msgid "Server copied"
 msgstr "Servidor copiado"
 
-#: templates/live/control.html:70 templates/live/control.html:72
+#: templates/live/control.html:75 templates/live/control.html:77
 msgid "Stream key"
 msgstr "Chave de transmissão"
 
-#: templates/live/control.html:73
+#: templates/live/control.html:78
 msgid "Show"
 msgstr "Mostrar"
 
-#: templates/live/control.html:74
+#: templates/live/control.html:79
 msgid "Stream key copied"
 msgstr "Chave de transmissão copiada"
 
-#: templates/live/control.html:76
+#: templates/live/control.html:81
 msgid ""
 "Anyone with this key can stream into this live. Keep it off your screen while"
 " you are on air."
@@ -2525,7 +2621,7 @@ msgstr ""
 "Quem tiver esta chave consegue transmitir nesta live. Não a deixe aparecer na"
 " tela durante a transmissão."
 
-#: templates/live/control.html:80
+#: templates/live/control.html:85
 msgid ""
 "In OBS, open <strong>Settings → Stream</strong> and choose the "
 "<strong>Custom</strong> service."
@@ -2533,11 +2629,11 @@ msgstr ""
 "No OBS, abra <strong>Configurações → Transmissão</strong> e escolha o serviço"
 " <strong>Personalizado</strong>."
 
-#: templates/live/control.html:81
+#: templates/live/control.html:86
 msgid "Paste the server and the stream key above."
 msgstr "Cole o servidor e a chave de transmissão acima."
 
-#: templates/live/control.html:82
+#: templates/live/control.html:87
 msgid ""
 "Under <strong>Output</strong>, use H.264 video with a <strong>2 s keyframe "
 "interval</strong> and AAC audio. For 720p, 2,500 to 4,000 Kbps works well."
@@ -2546,7 +2642,7 @@ msgstr ""
 "chave de 2 s</strong> e áudio AAC. Para 720p, de 2.500 a 4.000 Kbps funcionam"
 " bem."
 
-#: templates/live/control.html:83
+#: templates/live/control.html:88
 msgid ""
 "Click <strong>Start Streaming</strong>. The preview appears here a few "
 "seconds later."
@@ -2554,42 +2650,42 @@ msgstr ""
 "Clique em <strong>Iniciar transmissão</strong>. A prévia aparece aqui alguns "
 "segundos depois."
 
-#: templates/live/control.html:86
+#: templates/live/control.html:91
 msgid "Create a new stream key? The current one stops working."
 msgstr "Criar uma nova chave de transmissão? A atual deixará de funcionar."
 
-#: templates/live/control.html:88
+#: templates/live/control.html:93
 msgid "Stop the encoder first"
 msgstr "Pare o codificador primeiro"
 
-#: templates/live/control.html:88
+#: templates/live/control.html:93
 msgid "New stream key"
 msgstr "Nova chave de transmissão"
 
-#: templates/live/control.html:101
+#: templates/live/control.html:110
 msgid "Page"
 msgstr "Página"
 
-#: templates/live/control.html:108
+#: templates/live/control.html:117
 msgid "for your school's site"
 msgstr "para o site da sua escola"
 
-#: templates/live/control.html:110 templates/live/watch.html:64
+#: templates/live/control.html:119 templates/live/watch.html:64
 msgid "The same code plays the recording once the live is over."
 msgstr "O mesmo código passa a exibir a gravação quando a live terminar."
 
-#: templates/live/control.html:118 templates/live/control.html:122
+#: templates/live/control.html:127 templates/live/control.html:131
 msgid "Delete live"
 msgstr "Excluir live"
 
-#: templates/live/control.html:119
+#: templates/live/control.html:128
 msgid ""
 "Removes the live and its chat. A published recording stays in your media."
 msgstr ""
 "Remove a live e o chat dela. Uma gravação já publicada continua nas suas "
 "mídias."
 
-#: templates/live/control.html:120
+#: templates/live/control.html:129
 msgid "Delete this live and its chat for good?"
 msgstr "Excluir esta live e o chat dela de vez?"
 

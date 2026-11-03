@@ -11,7 +11,7 @@ from django.utils.text import slugify
 from apps.media import pipeline
 from apps.media.models import Media
 
-from . import ingest, services
+from . import ingest, relay, services
 from .models import Live
 
 logger = logging.getLogger(__name__)
@@ -100,4 +100,6 @@ def housekeeping() -> int:
     for live in pending:
         services.tick(live)
         touched += 1
+    # Folders of browser streams that ended an hour ago (or stalled a day ago).
+    relay.cleanup(settings.LIVE_BROWSER_DIR, 60 * 60)
     return touched

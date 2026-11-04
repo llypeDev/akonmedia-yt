@@ -37,7 +37,20 @@ class EmbedContext:
     identity: ExternalIdentity | None
 
     def grants_live(self, live) -> bool:
-        return self.integration.grants_live(live)
+        """The live is the integration owner's, and for the person's classes."""
+        if not self.integration.grants_live(live):
+            return False
+        return self.identity is None or self.identity.in_groups(live.group_list)
+
+    def grants_media(self, media) -> bool:
+        """A video of the integration owner's; a live's recording only for
+        the classes the live was for."""
+        if not self.integration.grants_media(media):
+            return False
+        from apps.live.models import Live
+
+        source = Live.objects.filter(recording=media).only("groups").first()
+        return source is None or self.identity is None or self.identity.in_groups(source.group_list)
 
     def moderates(self, live) -> bool:
         return bool(self.identity and self.identity.is_moderator and self.grants_live(live))
@@ -60,10 +73,11 @@ def load(token: str) -> ExternalIdentity | None:
         .filter(user_id=data.get("u"), integration_id=data.get("i"))
         .first()
     )
-    if identity is None or not identity.user.is_active:
+    if identity is None or identity.is_blocked or not identity.user.is_active:
         return None
     integration = identity.integration
-    if not integration.is_active or integration.secret_version != data.get("v"):
+    versions = {Integration.version_of(secret) for secret in integration.secrets_in_force()}
+    if not integration.is_active or data.get("v") not in versions:
         return None
     return identity
 

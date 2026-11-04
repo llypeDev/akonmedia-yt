@@ -31,7 +31,7 @@
       <h2>{% translate "This live has ended" %}</h2>
       <p data-when-recording="pending processing"{% if rec != "pending" and rec != "processing" %} hidden{% endif %}>{% icon "loader" "icon-sm icon-spin" %} {% translate "The recording is being prepared. It appears here as soon as it is ready." %}</p>
       <p data-when-recording="ready"{% if rec != "ready" %} hidden{% endif %}>{% translate "The recording is ready." %}</p>
-      <a class="btn btn-primary" data-when-recording="ready" data-recording-link href="{{ state.recording.url|default:'#' }}"{% if mode == "embed" %} target="_blank" rel="noopener"{% endif %}{% if rec != "ready" %} hidden{% endif %}>{% icon "play" "icon-sm" %}{% translate "Watch the recording" %}</a>
+      {% if not integration.hide_branding %}<a class="btn btn-primary" data-when-recording="ready" data-recording-link href="{{ state.recording.url|default:'#' }}"{% if mode == "embed" %} target="_blank" rel="noopener"{% endif %}{% if rec != "ready" %} hidden{% endif %}>{% icon "play" "icon-sm" %}{% translate "Watch the recording" %}</a>{% endif %}
       <p data-when-recording="none"{% if rec != "none" %} hidden{% endif %}>{% translate "There is no recording of this live." %}</p>
       <p data-when-recording="failed"{% if rec != "failed" %} hidden{% endif %}>{% translate "The recording could not be published." %}</p>
     </div>

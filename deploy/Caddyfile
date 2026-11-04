@@ -3,8 +3,10 @@
 # Caddy gets and renews the HTTPS certificate for PORTAL_DOMAIN by itself (Let's
 # Encrypt), sends http:// to https://, and passes each request on:
 #
-#   /hls/...   the lives on air, straight from the ingest server ("live")
-#   the rest   the portal ("web")
+#   /hls/...           the lives on air, straight from the ingest server ("live")
+#   /live/*/events/    the lives' push channel, held open by the ASGI
+#                      "events" service (apps/live/stream.py)
+#   the rest           the portal ("web")
 #
 # Uploaded media still goes through the portal, which checks the file and sets
 # its safety headers, but the bytes come from here: the portal answers with
@@ -20,6 +22,14 @@
 
 	handle /hls/* {
 		reverse_proxy live:8080
+	}
+
+	@events path_regexp ^/live/[^/]+/events/$
+	handle @events {
+		reverse_proxy events:8001 {
+			# Every event goes out as soon as it is written.
+			flush_interval -1
+		}
 	}
 
 	handle {

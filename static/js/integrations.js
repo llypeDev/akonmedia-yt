@@ -43,6 +43,15 @@
     });
   });
 
+  document.querySelectorAll("[data-color-pick]").forEach(function (picker) {
+    var text = picker.parentElement.querySelector("[data-color-text]");
+    if (!text) return;
+    picker.addEventListener("input", function () { text.value = picker.value; });
+    text.addEventListener("input", function () {
+      if (/^#[0-9a-fA-F]{6}$/.test(text.value)) picker.value = text.value;
+    });
+  });
+
   var guide = document.querySelector("[data-integration-guide]");
   var form = guide && guide.querySelector("[data-snippet-form]");
   if (!form) return;

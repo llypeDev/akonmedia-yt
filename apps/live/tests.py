@@ -17,8 +17,8 @@ from apps.media.models import Media
 from apps.rbac.roles import Role
 from apps.users.models import User
 
-from . import presence, services, tasks
-from .models import ChatMessage, ChatReaction, Live, LiveRecording
+from . import attendance, presence, services, tasks
+from .models import ChatMessage, ChatMute, ChatReaction, Live, LiveAttendance, LiveRecording
 
 SECRET = "test-hook-secret"
 
@@ -322,6 +322,8 @@ class PageTests(LiveTestCase):
         self.assertEqual(state["recording"], {
             "state": "ready", "ready": True,
             "url": reverse("core:media", args=[media.uid]), "embed": reverse("core:embed", args=[media.uid]),
+            # What a school's frame needs to play it where the live was.
+            "play": {"hls": "", "src": media.file.url, "poster": "", "kind": "video"},
         })
 
     def test_the_control_room_is_for_the_owner_and_curators(self):
@@ -516,29 +518,30 @@ class ReactionTests(LiveTestCase):
         chat = self.client.get(self.state_url).json()["chat"]
         self.assertEqual(chat["messages"][0]["reactions"], [{"kind": "clap", "count": 1, "mine": True}])
         self.assertTrue(chat["can_react"])
-        self.assertIn("reactions_rev", chat)
+        self.assertIn("version", chat)
 
     def test_open_pages_catch_up_only_when_something_changed(self):
         self.client.force_login(self.other)
         chat = self.client.get(self.state_url).json()["chat"]
-        rev = chat["reactions_rev"]
+        rev = chat["version"]
         after = self.message.id
-        quiet = self.client.get(self.state_url, {"after": after, "rrev": rev}).json()["chat"]
+        quiet = self.client.get(self.state_url, {"after": after, "cv": rev}).json()["chat"]
         self.assertNotIn("reactions", quiet)
+        self.assertTrue(quiet["unchanged"])
 
         self.client.force_login(self.viewer)
         self.react("wow")
         self.client.force_login(self.other)
-        news = self.client.get(self.state_url, {"after": after, "rrev": rev}).json()["chat"]
+        news = self.client.get(self.state_url, {"after": after, "cv": rev}).json()["chat"]
         self.assertEqual(news["reactions"], {str(self.message.id): [{"kind": "wow", "count": 1, "mine": False}]})
         self.assertEqual(news["reactions_from"], self.message.id)
-        self.assertGreater(news["reactions_rev"], rev)
+        self.assertGreater(news["version"], rev)
 
         # Taken back: the message is left out of the map, which means none.
         self.client.force_login(self.viewer)
         self.react("wow", on=False)
         self.client.force_login(self.other)
-        gone = self.client.get(self.state_url, {"after": after, "rrev": news["reactions_rev"]}).json()["chat"]
+        gone = self.client.get(self.state_url, {"after": after, "cv": news["version"]}).json()["chat"]
         self.assertEqual(gone["reactions"], {})
         self.assertEqual(gone["reactions_from"], self.message.id)
 
@@ -547,6 +550,171 @@ class ReactionTests(LiveTestCase):
         chat = self.client.get(self.state_url).json()["chat"]
         self.assertFalse(chat["can_react"])
         self.assertEqual(chat["messages"][0]["reactions"], [{"kind": "like", "count": 1, "mine": False}])
+
+
+class TeacherToolsTests(LiveTestCase):
+    def setUp(self):
+        super().setUp()
+        Live.objects.filter(pk=self.live.pk).update(status=Live.Status.LIVE, publishing=True)
+        self.viewer = make_user("aluno@example.com")
+        self.other = make_user("outro@example.com")
+        self.curator = make_user("mod@example.com", role=Role.EDITOR)
+        self.state_url = reverse("live:state", args=[self.live.uid])
+
+    def url(self, name, *args):
+        return reverse(f"live:{name}", args=[self.live.uid, *args])
+
+    def say(self, user, body, question=False):
+        cache.clear()
+        self.client.force_login(user)
+        response = self.client.post(self.url("chat"), {"body": body, "question": "1" if question else "0"})
+        self.assertEqual(response.status_code, 201, response.content)
+        return response.json()["message"]
+
+    def chat(self, user=None, **params):
+        if user:
+            self.client.force_login(user)
+        else:
+            self.client.logout()
+        return self.client.get(self.state_url, params).json()["chat"]
+
+    def test_the_host_and_moderators_get_the_badge(self):
+        self.say(self.owner, "Boa noite")
+        self.say(self.curator, "Sou o monitor")
+        self.say(self.viewer, "Oi")
+        staff = {m["body"]: m["staff"] for m in self.chat()["messages"]}
+        self.assertEqual(staff, {"Boa noite": True, "Sou o monitor": True, "Oi": False})
+
+    def test_questions_votes_and_answers(self):
+        question = self.say(self.viewer, "Cai na prova?", question=True)
+        plain = self.say(self.viewer, "Oi")
+        self.assertTrue(question["question"])
+        self.client.force_login(self.other)
+        vote = self.client.post(self.url("chat_react", question["id"]), {"kind": "up"}).json()
+        self.assertEqual((vote["votes"], vote["voted"]), (1, True))
+        # Votes only on questions, and they are not one of the pictures.
+        self.assertEqual(self.client.post(self.url("chat_react", plain["id"]), {"kind": "up"}).status_code, 400)
+        chat = self.chat(self.other)
+        self.assertEqual([q["body"] for q in chat["questions"]], ["Cai na prova?"])
+        self.assertEqual((chat["questions"][0]["votes"], chat["questions"][0]["voted"]), (1, True))
+        self.assertEqual(chat["messages"][0]["reactions"], [])
+
+        # Students cannot answer; the host can, and it leaves the list.
+        self.assertEqual(self.client.post(self.url("chat_answer", question["id"])).status_code, 403)
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.post(self.url("chat_answer", question["id"]), {"on": "1"}).status_code, 200)
+        self.assertEqual(self.client.post(self.url("chat_answer", plain["id"])).status_code, 400)
+        chat = self.chat(self.owner)
+        self.assertEqual(chat["questions"], [])
+        self.assertTrue(chat["messages"][0]["answered"])
+        # A page that already shows the question learns it was answered.
+        seen = self.chat(self.other, after=plain["id"], cv=0)
+        self.assertEqual(seen["votes"][str(question["id"])], {"votes": 1, "voted": True, "answered": True})
+
+    def test_pinning(self):
+        message = self.say(self.viewer, "Link da apostila: exemplo.com")
+        self.client.force_login(self.viewer)
+        self.assertEqual(self.client.post(self.url("chat_pin", message["id"])).status_code, 403)
+        self.client.force_login(self.owner)
+        self.client.post(self.url("chat_pin", message["id"]), {"on": "1"})
+        self.assertEqual(self.chat()["pinned"]["body"], "Link da apostila: exemplo.com")
+        self.client.force_login(self.owner)
+        self.client.post(self.url("chat_pin", message["id"]), {"on": "0"})
+        self.assertIsNone(self.chat()["pinned"])
+        # Hiding a pinned message takes it down too.
+        self.client.force_login(self.owner)
+        self.client.post(self.url("chat_pin", message["id"]), {"on": "1"})
+        self.client.post(self.url("chat_hide", message["id"]))
+        self.assertIsNone(self.chat()["pinned"])
+
+    def test_muting(self):
+        message = self.say(self.viewer, "spam")
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.post(self.url("chat_mute", message["id"]), {"minutes": "7"}).status_code, 400)
+        self.assertEqual(self.client.post(self.url("chat_mute", message["id"]), {"minutes": "5"}).status_code, 200)
+        cache.clear()
+        self.client.force_login(self.viewer)
+        refused = self.client.post(self.url("chat"), {"body": "de novo"})
+        self.assertEqual(refused.status_code, 403)
+        chat = self.chat(self.viewer)
+        self.assertFalse(chat["can_post"])
+        self.assertIn("muted_until", chat)
+        self.assertEqual([m["name"] for m in self.chat(self.owner)["muted"]], ["aluno"])
+
+        # The host and moderators cannot be muted.
+        own = self.say(self.curator, "monitor aqui")
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.post(self.url("chat_mute", own["id"]), {"minutes": "5"}).status_code, 403)
+
+        mute = ChatMute.objects.get()
+        self.client.post(self.url("chat_unmute", mute.id))
+        self.assertFalse(ChatMute.objects.exists())
+        self.say(self.viewer, "voltei")
+
+    def test_slow_mode(self):
+        self.client.force_login(self.viewer)
+        self.assertEqual(self.client.post(self.url("chat_settings"), {"slow_mode": "30"}).status_code, 403)
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.post(self.url("chat_settings"), {"slow_mode": "7"}).status_code, 400)
+        self.assertEqual(self.client.post(self.url("chat_settings"), {"slow_mode": "30"}).status_code, 200)
+        self.assertEqual(self.chat()["slow_mode"], 30)
+        cache.clear()
+        self.client.force_login(self.viewer)
+        self.assertEqual(self.client.post(self.url("chat"), {"body": "um"}).status_code, 201)
+        second = self.client.post(self.url("chat"), {"body": "dois"})
+        self.assertEqual(second.status_code, 429)
+        self.assertIn("30", second.json()["detail"])
+        # The host is not slowed down beyond the usual pause.
+        cache.clear()
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.post(self.url("chat"), {"body": "um"}).status_code, 201)
+
+    def test_an_unchanged_chat_costs_no_query(self):
+        self.say(self.viewer, "Oi")
+        first = self.chat(self.viewer)
+        self.client.force_login(self.viewer)
+        params = {"after": first["messages"][-1]["id"], "cv": first["version"]}
+        self.client.get(self.state_url, params)  # warm the session and the cache
+        with self.assertNumQueries(3):  # session, account, the live
+            chat = self.client.get(self.state_url, params).json()["chat"]
+        self.assertTrue(chat["unchanged"])
+
+    def test_one_snapshot_is_shared(self):
+        self.say(self.viewer, "Oi")
+        version = self.chat()["version"]
+        with mock.patch("apps.live.chat._build", wraps=__import__("apps.live.chat", fromlist=["_build"])._build) as build:
+            self.chat()
+            self.chat(self.other)
+            self.chat(self.viewer)
+        self.assertEqual(build.call_count, 0)  # built by the first request above
+        self.assertEqual(self.chat()["version"], version)
+
+
+class AttendanceTests(LiveTestCase):
+    def test_time_is_counted_between_polls_and_written_in_batches(self):
+        viewer = make_user("aluno@example.com")
+        cache.clear()
+        start = 1_000_000.0
+        for second in range(0, 61, 4):
+            attendance.touch(self.live, viewer, now=start + second)
+        row = LiveAttendance.objects.get()
+        self.assertEqual(row.seconds, 32)  # written at 30+ seconds; the rest is still gathering
+        # A long gap is time away: only the 28 s gathered before it and the
+        # 4 s after it count, written together once they pass 30 s.
+        attendance.touch(self.live, viewer, now=start + 600)
+        attendance.touch(self.live, viewer, now=start + 604)
+        row.refresh_from_db()
+        self.assertEqual(row.seconds, 64)
+        report = attendance.report(self.live)
+        self.assertEqual(report[0]["name"], "aluno")
+        self.assertEqual(report[0]["seconds"], 64)
+
+    def test_polls_of_signed_in_viewers_count(self):
+        Live.objects.filter(pk=self.live.pk).update(status=Live.Status.LIVE, publishing=True)
+        viewer = make_user("aluno@example.com")
+        self.client.force_login(viewer)
+        self.client.get(reverse("live:state", args=[self.live.uid]), {"client": "abcdefgh1"})
+        self.assertTrue(LiveAttendance.objects.filter(user=viewer).exists())
 
 
 class PresenceTests(LiveTestCase):

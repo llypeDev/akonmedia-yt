@@ -18,7 +18,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
-from . import ingest
+from . import ingest, signals
 from .models import Live, LiveRecording
 
 #: After the last encoder left, how long to wait for recording files whose
@@ -40,9 +40,10 @@ def start_publishing(live: Live) -> bool:
             updated_at=now,
         )
     )
-    if updated:
-        Live.objects.filter(pk=live.pk, started_at__isnull=True).update(started_at=now)
+    first = updated and Live.objects.filter(pk=live.pk, started_at__isnull=True).update(started_at=now)
     live.refresh_from_db()
+    if first:
+        signals.live_started.send(sender=Live, live=live)
     return bool(updated)
 
 
@@ -82,6 +83,7 @@ def end(live: Live) -> bool:
         # The callbacks that follow (publish done, record done) finish the job.
         ingest.drop_publisher(live.playback_id)
         live.refresh_from_db()
+    signals.live_ended.send(sender=Live, live=live)
     schedule_finalize(live)
     return True
 
@@ -100,6 +102,7 @@ def tick(live: Live, now=None) -> Live:
         ).update(status=Live.Status.ENDED, ended_at=F("interrupted_at"), updated_at=now)
         if ended:
             live.refresh_from_db()
+            signals.live_ended.send(sender=Live, live=live)
     schedule_finalize(live, now=now)
     return live
 

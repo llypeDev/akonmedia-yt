@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static akon i18n %}
+
+{% block title %}{% translate "Attendance" %} — {{ live.title }} — {{ PORTAL_NAME }}{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">{% icon "users" "icon-xs" %}<a href="{% url 'live:control' live.uid %}">{{ live.title }}</a></span>
+      <h1>{% translate "Attendance" %}</h1>
+      <p class="lede">{% translate "Everyone signed in who watched while the live was on air, with the minutes they stayed and the messages they sent. People from your school's site show its name and their id there." %}</p>
+    </div>
+    <div class="btn-group">
+      <a class="btn" href="{% url 'live:control' live.uid %}">{% icon "sliders" "icon-sm" %}{% translate "Control room" %}</a>
+      {% if rows %}<a class="btn btn-primary" href="?format=csv">{% icon "file-down" "icon-sm" %}{% translate "Download CSV" %}</a>{% endif %}
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">{% icon "users" %}{% translate "People" %}</div><div class="stat-value">{{ people }}</div><div class="stat-note">{% translate "signed in" %}</div></div>
+    <div class="stat"><div class="stat-label">{% icon "timer" %}{% translate "Average" %}</div><div class="stat-value">{{ average }}</div><div class="stat-note">{% translate "minutes each" %}</div></div>
+    <div class="stat"><div class="stat-label">{% icon "activity" %}{% translate "Peak" %}</div><div class="stat-value">{{ live.peak_viewers }}</div><div class="stat-note">{% translate "watching at once, signed in or not" %}</div></div>
+  </div>
+
+  <section class="panel panel-flush mt-3">
+    {% if rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Name" %}</th>
+              <th>{% translate "Site" %}</th>
+              <th>{% translate "Joined at" %}</th>
+              <th>{% translate "Last seen at" %}</th>
+              <th class="num">{% translate "Minutes" %}</th>
+              <th class="num">{% translate "Messages" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td><strong>{{ row.name }}</strong></td>
+                <td class="muted">{% if row.site %}{{ row.site }} <span class="mono">· {{ row.site_id|truncatechars:24 }}</span>{% else %}{{ PORTAL_NAME }}{% endif %}</td>
+                <td class="muted nowrap"><time datetime="{{ row.first_seen|date:'c' }}" data-local>{{ row.first_seen|date:"SHORT_DATETIME_FORMAT" }}</time></td>
+                <td class="muted nowrap"><time datetime="{{ row.last_seen|date:'c' }}" data-local>{{ row.last_seen|date:"SHORT_DATETIME_FORMAT" }}</time></td>
+                <td class="num">{{ row.minutes }}</td>
+                <td class="num">{{ row.messages }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">{% icon "users" %}</div>
+        <h3>{% translate "Nobody yet" %}</h3>
+        <p>{% translate "The list fills in while the live is on air, as signed-in people watch it." %}</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/live.js' %}"></script>{% endblock %}

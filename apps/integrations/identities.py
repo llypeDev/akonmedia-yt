@@ -49,7 +49,7 @@ def sync(person: Person) -> ExternalIdentity:
                 user.save()
                 identity = ExternalIdentity.objects.create(
                     integration=integration, external_id=person.external_id, user=user,
-                    name=person.name, email=person.email, is_moderator=person.moderator,
+                    name=person.name, email=person.email, is_moderator=person.moderator, groups=person.groups,
                 )
         except IntegrityError:  # the same person's first two requests at once
             identity = ExternalIdentity.objects.select_related("user").get(
@@ -57,7 +57,9 @@ def sync(person: Person) -> ExternalIdentity:
             )
 
     changed = []
-    for field, value in (("name", person.name), ("email", person.email), ("is_moderator", person.moderator)):
+    for field, value in (
+        ("name", person.name), ("email", person.email), ("is_moderator", person.moderator), ("groups", person.groups),
+    ):
         if getattr(identity, field) != value:
             setattr(identity, field, value)
             changed.append(field)
@@ -78,3 +80,48 @@ def sync(person: Person) -> ExternalIdentity:
 
         transaction.on_commit(lambda: fetch_picture.delay(identity.pk))
     return identity
+
+
+def find(integration, external_id: str) -> ExternalIdentity | None:
+    return (
+        ExternalIdentity.objects.select_related("user")
+        .filter(integration=integration, external_id=str(external_id))
+        .first()
+    )
+
+
+def block(identity: ExternalIdentity, blocked: bool = True) -> None:
+    """A blocked person's sessions end at once and they cannot sign in again
+    through the site, whatever tokens it makes for them."""
+    identity.is_blocked = blocked
+    identity.save(update_fields=["is_blocked"])
+
+
+def erase(identity: ExternalIdentity, keep_messages: bool = False) -> None:
+    """Forget a person (the right of deletion of the LGPD/GDPR): their name,
+    address and picture go. With ``keep_messages`` their messages stay in the
+    chats under "Removed person"; otherwise they go too, with their reactions
+    and attendance. A later sign-in from the site makes a new, empty account.
+    """
+    from django.conf import settings
+    from django.utils import translation
+
+    from apps.users import avatars
+
+    user = identity.user
+    with transaction.atomic():
+        identity.delete()
+        if not keep_messages:
+            if user.avatar_photo:
+                user.avatar_photo.delete(save=False)
+            user.delete()
+            return
+        if user.avatar_photo:
+            avatars.remove_photo(user)
+        # In the portal's language, whoever asked for it.
+        with translation.override(settings.LANGUAGE_CODE):
+            user.display_name = translation.gettext("Removed person")
+        user.email = f"removed-{hashlib.sha256(str(user.pk).encode()).hexdigest()[:20]}@{ACCOUNT_DOMAIN}"
+        user.avatar = ""
+        user.is_active = False
+        user.save(update_fields=["display_name", "email", "avatar", "is_active"])

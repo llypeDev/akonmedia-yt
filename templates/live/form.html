@@ -55,6 +55,11 @@
           </div>
           <span class="field-help">{% translate "Public is listed. Unlisted works for anyone with the link. Private is only you and curators." %}</span>
         </div>
+        <label class="field">
+          <span class="field-label">{% translate "School classes" %} <span class="hint">{% translate "optional" %}</span></span>
+          <input class="input" type="text" name="groups" maxlength="500" value="{{ form.groups.value|default:'' }}" placeholder="{% translate 'turma-a, turma-b' %}" autocomplete="off">
+          <span class="field-help">{% translate "For a private live shown on your school's site (Studio › Integrations): only the students of these classes see it there. Empty: all of the site's students." %}</span>
+        </label>
         <div class="field toggle-row">
           <span class="field-label">{% translate "Options" %}</span>
           <label class="check"><input type="checkbox" name="record" {% if form.record.value %}checked{% endif %}> {% translate "Publish the recording in my media when the live ends" %}</label>

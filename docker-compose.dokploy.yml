@@ -56,6 +56,7 @@ services:
     depends_on:
       - web
       - live
+      - events
     logging: *logging
 
   web:
@@ -68,6 +69,19 @@ services:
       default:
         aliases:
           - qqplay-web
+
+  # The lives' push channel (apps/live/stream.py), reached through Caddy.
+  events:
+    <<: *app
+    command: uvicorn config.asgi:application --host 0.0.0.0 --port 8001 --proxy-headers --forwarded-allow-ips=*
+    environment:
+      RUN_MIGRATIONS: "0"
+    healthcheck:
+      disable: true
+    networks:
+      default:
+        aliases:
+          - qqplay-events
 
   worker:
     <<: *app

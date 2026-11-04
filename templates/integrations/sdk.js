@@ -1,10 +1,13 @@
 {% autoescape off %}/* QQplay on your site: lives and their chat, with your own sign-in.
  *
  *   <div data-qqplay-live="LIVE_ID" data-layout="both" data-token="TOKEN"></div>
+ *   <div data-qqplay-video="VIDEO_ID" data-layout="both" data-token="TOKEN"></div>
  *   <script src="{{ origin }}/embed/sdk.js" async></script>
  *
- * data-qqplay-live   the live's id (the end of its address on QQplay)
- * data-layout        both (player and chat, the default), player or chat
+ * data-qqplay-live   a live's id (the end of its address on QQplay)
+ * data-qqplay-video  or a video of the library, with its comments
+ * data-layout        both (the player with the chat or the comments, the
+ *                    default), player, or chat (the comments, for a video)
  * data-token         the token your server signs for the person signed in
  * data-token-url     or an address on your site that answers {"token": "..."}
  *                    for the person signed in; the script asks it again when
@@ -54,7 +57,9 @@
   function Widget(el, options) {
     this.el = el;
     this.live = String(options.live || "");
-    this.layout = ["both", "player", "chat"].indexOf(options.layout) >= 0 ? options.layout : "both";
+    this.video = String(options.video || "");
+    var layout = options.layout === "comments" ? "chat" : options.layout;
+    this.layout = ["both", "player", "chat"].indexOf(layout) >= 0 ? layout : "both";
     this.theme = options.theme === "dark" || options.theme === "light" ? options.theme : "";
     this.height = Number(options.height) || 600;
     this.token = options.token || "";
@@ -79,13 +84,15 @@
   };
 
   Widget.prototype.build = function () {
-    var params = ["layout=" + this.layout, "sdk=1"];
+    var params = ["layout=" + (this.video && this.layout === "chat" ? "comments" : this.layout), "sdk=1"];
     var key = keyOf(this.token);
     if (key) params.push("school=" + encodeURIComponent(key));
     if (this.theme) params.push("theme=" + this.theme);
     var frame = document.createElement("iframe");
-    frame.src = ORIGIN + "/embed/live/" + encodeURIComponent(this.live) + "/?" + params.join("&");
-    frame.title = this.layout === "chat" ? "QQplay chat" : "QQplay live";
+    frame.src = this.video
+      ? ORIGIN + "/embed/" + encodeURIComponent(this.video) + "/?" + params.join("&")
+      : ORIGIN + "/embed/live/" + encodeURIComponent(this.live) + "/?" + params.join("&");
+    frame.title = this.video ? "QQplay video" : this.layout === "chat" ? "QQplay chat" : "QQplay live";
     frame.allow = "autoplay; fullscreen; picture-in-picture";
     frame.setAttribute("allowfullscreen", "");
     frame.setAttribute("loading", "lazy");
@@ -160,6 +167,7 @@
   function fromAttributes(el) {
     return {
       live: el.getAttribute("data-qqplay-live"),
+      video: el.getAttribute("data-qqplay-video"),
       layout: el.getAttribute("data-layout"),
       theme: el.getAttribute("data-theme"),
       height: el.getAttribute("data-height"),
@@ -183,7 +191,7 @@
       return widget;
     },
     mountAll: function () {
-      var nodes = document.querySelectorAll("[data-qqplay-live]");
+      var nodes = document.querySelectorAll("[data-qqplay-live], [data-qqplay-video]");
       for (var i = 0; i < nodes.length; i++) api.mount(nodes[i]);
     },
     setToken: function (el, token) {

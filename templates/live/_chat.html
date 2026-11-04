@@ -1,18 +1,50 @@
 {% load akon i18n %}{% with chat=state.chat %}{% url 'account_login' as login_url %}
-<section class="panel live-chat" data-chat aria-label="{% translate "Live chat" %}">
+<section class="panel live-chat" data-chat aria-label="{% if integration.chat_title %}{{ integration.chat_title }}{% else %}{% translate "Live chat" %}{% endif %}">
   <div class="panel-head row-between">
-    <h2><span class="panel-title-icon">{% icon "message" %}</span>{% translate "Live chat" %}</h2>
+    <h2><span class="panel-title-icon">{% icon "message" %}</span>{% if integration.chat_title %}{{ integration.chat_title }}{% else %}{% translate "Live chat" %}{% endif %}</h2>
     {% if embedded %}<span class="chat-who" data-chat-who hidden></span>{% else %}<span class="live-viewers" data-live-viewers hidden></span>{% endif %}
   </div>
-  <ol class="chat-list" data-chat-list aria-live="polite" aria-relevant="additions"></ol>
+  {# Questions for the host are listed apart, the most voted first. #}
+  <div class="chat-tabs" role="tablist" aria-label="{% translate "Chat sections" %}">
+    <button type="button" class="chat-tab active" role="tab" aria-selected="true" data-chat-tab="chat">{% icon "message" "icon-sm" %}{% translate "Chat" %}</button>
+    <button type="button" class="chat-tab" role="tab" aria-selected="false" tabindex="-1" data-chat-tab="questions">{% icon "question" "icon-sm" %}{% translate "Questions" %} <span class="count-pill" data-questions-count hidden>0</span></button>
+  </div>
+  <div class="chat-pinned" data-chat-pinned hidden></div>
+  <ol class="chat-list" data-chat-list data-chat-view="chat" aria-live="polite" aria-relevant="additions"></ol>
   <div class="chat-empty" data-chat-empty>{% icon "message" %}<span>{% translate "No messages yet." %}</span></div>
+  <ol class="chat-questions" data-chat-questions data-chat-view="questions" hidden></ol>
+  <div class="chat-empty" data-questions-empty hidden>{% icon "question" %}<span>{% translate "No open questions. Send one with the question button below the box." %}</span></div>
+
+  {# Moderators: the slow mode and the people muted for now. #}
+  <details class="chat-mod" data-chat-mod hidden>
+    <summary>{% icon "shield" "icon-sm" %}{% translate "Moderation" %}</summary>
+    <label class="chat-mod-row">
+      <span>{% translate "Slow mode" %}</span>
+      <select class="select" data-slow-mode aria-label="{% translate "Slow mode" %}">
+        <option value="0">{% translate "Off" context "slow mode" %}</option>
+        <option value="5">{% blocktranslate count counter=5 %}{{ counter }} second{% plural %}{{ counter }} seconds{% endblocktranslate %}</option>
+        <option value="10">{% blocktranslate count counter=10 %}{{ counter }} second{% plural %}{{ counter }} seconds{% endblocktranslate %}</option>
+        <option value="30">{% blocktranslate count counter=30 %}{{ counter }} second{% plural %}{{ counter }} seconds{% endblocktranslate %}</option>
+        <option value="60">{% translate "1 minute" %}</option>
+        <option value="120">{% translate "2 minutes" %}</option>
+      </select>
+    </label>
+    <div class="chat-mod-muted">
+      <span class="muted">{% translate "Muted" %}</span>
+      <ul class="chat-muted-list" data-muted-list></ul>
+    </div>
+  </details>
+
   <form class="chat-form" data-chat-form data-chat-when="can-post"{% if not chat.can_post %} hidden{% endif %}>
-    <textarea class="textarea" name="body" rows="2" maxlength="500" placeholder="{% translate "Say something…" %}" aria-label="{% translate "Chat message" %}"></textarea>
+    <textarea class="textarea" name="body" rows="2" maxlength="500" placeholder="{% translate "Say something…" %}" aria-label="{% translate "Chat message" %}" data-placeholder-question="{% translate "Ask the host a question…" %}"></textarea>
     <div class="chat-form-foot">
+      <button type="button" class="chat-ask" aria-pressed="false" data-chat-ask title="{% translate "Send as a question for the host" %}">{% icon "question" "icon-sm" %}<span>{% translate "Question" %}</span></button>
       <span class="chat-left" data-chat-left aria-hidden="true">500</span>
       <button type="submit" class="btn btn-primary btn-sm">{% icon "send" "icon-sm" %}{% translate "Send" %}</button>
     </div>
   </form>
+  <p class="chat-note chat-note-slow" data-chat-slow hidden></p>
+  <p class="chat-note" data-chat-muted hidden></p>
   {% if not embedded %}
     <p class="chat-note" data-chat-when="sign-in"{% if not chat.open or chat.can_post %} hidden{% endif %}>{% blocktranslate with url=login_url|add:"?next="|add:request.path %}<a href="{{ url }}">Sign in</a> to take part in the chat.{% endblocktranslate %}</p>
   {% elif integration %}

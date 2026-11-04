@@ -136,9 +136,9 @@ os recursos de terceiros estão listados em [Licenças](#licenças).
       <h4>🔴 Lives</h4>
       <ul>
         <li>Transmissão pelo OBS ou pelo navegador, entregue em HLS</li>
-        <li>Chat com reações e embed</li>
-        <li>A gravação publicada como vídeo quando a live termina</li>
-        <li>A live e o chat dentro do site da sua escola, com o login da escola (<a href="#integração-com-a-sua-escola">veja como</a>)</li>
+        <li>Chat com reações, perguntas com votos, mensagem fixada, modo lento e selo Streaming para a equipe</li>
+        <li>A gravação publicada como vídeo quando a live termina, e a presença de cada aluno</li>
+        <li>A live, o chat e os vídeos com comentários dentro do site da sua escola, com o login, as turmas e a cara da escola, mais API e webhooks (<a href="#integração-com-a-sua-escola">veja como</a>)</li>
       </ul>
     </td>
     <td width="50%" valign="top">
@@ -318,6 +318,7 @@ flowchart TB
         caddy["Caddy<br>HTTPS e arquivos de mídia"]
         live["live<br>nginx-rtmp → HLS"]
         web["web<br>Django + gunicorn"]
+        events["events<br>avisos das lives (SSE)"]
         db[("PostgreSQL")]
         redis[("Redis")]
         worker["worker<br>codificação com ffmpeg"]
@@ -327,10 +328,12 @@ flowchart TB
     viewer -- "HTTPS 443" --> caddy
     obs -- "RTMP 1935" --> live
     caddy --> web
+    caddy -- "/live/…/events/" --> events
     caddy -- "/hls" --> live
     live -- "chamadas" --> web
     web --> db
     web --> redis
+    events --> db
     beat --> redis
     redis --> worker
     redis --> tasks
@@ -346,6 +349,7 @@ flowchart TB
 | `redis` | cache e broker |
 | `caddy` | só em produção: HTTPS automático na frente de tudo |
 | `tasks` | só em produção: worker das tarefas rápidas, que nunca espera uma codificação |
+| `events` | só em produção: o mesmo código sob uvicorn (ASGI), que segura milhares de conexões abertas e avisa as páginas das lives quando algo muda |
 
 ### Como foi pensado
 
@@ -646,7 +650,8 @@ com um aluno de teste.
    | `name` | obrigatório | nome mostrado no chat |
    | `exp` | obrigatório | validade; no máximo 24 h à frente (10 min é o bastante) |
    | `picture` | opcional | foto do aluno, só `https`; vira o avatar dele |
-   | `moderator` | opcional | `true` para professores: podem ocultar mensagens |
+   | `moderator` | opcional | `true` para professores (veja as ferramentas abaixo) |
+   | `groups` | opcional | as turmas do aluno, ex. `["3A", "3B"]` |
    | `email` | opcional | só para referência no Admin |
 
 2. **Na página da aula**, cole:
@@ -661,6 +666,93 @@ com um aluno de teste.
    lugar de `data-token`: um endereço do site que responde `{"token": "…"}`
    para o aluno logado, chamado de novo quando a sessão do quadro termina.
    Pelo script, `QQplay.mount(elemento, {live, layout, token, tokenUrl})`.
+
+   Um vídeo da biblioteca entra do mesmo jeito, com os comentários dele:
+   `<div data-qqplay-video="ID_DO_VIDEO" data-layout="both" …>` (ou `player`,
+   `comments`). Os alunos comentam, respondem e clicam no tempo de um
+   comentário para ir até aquele ponto do vídeo.
+
+**Na escola, como no portal:**
+
+- **Professores** (`moderator: true`) aparecem no chat com o selo
+  **Streaming** e podem fixar uma mensagem no topo, responder perguntas,
+  silenciar alguém por alguns minutos, ligar o modo lento e ocultar mensagens e
+  comentários. O apresentador da live tem as mesmas ferramentas.
+- **Perguntas:** o aluno marca a mensagem como pergunta; elas ficam numa aba
+  própria, ordenadas pelos votos dos colegas, até alguém marcar como
+  respondida.
+- **Turmas:** uma live com o campo *Turmas da escola* preenchido (ou criada pela
+  API com `classes`) só abre para quem traz uma dessas turmas em `groups`, e a
+  gravação também. Vazio, abre para todos os alunos do site.
+- **Lives privadas** e **vídeos privados** do dono da integração aparecem só para
+  os alunos que o site conecta. Quando uma live termina, a gravação passa a
+  tocar no mesmo quadro, com o chat.
+- **Presença:** cada live guarda quem assistiu e por quantos minutos; o botão
+  *Presença* na sala de controle mostra a lista e baixa um CSV, e a API devolve
+  o mesmo com o id de cada aluno na escola.
+- **Aparência:** cor de destaque, título do chat, o texto do selo e a opção de
+  esconder os links para o portal, na página da integração.
+- **Pessoas:** a página da integração lista quem entrou pelo site; dá para
+  bloquear alguém (as sessões terminam na hora) ou excluir os dados de uma
+  pessoa (LGPD), mantendo as mensagens como “Pessoa removida” ou apagando tudo.
+- **Troca do segredo** com carência: o segredo antigo continua valendo por 1 h
+  ou 24 h, para dar tempo de atualizar o servidor da escola, ou para na hora.
+- Os quadros só abrem dentro dos sites listados na integração
+  (`Content-Security-Policy: frame-ancestors`).
+
+<details>
+<summary><b>API para o servidor da escola</b></summary>
+
+<br>
+
+O servidor da escola assina um token como o dos alunos, com `"scope": "api"`
+no lugar da pessoa e validade de no máximo uma hora, e o envia em
+`Authorization: Bearer …`. A API age em nome do dono da integração, sobre as
+lives e os vídeos dele e sobre os alunos daquela integração.
+
+| | Endereço (`/api/integrations/v1/…`) | |
+| --- | --- | --- |
+| `GET` | `lives/` | as lives, da mais nova; `?status=live` filtra |
+| `POST` | `lives/` | agenda uma live: `title`, `description`, `scheduled_for` (ISO 8601 com fuso), `visibility` (privada por padrão), `classes`, `chat`, `record`; a resposta traz o servidor e a chave para o OBS |
+| `GET` `PATCH` `DELETE` | `lives/<id>/` | lê, altera ou exclui (não no ar) |
+| `POST` | `lives/<id>/end/` | encerra |
+| `GET` | `lives/<id>/attendance/` | presença dos alunos da escola: id, nome, minutos, mensagens |
+| `GET` | `videos/` | os vídeos prontos do dono |
+| `POST` | `students/<id>/block/`, `…/unblock/` | bloqueia ou libera um aluno |
+| `DELETE` | `students/<id>/` | exclui os dados do aluno; `?keep_messages=1` mantém as mensagens anônimas |
+
+```bash
+curl -X POST https://SEU_PORTAL/api/integrations/v1/lives/ \
+  -H "Authorization: Bearer $QQPLAY_API_TOKEN" -H "Content-Type: application/json" \
+  -d '{"title": "Revisão", "scheduled_for": "2026-11-20T19:00:00-03:00", "classes": ["3A"]}'
+```
+
+</details>
+
+<details>
+<summary><b>Webhooks</b></summary>
+
+<br>
+
+Com um endereço `https` em *Avisos para o seu servidor*, o portal envia um
+`POST` em JSON quando uma live começa (`live.started`), termina (`live.ended`)
+e quando a gravação fica pronta (`recording.ready`), uma vez por live e evento.
+O corpo traz a live (id, título, estado, turmas, horários, endereço e a
+gravação). Os cabeçalhos `X-QQplay-Event` e `X-QQplay-Delivery` dizem o que é,
+e `X-QQplay-Signature: sha256=…` é o HMAC-SHA256 do corpo com o segredo da
+integração:
+
+```python
+expected = "sha256=" + hmac.new(SECRET.encode(), request.body, hashlib.sha256).hexdigest()
+hmac.compare_digest(expected, request.headers["X-QQplay-Signature"])
+```
+
+Uma resposta fora de 2xx é tentada de novo depois de 30 s, 2 min, 10 min e
+30 min. O botão *Enviar um teste* manda um evento `test`, e a página mostra as
+últimas entregas com o código de resposta. Os avisos só vão para endereços
+públicos, nunca para a rede interna do servidor.
+
+</details>
 
 <details>
 <summary><b>Como funciona por dentro</b> (<code>apps/integrations/</code>)</summary>
@@ -677,12 +769,21 @@ com um aluno de teste.
   e-mail do token, então um site não consegue falar em nome de uma conta do
   portal.
 - Só páginas dos sites listados na integração conectam alunos. Desligar a
-  integração ou trocar o segredo encerra na hora as sessões abertas.
+  integração, bloquear o aluno ou trocar o segredo sem carência encerra na hora
+  as sessões abertas.
 - Uma live **privada** do dono da integração aparece no site da escola para os
   alunos conectados, e em nenhum outro lugar. Públicas e não listadas aparecem
   para todos (o chat, sem login, fica só para leitura).
 - A foto do aluno é baixada em segundo plano só de endereços públicos (nada da
   rede interna do servidor) e passa pelo mesmo tratamento de uma foto enviada.
+- O estado do chat de cada live (mensagens, reações, perguntas, mensagem
+  fixada) é montado uma vez por mudança e guardado no cache, compartilhado por
+  todos os alunos; uma página que já está em dia recebe só “nada mudou”, sem
+  consultas ao chat. No `docker-compose.prod.yml`, o serviço `events` avisa as
+  páginas na hora em que algo muda (Server-Sent Events), e elas passam a
+  consultar o estado só a cada 20 s no resto do tempo. Sem ele (no
+  `runserver`, por exemplo), as páginas seguem consultando a cada poucos
+  segundos.
 
 </details>
 
@@ -742,6 +843,34 @@ BASE_URL=http://127.0.0.1:8000 \
 E2E_HOST_EMAIL=studio@example.com E2E_VIEWER_EMAIL=ana@example.com \
 E2E_PASSWORD=demo-pass-123 node tools/e2e/live.mjs
 ```
+
+</details>
+
+<details>
+<summary><b>Teste de ponta a ponta da integração</b> · 30 verificações</summary>
+
+<br>
+
+`tools/e2e/integration.mjs` sobe um site de escola de mentira, em outra origem,
+que conecta os alunos com o segredo da integração. A integração é criada no
+estúdio, o servidor da escola agenda pela API uma live privada para uma turma,
+uma aluna e um professor conversam no chat (selo Streaming, pergunta
+respondida, mensagem fixada, modo lento, aluna silenciada e liberada), uma
+aluna de outra turma fica de fora, os dois comentam um vídeo da biblioteca e o
+professor oculta um comentário; no fim, o servidor da escola lê a presença,
+bloqueia a aluna e exclui os dados dela. Com `E2E_LIVE_HOOK_SECRET` (o
+`LIVE_HOOK_SECRET` do portal), a live entra no ar pela chamada do servidor de
+ingestão, sem precisar do OBS.
+
+```bash
+BASE_URL=http://127.0.0.1:8000 E2E_HOST_EMAIL=studio@example.com \
+E2E_PASSWORD=demo-pass-123 E2E_LIVE_HOOK_SECRET=… node tools/e2e/integration.mjs
+```
+
+Contra a stack de produção rodando na própria máquina (`PORTAL_DOMAIN=localhost`,
+com o certificado local do Caddy), acrescente `BASE_URL=https://localhost
+E2E_INSECURE_TLS=1 NODE_TLS_REJECT_UNAUTHORIZED=0`: assim o teste passa também
+pelo Caddy, pelo serviço `events` e pelo PostgreSQL.
 
 </details>
 

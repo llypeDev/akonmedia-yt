@@ -471,12 +471,37 @@ def _flag(raw: str | None, default: bool) -> bool:
     return raw.strip().lower() not in {"0", "false", "no", "off"}
 
 
+EMBED_LAYOUTS = ("player", "comments", "both")
+
+
 def embed(request, uid: str):
-    """Bare player for iframes: no header, no navigation, nothing to click away."""
+    """Bare player for iframes: no header, no navigation, nothing to click away.
+
+        ?layout=player|comments|both   the comments beside the player, or alone
+        ?school=<integration key>      people comment through that site
+                                       (apps.integrations); a private video of
+                                       the integration's owner shows once they
+                                       have signed in
+        ?theme=dark|light
+    """
+    from apps.integrations.models import Integration
+
     media = get_object_or_404(
         Media.objects.select_related("owner").prefetch_related("subtitles", "chapters"), uid=uid
     )
-    if not can_view(request.user, media):
+    layout = request.GET.get("layout", "player")
+    layout = layout if layout in EMBED_LAYOUTS else "player"
+    theme = request.GET.get("theme", "")
+    theme = theme if theme in ("dark", "light") else ""
+    school = (request.GET.get("school") or "")[:40]
+    integration = Integration.objects.filter(key=school, is_active=True).first() if school else None
+
+    available = can_view(request.user, media)
+    awaiting = (
+        not available and integration is not None and media.state == Media.State.READY
+        and integration.grants_media(media)
+    )
+    if not (available or awaiting):
         raise Http404("media not found")
 
     try:
@@ -487,6 +512,11 @@ def embed(request, uid: str):
     chapters = list(media.chapters.all())
     context = {
         "media": media,
+        "available": available,
+        "awaiting": awaiting,
+        "layout": layout,
+        "theme": theme,
+        "integration": integration,
         "autoplay": _flag(request.GET.get("autoplay"), False),
         "controls": _flag(request.GET.get("controls"), True),
         "show_title": _flag(request.GET.get("title"), False),
@@ -501,9 +531,9 @@ def embed(request, uid: str):
         "page_url": request.build_absolute_uri(reverse("core:media", args=[media.uid])),
     }
     response = render(request, "core/embed.html", context)
-    # Embeds are designed to live inside other sites.
+    # Embeds are designed to live inside other sites; a school's only in its own.
     response["X-Frame-Options"] = "ALLOWALL"
-    response["Content-Security-Policy"] = "frame-ancestors *"
+    response["Content-Security-Policy"] = integration.frame_ancestors() if integration else "frame-ancestors *"
     return response
 
 

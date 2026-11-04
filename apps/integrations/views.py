@@ -21,7 +21,7 @@ from apps.core.templatetags.akon import avatar
 from apps.live.models import Live
 from apps.rbac import permissions as policy
 
-from . import identities, sessions, tokens
+from . import identities, sessions, tokens, webhooks
 from .models import Integration, normalize_origin
 
 #: Sign-ins one address may attempt per minute.
@@ -76,7 +76,7 @@ def session(request):
         )
 
     identity = identities.sync(person)
-    if not identity.user.is_active:
+    if identity.is_blocked or not identity.user.is_active:
         return JsonResponse({"detail": _("This account is blocked."), "code": "blocked"}, status=403)
     Integration.objects.filter(pk=integration.pk).update(last_used_at=timezone.now())
     return JsonResponse(
@@ -115,6 +115,14 @@ class IntegrationForm(forms.ModelForm):
             "origins": forms.Textarea(attrs={"rows": 3, "spellcheck": "false"}),
         }
         labels = {"name": gettext_lazy("Name"), "origins": gettext_lazy("Sites")}
+
+
+class LookForm(forms.ModelForm):
+    """How the frames look on the site, and where its news go."""
+
+    class Meta:
+        model = Integration
+        fields = ["accent_color", "chat_title", "staff_label", "hide_branding", "webhook_url"]
 
 
 def _can_integrate(user) -> bool:
@@ -168,7 +176,7 @@ def studio_detail(request, pk):
     layout = layout if layout in ("both", "player", "chat") else "both"
     theme = request.GET.get("theme", "")
     theme = theme if theme in ("dark", "light") else ""
-    people = integration.identities.select_related("user").order_by("-last_seen_at")[:20]
+    people = integration.identities.select_related("user").order_by("-last_seen_at")[:50]
     return render(
         request,
         "integrations/detail.html",
@@ -181,19 +189,75 @@ def studio_detail(request, pk):
             "theme": theme,
             "people": people,
             "people_count": integration.identities.count(),
+            "look": LookForm(instance=integration),
+            "deliveries": integration.deliveries.all()[:10],
+            "grace_until": integration.previous_secret_until
+            if integration.previous_secret and integration.previous_secret_until
+            and integration.previous_secret_until > timezone.now() else None,
             "origin": _origin_of(request),
             "sdk_url": request.build_absolute_uri(reverse("integrations:sdk")),
+            "api_url": request.build_absolute_uri(reverse("integrations:api_lives")).removesuffix("lives/"),
         },
     )
+
+
+#: Hours the old secret may keep working after a new one is made.
+GRACE_HOURS = (0, 1, 24)
 
 
 @login_required
 @require_POST
 def rotate(request, pk):
     integration = _mine(request, pk)
-    integration.rotate_secret()
-    messages.success(request, _("New secret created. Update it on your site's server: the old one no longer works."))
+    try:
+        grace = int(request.POST.get("grace", 24))
+    except (TypeError, ValueError):
+        grace = 24
+    grace = grace if grace in GRACE_HOURS else 24
+    integration.rotate_secret(grace)
+    if grace:
+        messages.success(
+            request,
+            _("New secret created. The old one keeps working for %(hours)d h: update your site's server before then.")
+            % {"hours": grace},
+        )
+    else:
+        messages.success(request, _("New secret created. Update it on your site's server: the old one no longer works."))
     return redirect("integrations:detail", pk=integration.pk)
+
+
+@login_required
+@require_POST
+def look(request, pk):
+    integration = _mine(request, pk)
+    form = LookForm(request.POST, instance=integration)
+    if form.is_valid():
+        form.save()
+        messages.success(request, _("Integration saved."))
+    else:
+        for errors in form.errors.values():
+            messages.error(request, errors[0])
+    return redirect("integrations:detail", pk=integration.pk)
+
+
+@login_required
+@require_POST
+def person(request, pk, person_id):
+    """Block, unblock or forget one person of the site."""
+    integration = _mine(request, pk)
+    identity = get_object_or_404(integration.identities.select_related("user"), pk=person_id)
+    action = request.POST.get("action")
+    name = identity.name
+    if action == "block":
+        identities.block(identity, True)
+        messages.success(request, _("%(name)s is blocked.") % {"name": name})
+    elif action == "unblock":
+        identities.block(identity, False)
+        messages.success(request, _("%(name)s is unblocked.") % {"name": name})
+    elif action == "erase":
+        identities.erase(identity, keep_messages=request.POST.get("keep_messages") == "1")
+        messages.success(request, _("%(name)s's data was deleted.") % {"name": name})
+    return redirect(f"{reverse('integrations:detail', args=[integration.pk])}#people")
 
 
 @login_required
@@ -245,3 +309,22 @@ def preview(request, pk):
             "sdk_url": reverse("integrations:sdk"),
         },
     )
+
+
+@login_required
+@require_POST
+def webhook_test(request, pk):
+    """Save the webhook address (the form posts it) and send a test."""
+    integration = _mine(request, pk)
+    form = LookForm(request.POST, instance=integration)
+    if not form.is_valid():
+        for errors in form.errors.values():
+            messages.error(request, errors[0])
+        return redirect(f"{reverse('integrations:detail', args=[integration.pk])}#webhooks")
+    form.save()
+    if not integration.webhook_url:
+        messages.error(request, _("Fill in the webhook address first."))
+    else:
+        webhooks.send_test(integration)
+        messages.success(request, _("Test sent. Its result shows in the list in a few seconds."))
+    return redirect(f"{reverse('integrations:detail', args=[integration.pk])}#webhooks")

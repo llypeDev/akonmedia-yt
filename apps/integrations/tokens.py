@@ -11,6 +11,7 @@ integration's page in the studio). Header and claims:
       "email": "ana@escola.com.br",         # optional, for the admins' reference
       "picture": "https://.../ana.jpg",     # optional, https only
       "moderator": true,                    # optional: may hide chat messages
+      "groups": ["turma-a"],                # optional: the person's classes
       "iat": 1767225600,
       "exp": 1767226200                     # required, at most a day ahead
     }
@@ -30,6 +31,8 @@ from urllib.parse import urlsplit
 
 from django.utils.translation import gettext as _
 
+from apps.live.models import parse_groups
+
 from .models import Integration
 
 #: Longest a token may still be valid for. Sites should sign them for minutes.
@@ -37,6 +40,8 @@ MAX_LIFETIME = 24 * 3600
 #: Clocks of two servers are never quite equal.
 LEEWAY = 120
 MAX_TOKEN_LENGTH = 8192
+#: Longest an API token (the site's server talking to QQplay) may be valid for.
+API_LIFETIME = 3600
 
 
 class TokenError(Exception):
@@ -51,6 +56,7 @@ class Person:
     email: str
     picture: str
     moderator: bool
+    groups: list
 
 
 def _b64decode(part: str) -> bytes:
@@ -75,9 +81,8 @@ def _text(value, limit: int) -> str:
     return value.strip()[:limit] if isinstance(value, str) else ""
 
 
-def verify(token: str, now: float | None = None) -> Person:
-    """The person a token names, or TokenError."""
-    now = time.time() if now is None else now
+def _check(token: str, now: float, max_lifetime: int) -> tuple[Integration, dict]:
+    """The integration that signed a token and its claims, or TokenError."""
     if not token or len(token) > MAX_TOKEN_LENGTH or token.count(".") != 2:
         raise TokenError(_("This is not a token."))
     head_part, body_part, signature_part = token.split(".")
@@ -96,8 +101,12 @@ def verify(token: str, now: float | None = None) -> Person:
     integration = Integration.objects.filter(key=key, is_active=True).first() if isinstance(key, str) else None
     if integration is None:
         raise TokenError(_("No active integration has this key."))
-    expected = hmac.new(integration.secret.encode(), f"{head_part}.{body_part}".encode(), hashlib.sha256).digest()
-    if not hmac.compare_digest(expected, signature):
+    signed = f"{head_part}.{body_part}".encode()
+    # The current secret, or the one before it while it is still accepted.
+    if not any(
+        hmac.compare_digest(hmac.new(secret.encode(), signed, hashlib.sha256).digest(), signature)
+        for secret in integration.secrets_in_force()
+    ):
         raise TokenError(_("The signature does not match: check the integration's secret."))
 
     expires = claims.get("exp")
@@ -105,11 +114,35 @@ def verify(token: str, now: float | None = None) -> Person:
         raise TokenError(_("The token needs an expiry (exp)."))
     if expires < now - LEEWAY:
         raise TokenError(_("The token has expired."))
-    if expires > now + MAX_LIFETIME + LEEWAY:
-        raise TokenError(_("The token is valid for too long: at most a day."))
+    if expires > now + max_lifetime + LEEWAY:
+        if max_lifetime == MAX_LIFETIME:
+            raise TokenError(_("The token is valid for too long: at most a day."))
+        raise TokenError(_("The token is valid for too long: at most an hour."))
     not_before = claims.get("nbf")
     if isinstance(not_before, (int, float)) and not_before > now + LEEWAY:
         raise TokenError(_("The token is not valid yet."))
+    return integration, claims
+
+
+def verify_api(token: str, now: float | None = None) -> Integration:
+    """The integration whose server sent an API request, or TokenError.
+
+    The same kind of token as for people, made by the site's server with
+    ``"scope": "api"`` and no person, valid for an hour at most.
+    """
+    now = time.time() if now is None else now
+    integration, claims = _check(token, now, API_LIFETIME)
+    if claims.get("scope") != "api":
+        raise TokenError(_("An API token needs \"scope\": \"api\"."))
+    return integration
+
+
+def verify(token: str, now: float | None = None) -> Person:
+    """The person a token names, or TokenError."""
+    now = time.time() if now is None else now
+    integration, claims = _check(token, now, MAX_LIFETIME)
+    if claims.get("scope") == "api":
+        raise TokenError(_("This is an API token, not a person's."))
 
     subject = claims.get("sub")
     if isinstance(subject, int):
@@ -133,4 +166,5 @@ def verify(token: str, now: float | None = None) -> Person:
         email=email,
         picture=picture,
         moderator=claims.get("moderator") is True,
+        groups=parse_groups(claims.get("groups")) if isinstance(claims.get("groups"), (list, str)) else [],
     )

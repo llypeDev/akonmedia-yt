@@ -793,6 +793,8 @@ ICON_MAP = {
     "bell": "bell", "radio": "radio", "tv": "tv", "mic": "mic",
     "video": "video", "screen-share": "screen-share", "stop": "circle-stop",
     "smile-plus": "smile-plus", "camera": "camera", "user-round": "circle-user-round",
+    "question": "circle-help", "pin": "pin", "mute": "message-square-off", "vote": "arrow-big-up",
+    "ban": "ban", "file-down": "file-down", "webhook": "webhook",
 }
 
 SVG_NS = "http://www.w3.org/2000/svg"

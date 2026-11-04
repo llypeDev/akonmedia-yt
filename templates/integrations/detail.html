@@ -35,7 +35,7 @@
         <ol class="guide-steps">
           <li>
             <h3>{% translate "Sign the student in, on your server" %}</h3>
-            <p class="muted">{% blocktranslate %}When a lesson's page is opened, your server makes a token for the person signed in: their id and name (a picture and a moderator flag are optional), signed with the secret. It is a standard JSON Web Token (HS256): any JWT library makes it too.{% endblocktranslate %}</p>
+            <p class="muted">{% blocktranslate %}When a lesson's page is opened, your server makes a token for the person signed in: their id and name (a picture, a moderator flag and their classes are optional), signed with the secret. It is a standard JSON Web Token (HS256): any JWT library makes it too.{% endblocktranslate %}</p>
             <div class="tabs code-tabs" role="tablist" data-code-tabs>
               <button type="button" class="tab active" role="tab" aria-selected="true" data-code-tab="php">PHP</button>
               <button type="button" class="tab" role="tab" aria-selected="false" tabindex="-1" data-code-tab="node">Node.js</button>
@@ -52,7 +52,8 @@ function qqplay_token(array $student): string {
         'sub' =&gt; (string) $student['id'],
         'name' =&gt; $student['name'],
         'picture' =&gt; $student['photo_url'] ?? null,   // https, {% translate "optional" %}
-        'moderator' =&gt; $student['is_teacher'] ?? false, // {% translate "may hide messages" %}
+        'moderator' =&gt; $student['is_teacher'] ?? false, // {% translate "teacher: moderates the chat" %}
+        'groups' =&gt; $student['classes'] ?? [],          // {% translate "optional: their classes" %}
         'iat' =&gt; time(),
         'exp' =&gt; time() + 600,
     ]));
@@ -70,7 +71,8 @@ function qqplayToken(student) {
     sub: String(student.id),
     name: student.name,
     picture: student.photoUrl, // https, {% translate "optional" %}
-    moderator: Boolean(student.isTeacher), // {% translate "may hide messages" %}
+    moderator: Boolean(student.isTeacher), // {% translate "teacher: moderates the chat" %}
+    groups: student.classes || [], // {% translate "optional: their classes" %}
     iat: now,
     exp: now + 600,
   });
@@ -94,7 +96,8 @@ def qqplay_token(student):
         "sub": str(student["id"]),
         "name": student["name"],
         "picture": student.get("photo_url"),  # https, {% translate "optional" %}
-        "moderator": bool(student.get("is_teacher")),  # {% translate "may hide messages" %}
+        "moderator": bool(student.get("is_teacher")),  # {% translate "teacher: moderates the chat" %}
+        "groups": student.get("classes", []),  # {% translate "optional: their classes" %}
         "iat": now,
         "exp": now + 600,
     }).encode())
@@ -135,6 +138,7 @@ def qqplay_token(student):
      data-token="&lt;?= qqplay_token($student) ?&gt;"&gt;&lt;/div&gt;
 &lt;script src="{{ sdk_url }}" async&gt;&lt;/script&gt;</code></pre><button type="button" class="btn btn-sm code-copy" data-copy-target="#code-snippet" data-copied="{% translate 'Code copied' %}">{% icon "copy" "icon-sm" %}{% translate "Copy" %}</button></div>
               <p class="muted small">{% blocktranslate %}<code>data-token</code> takes the token from step 1 (the example is PHP; use your language's way of printing it). For classes longer than a few hours, use <code>data-token-url</code> instead: an address on your site that answers <code>{"token": "…"}</code> for the student signed in; the frame asks it again when the session runs out.{% endblocktranslate %}</p>
+              <p class="muted small">{% blocktranslate %}A video of your library goes the same way, with its comments: <code>data-qqplay-video="&lt;video id&gt;"</code> and <code>data-layout="both"</code> (or <code>player</code>, <code>comments</code>). Your private videos show only to the people your site signs in.{% endblocktranslate %}</p>
             {% else %}
               <p class="muted">{% translate "Create a live first: its code appears here." %} <a class="text-link" href="{% url 'live:new' %}">{% translate "New live" %}</a></p>
             {% endif %}
@@ -151,26 +155,40 @@ def qqplay_token(student):
       </section>
 
       {# ---------------------------------------------------------- the people #}
-      <section class="panel panel-flush">
+      <section class="panel panel-flush" id="people">
         <div class="panel-head" style="padding: 18px 20px 0">
           <h2><span class="panel-title-icon">{% icon "users" %}</span>{% translate "People from this site" %}</h2>
           <span class="muted">{{ people_count }}</span>
         </div>
         {% if people %}
-          <div class="table-wrap">
-            <table class="table">
-              <thead><tr><th>{% translate "Name" %}</th><th>{% translate "Id on the site" %}</th><th>{% translate "Last seen" %}</th></tr></thead>
-              <tbody>
-                {% for person in people %}
-                  <tr>
-                    <td><span class="user-cell">{% avatar person.user "sm" %}<span><strong>{{ person.name }}</strong>{% if person.is_moderator %} <span class="badge badge-role">{% translate "Moderator" %}</span>{% endif %}</span></span></td>
-                    <td class="mono muted">{{ person.external_id }}</td>
-                    <td class="muted nowrap">{% if person.last_seen_at %}<time datetime="{{ person.last_seen_at|date:'c' }}" data-local>{{ person.last_seen_at|date:"SHORT_DATETIME_FORMAT" }}</time>{% else %}—{% endif %}</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+          <ul class="people-list">
+            {% for person in people %}
+              <li{% if person.is_blocked %} class="is-blocked"{% endif %}>
+                <span class="user-cell">{% avatar person.user "sm" %}<span>
+                  <strong>{{ person.name }}</strong>{% if person.is_moderator %} <span class="badge badge-role">{% translate "Moderator" %}</span>{% endif %}{% if person.is_blocked %} <span class="badge badge-failed">{% translate "Blocked" %}</span>{% endif %}
+                  <span class="person-meta"><span class="mono" title="{% translate 'Id on the site' %}">{{ person.external_id|truncatechars:24 }}</span>{% if person.groups %} · <span title="{% translate 'Classes' %}">{{ person.groups|join:", " }}</span>{% endif %}{% if person.last_seen_at %} · <time title="{% translate 'Last seen' %}" datetime="{{ person.last_seen_at|date:'c' }}" data-local>{{ person.last_seen_at|date:"SHORT_DATETIME_FORMAT" }}</time>{% endif %}</span>
+                </span></span>
+                <div class="person-actions">
+                  <form method="post" action="{% url 'integrations:person' integration.pk person.pk %}">
+                    {% csrf_token %}
+                    {% if person.is_blocked %}
+                      <input type="hidden" name="action" value="unblock">
+                      <button class="btn btn-sm" type="submit">{% translate "Unblock" %}</button>
+                    {% else %}
+                      <input type="hidden" name="action" value="block">
+                      <button class="btn btn-sm" type="submit" title="{% translate 'Signs them out and keeps them from signing in through the site' %}">{% icon "ban" "icon-sm" %}{% translate "Block" %}</button>
+                    {% endif %}
+                  </form>
+                  <form class="person-erase" method="post" action="{% url 'integrations:person' integration.pk person.pk %}" data-confirm="{% blocktranslate with name=person.name %}Delete {{ name }}'s data? Their name and picture are removed for good.{% endblocktranslate %}" data-confirm-tone="danger">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="erase">
+                    <button class="btn btn-sm btn-danger" type="submit">{% icon "trash" "icon-sm" %}{% translate "Delete data" %}</button>
+                    <label class="check small"><input type="checkbox" name="keep_messages" value="1" checked> {% translate "keep their messages, anonymous" %}</label>
+                  </form>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
         {% else %}
           <p class="muted" style="padding: 0 20px 20px">{% translate "Nobody has signed in through this site yet." %}</p>
         {% endif %}
@@ -200,8 +218,19 @@ def qqplay_token(student):
             </div>
             <span class="field-help">{% translate "Whoever has it can sign in as any of your students. Store it in your server's settings (QQPLAY_SECRET in the examples), never in a page." %}</span>
           </div>
-          <form method="post" action="{% url 'integrations:rotate' integration.pk %}" data-confirm="{% translate 'Create a new secret? The current one stops working at once, and everyone signed in through the site is signed out until your server uses the new one.' %}" data-confirm-tone="danger">
+          {% if grace_until %}
+            <p class="field-help">{% blocktranslate with when=grace_until|date:"SHORT_DATETIME_FORMAT" %}The previous secret still works until {{ when }}.{% endblocktranslate %}</p>
+          {% endif %}
+          <form class="rotate-form" method="post" action="{% url 'integrations:rotate' integration.pk %}" data-confirm="{% translate 'Create a new secret? Your server must use it before the old one stops working.' %}">
             {% csrf_token %}
+            <label class="field">
+              <span class="field-label">{% translate "The current secret keeps working" %}</span>
+              <select class="select" name="grace">
+                <option value="24">{% translate "for 24 more hours" %}</option>
+                <option value="1">{% translate "for 1 more hour" %}</option>
+                <option value="0">{% translate "no more: stop it now (everyone is signed out)" %}</option>
+              </select>
+            </label>
             <button class="btn btn-sm" type="submit">{% icon "refresh" "icon-sm" %}{% translate "Create a new secret" %}</button>
           </form>
         </div>
@@ -229,6 +258,92 @@ def qqplay_token(student):
         </form>
       </section>
 
+      {# -------------------------------------------------------------- the look #}
+      <section class="panel">
+        <div class="panel-head">
+          <h2><span class="panel-title-icon">{% icon "sliders" %}</span>{% translate "Look on your site" %}</h2>
+        </div>
+        <form class="form-grid" method="post" action="{% url 'integrations:look' integration.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="webhook_url" value="{{ integration.webhook_url }}">
+          <label class="field">
+            <span class="field-label">{% translate "Accent colour" %} <span class="hint">{% translate "buttons and highlights" %}</span></span>
+            <span class="color-field">
+              <input type="color" value="{{ integration.accent_color|default:'#22d3ee' }}" data-color-pick aria-label="{% translate 'Accent colour' %}">
+              <input class="input mono" type="text" name="accent_color" maxlength="7" value="{{ integration.accent_color }}" placeholder="#22d3ee" data-color-text>
+            </span>
+          </label>
+          <label class="field">
+            <span class="field-label">{% translate "Chat title" %}</span>
+            <input class="input" type="text" name="chat_title" maxlength="60" value="{{ integration.chat_title }}" placeholder="{% translate 'Live chat' %}">
+          </label>
+          <label class="field">
+            <span class="field-label">{% translate "Badge of the host and teachers" %}</span>
+            <input class="input" type="text" name="staff_label" maxlength="30" value="{{ integration.staff_label }}" placeholder="{% translate 'Streaming' %}">
+          </label>
+          <label class="check"><input type="checkbox" name="hide_branding" value="1"{% if integration.hide_branding %} checked{% endif %}> {% blocktranslate %}Hide the links to {{ PORTAL_NAME }} in the frames{% endblocktranslate %}</label>
+          <div class="form-actions"><button class="btn btn-primary btn-sm" type="submit">{% icon "check" "icon-sm" %}{% translate "Save" %}</button></div>
+        </form>
+      </section>
+
+      {# --------------------------------------------------------------- webhooks #}
+      <section class="panel" id="webhooks">
+        <div class="panel-head">
+          <h2><span class="panel-title-icon">{% icon "webhook" %}</span>{% translate "News for your server" %}</h2>
+        </div>
+        <p class="muted small">{% translate "When a live starts, ends or its recording is ready, QQplay posts it to this address on your server, signed with the secret (the X-QQplay-Signature header)." %}</p>
+        <form class="form-grid" method="post" action="{% url 'integrations:look' integration.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="accent_color" value="{{ integration.accent_color }}">
+          <input type="hidden" name="chat_title" value="{{ integration.chat_title }}">
+          <input type="hidden" name="staff_label" value="{{ integration.staff_label }}">
+          {% if integration.hide_branding %}<input type="hidden" name="hide_branding" value="1">{% endif %}
+          <label class="field">
+            <span class="field-label">{% translate "Webhook address" %} <span class="hint">https</span></span>
+            <input class="input mono" type="url" name="webhook_url" maxlength="500" value="{{ integration.webhook_url }}" placeholder="https://escola.com.br/qqplay/webhook">
+          </label>
+          <div class="form-actions btn-group">
+            <button class="btn btn-primary btn-sm" type="submit">{% icon "check" "icon-sm" %}{% translate "Save" %}</button>
+            {% if integration.webhook_url %}<button class="btn btn-sm" type="submit" formaction="{% url 'integrations:webhook_test' integration.pk %}">{% icon "send" "icon-sm" %}{% translate "Send a test" %}</button>{% endif %}
+          </div>
+        </form>
+        {% if deliveries %}
+          <ul class="delivery-list">
+            {% for delivery in deliveries %}
+              <li>
+                <span class="badge {% if delivery.ok %}badge-public{% else %}badge-failed{% endif %}">{% if delivery.status_code %}{{ delivery.status_code }}{% elif delivery.ok %}OK{% else %}{% translate "failed" %}{% endif %}</span>
+                <code>{{ delivery.event }}</code>
+                <time class="muted" datetime="{{ delivery.created_at|date:'c' }}" data-local>{{ delivery.created_at|date:"SHORT_DATETIME_FORMAT" }}</time>
+                {% if delivery.error %}<span class="muted small" title="{{ delivery.error }}">{{ delivery.error|truncatechars:60 }}</span>{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------------------------ api #}
+      <section class="panel" id="api">
+        <div class="panel-head">
+          <h2><span class="panel-title-icon">{% icon "code" %}</span>{% translate "API for your server" %}</h2>
+        </div>
+        <p class="muted small">{% blocktranslate %}Your server can schedule lives, end them, read who watched and block or forget students. It signs a token like the students' ones, with <code>"scope": "api"</code> instead of a person and valid for an hour at most, and sends it as <code>Authorization: Bearer …</code>.{% endblocktranslate %}</p>
+<div class="code-block"><pre id="code-api"><code># {% translate "A live for two classes, on the 20th at 7 pm (Brasília)" %}
+curl -X POST {{ api_url }}lives/ \
+  -H "Authorization: Bearer $QQPLAY_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Revisão", "scheduled_for": "2026-11-20T19:00:00-03:00", "classes": ["turma-a", "turma-b"]}'</code></pre><button type="button" class="btn btn-sm code-copy" data-copy-target="#code-api" data-copied="{% translate 'Code copied' %}">{% icon "copy" "icon-sm" %}{% translate "Copy" %}</button></div>
+        <ul class="api-list">
+          <li><code>GET POST</code> <span class="mono">lives/</span></li>
+          <li><code>GET PATCH DELETE</code> <span class="mono">lives/&lt;id&gt;/</span></li>
+          <li><code>POST</code> <span class="mono">lives/&lt;id&gt;/end/</span></li>
+          <li><code>GET</code> <span class="mono">lives/&lt;id&gt;/attendance/</span></li>
+          <li><code>GET</code> <span class="mono">videos/</span></li>
+          <li><code>POST</code> <span class="mono">students/&lt;id&gt;/block/</span></li>
+          <li><code>POST</code> <span class="mono">students/&lt;id&gt;/unblock/</span></li>
+          <li><code>DELETE</code> <span class="mono">students/&lt;id&gt;/</span></li>
+        </ul>
+      </section>
+
       {# ----------------------------------------------------------- what it does #}
       <section class="panel">
         <div class="panel-head">
@@ -237,7 +352,9 @@ def qqplay_token(student):
         <ul class="plain-list muted">
           <li>{% translate "Students talk and react under the name and picture your site sends, with no account to create here." %}</li>
           <li>{% translate "Your private lives show on your site to the people it signs in, and nowhere else. Public and unlisted lives show to everyone." %}</li>
-          <li>{% translate "People marked as moderators (your teachers) can hide messages in the chat of your lives." %}</li>
+          <li>{% translate "People marked as moderators (your teachers) wear the Streaming badge (or yours, under Look on your site) and can pin a message, answer questions, mute someone, slow the chat down and hide messages and comments." %}</li>
+          <li>{% translate "A live for some classes (its School classes field) shows only to the people whose token lists one of them in groups; its recording too." %}</li>
+          <li>{% translate "Each live keeps who watched and for how long: see Attendance in its control room, or ask the API." %}</li>
           <li>{% translate "Messages and reactions are the same as on the live's page here: whoever watches on either side sees them all." %}</li>
         </ul>
       </section>

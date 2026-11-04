@@ -41,6 +41,7 @@ services:
     depends_on:
       - web
       - live
+      - events
     logging: *logging
 
   web:
@@ -49,6 +50,21 @@ services:
       # Threads, so page views and the lives' polling do not queue behind
       # one another.
       GUNICORN_CMD_ARGS: "--threads 4"
+    logging: *logging
+
+  # The lives' push channel: an ASGI server holding the open connections of
+  # the pages watching a live (apps/live/stream.py). One process, idle almost
+  # all the time; Caddy sends it /live/<id>/events/ only.
+  events:
+    extends:
+      file: docker-compose.yml
+      service: web
+    command: uvicorn config.asgi:application --host 0.0.0.0 --port 8001 --proxy-headers --forwarded-allow-ips=*
+    ports: !reset []
+    environment:
+      RUN_MIGRATIONS: "0"
+    healthcheck:
+      disable: true
     logging: *logging
 
   worker:

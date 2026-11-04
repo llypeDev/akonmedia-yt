@@ -6,8 +6,9 @@
 # listens on plain HTTP inside the Docker network and does the same as
 # deploy/Caddyfile from there on:
 #
-#   /hls/...   the lives on air, straight from the ingest server ("live")
-#   the rest   the portal ("web"), with the media files sent from the volume
+#   /hls/...           the lives on air, straight from the ingest server ("live")
+#   /live/*/events/    the lives' push channel (the ASGI "events" service)
+#   the rest           the portal ("web"), with the media files sent from the volume
 #
 # The upstreams are called by the aliases qqplay-web and qqplay-live, which
 # docker-compose.dokploy.yml gives them on the stack's own network. This
@@ -28,6 +29,13 @@
 
 	handle /hls/* {
 		reverse_proxy qqplay-live:8080
+	}
+
+	@events path_regexp ^/live/[^/]+/events/$
+	handle @events {
+		reverse_proxy qqplay-events:8001 {
+			flush_interval -1
+		}
 	}
 
 	handle {

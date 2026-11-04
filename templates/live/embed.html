@@ -55,6 +55,21 @@
       .embed-both .live-chat { border-left: 0; border-top: 1px solid var(--line); }
     }
   </style>
+  {% if integration.accent_color %}
+    {# The school's colour for buttons and highlights. #}
+    <style>
+      :root, :root[data-theme] {
+        --accent: {{ integration.accent_color }};
+        --accent-strong: {{ integration.accent_color }};
+        --accent-ink: {{ integration.accent_ink }};
+        --accent-soft: color-mix(in srgb, {{ integration.accent_color }} 14%, transparent);
+        --accent-ring: color-mix(in srgb, {{ integration.accent_color }} 50%, transparent);
+        --grad: linear-gradient(120deg, {{ integration.accent_color }}, {{ integration.accent_color }});
+        --grad-btn: linear-gradient(120deg, {{ integration.accent_color }}, {{ integration.accent_color }});
+      }
+      .live-stage .btn { background: {{ integration.accent_color }}; color: {{ integration.accent_ink }}; }
+    </style>
+  {% endif %}
 </head>
 <body>
   {% if available %}
@@ -63,6 +78,12 @@
          data-chat-url="{% url 'integrations:live_chat' live.uid %}"
          data-hide-url="{% url 'integrations:live_hide' live.uid 0 %}"
          data-react-url="{% url 'integrations:live_react' live.uid 0 %}"
+         data-pin-url="{% url 'integrations:live_pin' live.uid 0 %}"
+         data-answer-url="{% url 'integrations:live_answer' live.uid 0 %}"
+         data-mute-url="{% url 'integrations:live_mute' live.uid 0 %}"
+         data-unmute-url="{% url 'integrations:live_unmute' live.uid 0 %}"
+         data-settings-url="{% url 'integrations:live_settings' live.uid %}"
+         data-staff-label="{% if integration.staff_label %}{{ integration.staff_label }}{% else %}{% translate 'Streaming' %}{% endif %}"
          {% if integration %}data-school="{{ integration.key }}" data-session-url="{% url 'integrations:session' %}"{% endif %}
          {% if awaiting %}data-awaiting{% endif %}
          data-sprite="{% static 'icons/sprite.svg' %}"

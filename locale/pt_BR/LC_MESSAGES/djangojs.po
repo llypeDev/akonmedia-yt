@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: QQplay\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 23:09+0000\n"
+"POT-Creation-Date: 2026-11-04 00:12+0000\n"
 "PO-Revision-Date: 2026-11-03 16:07+0000\n"
 "Last-Translator: QQplay\n"
 "Language-Team: Português (Brasil)\n"
@@ -23,7 +23,7 @@ msgid "Could not copy — select the text and copy it manually."
 msgstr "Não foi possível copiar — selecione o texto e copie manualmente."
 
 #. Translators: cancels the automatic jump to the next playlist item.
-#: static/js/app.js:302 static/js/avatar.js:254 static/js/player.js:2369
+#: static/js/app.js:302 static/js/avatar.js:254 static/js/player.js:2371
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -197,6 +197,56 @@ msgstr "Limpar"
 msgid "Done"
 msgstr "Pronto"
 
+#. Translators: badge next to the names of the host and the moderators in the
+#. live chat.
+#: static/js/embed-comments.js:23 static/js/live.js:924
+msgid "Streaming"
+msgstr "Streaming"
+
+#: static/js/embed-comments.js:150
+msgid "This video is for other classes"
+msgstr "Este vídeo é de outras turmas"
+
+#: static/js/embed-comments.js:151
+msgid "This video is only for the school's people"
+msgstr "Este vídeo é só para as pessoas da escola"
+
+#: static/js/embed-comments.js:169 static/js/live.js:970
+msgid "You could not be signed in."
+msgstr "Não foi possível conectar você."
+
+#: static/js/embed-comments.js:189 static/js/live.js:275
+msgid "If you are in one of them, ask your school."
+msgstr "Se você está em uma delas, fale com a sua escola."
+
+#: static/js/embed-comments.js:267
+msgid "Reply"
+msgstr "Responder"
+
+#: static/js/embed-comments.js:276
+msgid "Hide"
+msgstr "Ocultar"
+
+#: static/js/embed-comments.js:323
+msgid "Replying to %(name)s"
+msgstr "Respondendo a %(name)s"
+
+#: static/js/embed-comments.js:336
+msgid "at %(time)s"
+msgstr "em %(time)s"
+
+#: static/js/embed-comments.js:351
+msgid "The comment could not be sent."
+msgstr "Não foi possível enviar o comentário."
+
+#: static/js/embed-comments.js:393
+msgid "The comment could not be hidden."
+msgstr "Não foi possível ocultar o comentário."
+
+#: static/js/embed-comments.js:394
+msgid "Comment hidden."
+msgstr "Comentário ocultado."
+
 #. Translators: names of the reactions in the live chat, read out by screen
 #. readers.
 #: static/js/live.js:41
@@ -242,85 +292,177 @@ msgid "%(seconds)s s"
 msgstr "%(seconds)s s"
 
 #. Translators: number of people watching a live stream right now.
-#: static/js/live.js:365
+#: static/js/live.js:443
 msgid "%(count)s watching"
 msgid_plural "%(count)s watching"
 msgstr[0] "%(count)s assistindo"
 msgstr[1] "%(count)s assistindo"
 
 #. Translators: %(time)s is a countdown such as "2 h 05 min".
-#: static/js/live.js:400
+#: static/js/live.js:478
 msgid "Starts in %(time)s"
 msgstr "Começa em %(time)s"
 
-#: static/js/live.js:401
+#: static/js/live.js:479
 msgid "Starting any moment now"
 msgstr "Começa a qualquer momento"
 
-#: static/js/live.js:499
+#: static/js/live.js:516
+msgid "Something went wrong."
+msgstr "Algo deu errado."
+
+#: static/js/live.js:574
+msgid "Slow mode on."
+msgstr "Modo lento ativado."
+
+#: static/js/live.js:574
+msgid "Slow mode off."
+msgstr "Modo lento desativado."
+
+#: static/js/live.js:617
+msgid "Message pinned."
+msgstr "Mensagem fixada."
+
+#: static/js/live.js:617
+msgid "Message unpinned."
+msgstr "Mensagem desafixada."
+
+#: static/js/live.js:628
+msgid "Question marked as answered."
+msgstr "Pergunta marcada como respondida."
+
+#: static/js/live.js:628
+msgid "Question opened again."
+msgstr "Pergunta reaberta."
+
+#: static/js/live.js:638
+msgid "%(name)s is muted for 5 minutes."
+msgstr "Chat de %(name)s silenciado por 5 minutos."
+
+#: static/js/live.js:680
 msgid "The message could not be sent."
 msgstr "Não foi possível enviar a mensagem."
 
-#: static/js/live.js:531
-msgid "Message hidden."
-msgstr "Mensagem ocultada."
+#: static/js/live.js:717
+msgid "Wait %(seconds)s s"
+msgstr "Aguarde %(seconds)s s"
 
-#: static/js/live.js:534
+#: static/js/live.js:727
 msgid "The message could not be hidden."
 msgstr "Não foi possível ocultar a mensagem."
 
-#: static/js/live.js:585
+#: static/js/live.js:730
+msgid "Message hidden."
+msgstr "Mensagem ocultada."
+
+#: static/js/live.js:754
+msgid "A moderator muted you until %(time)s."
+msgstr "Um moderador silenciou você até %(time)s."
+
+#: static/js/live.js:761
+msgid "Slow mode: one message every %(seconds)s s."
+msgstr "Modo lento: uma mensagem a cada %(seconds)s s."
+
+#: static/js/live.js:819 static/js/live.js:820
+msgid "Unpin"
+msgstr "Desafixar"
+
+#. Translators: votes on a question in the live chat, e.g. "Votes: 4".
+#: static/js/live.js:833 static/js/live.js:1142
+msgid "Votes: %(count)s"
+msgstr "Votos: %(count)s"
+
+#: static/js/live.js:835
+msgid "Vote for this question"
+msgstr "Votar nesta pergunta"
+
+#. Translators: tag on a live chat message sent as a question for the host.
+#: static/js/live.js:875 static/js/live.js:1093 static/js/live.js:1201
+msgid "Answered"
+msgstr "Respondida"
+
+#: static/js/live.js:901
+msgid "Nobody right now."
+msgstr "Ninguém no momento."
+
+#: static/js/live.js:908
+msgid "%(name)s, until %(time)s"
+msgstr "%(name)s, até %(time)s"
+
+#: static/js/live.js:913 static/js/player.js:1296 static/js/player.js:1440
+msgid "Unmute"
+msgstr "Ativar som"
+
+#: static/js/live.js:954
 msgid "Open this live from your school's site."
 msgstr "Abra esta live pelo site da sua escola."
 
-#: static/js/live.js:601
-msgid "You could not be signed in."
-msgstr "Não foi possível conectar você."
+#: static/js/live.js:996
+msgid "This live is for other classes"
+msgstr "Esta live é de outras turmas"
 
-#: static/js/live.js:626
+#: static/js/live.js:997
 msgid "This live is only for the school's people"
 msgstr "Esta live é só para as pessoas da escola"
 
-#: static/js/live.js:644
+#: static/js/live.js:1015
 msgid "Signed in as %(name)s, moderator"
 msgstr "Conectado como %(name)s, moderador"
 
-#: static/js/live.js:645
+#: static/js/live.js:1016
 msgid "Signed in as %(name)s"
 msgstr "Conectado como %(name)s"
 
 #. Translators: a reaction under a live chat message, e.g. "Like: 3".
-#: static/js/live.js:678
+#: static/js/live.js:1049
 msgid "%(reaction)s: %(count)s"
 msgstr "%(reaction)s: %(count)s"
 
-#: static/js/live.js:713
+#: static/js/live.js:1093 static/js/live.js:1201
+msgid "Question"
+msgstr "Pergunta"
+
+#: static/js/live.js:1099
 msgid "Sign in to react."
 msgstr "Entre para reagir."
 
-#: static/js/live.js:750
+#: static/js/live.js:1124
 msgid "The reaction could not be saved."
 msgstr "Não foi possível salvar a reação."
 
-#. Translators: badge next to the name of the person streaming, in the live
-#. chat.
-#: static/js/live.js:784
-msgid "Host"
-msgstr "Apresentador"
+#: static/js/live.js:1152
+msgid "Sign in to vote."
+msgstr "Entre para votar."
+
+#: static/js/live.js:1161
+msgid "The vote could not be saved."
+msgstr "Não foi possível salvar o voto."
 
 #. Translators: button that reacts to a live chat message, e.g. "React: Like".
-#: static/js/live.js:819
+#: static/js/live.js:1242
 msgid "React: %(reaction)s"
 msgstr "Reagir: %(reaction)s"
 
+#: static/js/live.js:1250
+msgid "Pin over the chat"
+msgstr "Fixar no topo do chat"
+
+#: static/js/live.js:1252
+msgid "Mark as answered"
+msgstr "Marcar como respondida"
+
+#: static/js/live.js:1255
+msgid "Mute the author for 5 minutes"
+msgstr "Silenciar o autor por 5 minutos"
+
 #. Translators: moderation button on a live chat message.
-#: static/js/live.js:832 static/js/live.js:833
+#: static/js/live.js:1258
 msgid "Hide message"
 msgstr "Ocultar mensagem"
 
 #. Translators: button on a touch screen that shows the reactions of a live
 #. chat message.
-#: static/js/live.js:846
+#: static/js/live.js:1267
 msgid "React to this message"
 msgstr "Reagir a esta mensagem"
 
@@ -356,8 +498,8 @@ msgstr "Player de áudio"
 msgid "Video player"
 msgstr "Player de vídeo"
 
-#: static/js/player.js:484 static/js/player.js:574 static/js/player.js:1368
-#: static/js/player.js:1374
+#: static/js/player.js:484 static/js/player.js:576 static/js/player.js:1370
+#: static/js/player.js:1376
 msgid "Play"
 msgstr "Reproduzir"
 
@@ -378,323 +520,319 @@ msgid "Watch"
 msgstr "Assistir"
 
 #. Translators: accessible name of the player's seek bar.
-#: static/js/player.js:533
+#: static/js/player.js:535
 msgid "Seek"
 msgstr "Barra de progresso"
 
 #. Translators: previous item in a playlist.
-#: static/js/player.js:567
+#: static/js/player.js:569
 msgid "Previous"
 msgstr "Anterior"
 
 #. Translators: next item in a playlist.
-#: static/js/player.js:583
+#: static/js/player.js:585
 msgid "Next"
 msgstr "Próxima"
 
-#: static/js/player.js:590 static/js/player.js:1438
+#: static/js/player.js:592 static/js/player.js:1440
 msgid "Mute"
 msgstr "Desativar som"
 
-#: static/js/player.js:601 static/js/player.js:2169
+#: static/js/player.js:603 static/js/player.js:2171
 msgid "Volume"
 msgstr "Volume"
 
 #. Translators: tooltip of the player's LIVE button, which jumps to the newest
 #. moment of the stream.
-#: static/js/player.js:624 static/js/player.js:625
+#: static/js/player.js:626 static/js/player.js:627
 msgid "Jump to live"
 msgstr "Ir para o ao vivo"
 
 #. Translators: short badge on the player while a stream is live. Keep it very
 #. short.
-#: static/js/player.js:629
+#: static/js/player.js:631
 msgid "LIVE"
 msgstr "AO VIVO"
 
-#: static/js/player.js:640 static/js/player.js:1867 static/js/player.js:2056
-#: static/js/player.js:2100
+#: static/js/player.js:642 static/js/player.js:1869 static/js/player.js:2058
+#: static/js/player.js:2102
 msgid "Subtitles"
 msgstr "Legendas"
 
-#: static/js/player.js:649 static/js/player.js:693
+#: static/js/player.js:651 static/js/player.js:695
 msgid "Settings"
 msgstr "Configurações"
 
-#: static/js/player.js:661 static/js/player.js:1110
+#: static/js/player.js:663 static/js/player.js:1112
 msgid "Picture-in-picture"
 msgstr "Picture-in-picture"
 
-#: static/js/player.js:670 static/js/player.js:2283
+#: static/js/player.js:672 static/js/player.js:2285
 msgid "Theater mode"
 msgstr "Modo teatro"
 
-#: static/js/player.js:680 static/js/player.js:2325
+#: static/js/player.js:682 static/js/player.js:2327
 msgid "Full screen"
 msgstr "Tela cheia"
 
-#: static/js/player.js:835
+#: static/js/player.js:837
 msgid "This stream could not be loaded."
 msgstr "Não foi possível carregar esta transmissão."
 
-#: static/js/player.js:1106
+#: static/js/player.js:1108
 msgid "Exit picture-in-picture"
 msgstr "Sair do picture-in-picture"
 
-#: static/js/player.js:1294 static/js/player.js:1438
-msgid "Unmute"
-msgstr "Ativar som"
-
 #. Translators: pill shown after a muted autoplay; also used on desktop.
-#: static/js/player.js:1297
+#: static/js/player.js:1299
 msgid "Tap to unmute"
 msgstr "Toque para ativar o som"
 
 #. Translators: on-screen flash after skipping, e.g. "+10s" or "−5s"; %(sign)s
 #. is + or −, %(seconds)s the amount.
-#: static/js/player.js:1344
+#: static/js/player.js:1346
 msgid "%(sign)s%(seconds)ss"
 msgstr "%(sign)s%(seconds)ss"
 
 #. Translators: on-screen flash after stepping one video frame forward; keep
 #. the arrow.
-#: static/js/player.js:1356
+#: static/js/player.js:1358
 msgid "Frame ›"
 msgstr "Quadro ›"
 
 #. Translators: on-screen flash after stepping one video frame back; keep the
 #. arrow.
-#: static/js/player.js:1358
+#: static/js/player.js:1360
 msgid "‹ Frame"
 msgstr "‹ Quadro"
 
-#: static/js/player.js:1368 static/js/player.js:1374
+#: static/js/player.js:1370 static/js/player.js:1376
 msgid "Replay"
 msgstr "Assistir de novo"
 
-#: static/js/player.js:1368
+#: static/js/player.js:1370
 msgid "Pause"
 msgstr "Pausar"
 
 #. Translators: on-screen flash when the sound is switched off.
-#: static/js/player.js:1421
+#: static/js/player.js:1423
 msgid "Muted"
 msgstr "Sem som"
 
 #. Translators: spoken value of the seek bar, e.g. "1:05 of 8:15".
-#: static/js/player.js:1489
+#: static/js/player.js:1491
 msgid "%(current)s of %(total)s"
 msgstr "%(current)s de %(total)s"
 
 #. Translators: spoken value of the seek bar while watching a live stream
 #. behind the live edge, e.g. "0:42 behind live".
-#: static/js/player.js:1518 static/js/player.js:2252
+#: static/js/player.js:1520 static/js/player.js:2254
 msgid "Live"
 msgstr "Ao vivo"
 
-#: static/js/player.js:1518
+#: static/js/player.js:1520
 msgid "%(time)s behind live"
 msgstr "%(time)s atrás do ao vivo"
 
-#: static/js/player.js:1838
+#: static/js/player.js:1840
 msgid "Subtitles off"
 msgstr "Legendas desativadas"
 
-#: static/js/player.js:1844
+#: static/js/player.js:1846
 msgid "Subtitles on"
 msgstr "Legendas ativadas"
 
 #. Translators: subtitles switched off, in the player's settings menu.
-#: static/js/player.js:1866
+#: static/js/player.js:1868
 msgid "Off"
 msgstr "Desativadas"
 
-#: static/js/player.js:2007 static/js/player.js:2080
+#: static/js/player.js:2009 static/js/player.js:2082
 msgid "Playback speed"
 msgstr "Velocidade"
 
 #. Translators: video quality (rendition), in the player's settings menu.
-#: static/js/player.js:2020 static/js/player.js:2090
+#: static/js/player.js:2022 static/js/player.js:2092
 msgid "Quality"
 msgstr "Qualidade"
 
 #. Translators: technical overlay with stream statistics (resolution, bitrate,
 #. buffer…).
-#: static/js/player.js:2110 static/js/player.js:2188
+#: static/js/player.js:2112 static/js/player.js:2190
 msgid "Stats for nerds"
 msgstr "Estatísticas para nerds"
 
 #. Translators: stats overlay row: how the stream is played (HLS via hls.js,
 #. native HLS, progressive file).
-#: static/js/player.js:2154
+#: static/js/player.js:2156
 msgid "Engine"
 msgstr "Mecanismo"
 
 #. Translators: stats overlay row: size of the player on screen.
-#: static/js/player.js:2156
+#: static/js/player.js:2158
 msgid "Viewport"
 msgstr "Área visível"
 
-#: static/js/player.js:2157
+#: static/js/player.js:2159
 msgid "Resolution"
 msgstr "Resolução"
 
 #. Translators: stats overlay row: the HLS rendition being played and its
 #. bitrate.
-#: static/js/player.js:2159
+#: static/js/player.js:2161
 msgid "Level"
 msgstr "Nível"
 
-#: static/js/player.js:2160
+#: static/js/player.js:2162
 msgid "Codecs"
 msgstr "Codecs"
 
 #. Translators: stats overlay row: estimated download speed.
-#: static/js/player.js:2162
+#: static/js/player.js:2164
 msgid "Bandwidth"
 msgstr "Banda"
 
 #. Translators: stats overlay row: how much media is downloaded ahead of the
 #. playhead.
-#: static/js/player.js:2164
+#: static/js/player.js:2166
 msgid "Buffer"
 msgstr "Buffer"
 
 #. Translators: stats overlay row: dropped and total video frames.
-#: static/js/player.js:2166
+#: static/js/player.js:2168
 msgid "Frames"
 msgstr "Quadros"
 
 #. Translators: stats overlay row: playback speed.
-#: static/js/player.js:2168
+#: static/js/player.js:2170
 msgid "Speed"
 msgstr "Velocidade"
 
 #. Translators: stats overlay row: current time / duration.
-#: static/js/player.js:2171
+#: static/js/player.js:2173
 msgid "Position"
 msgstr "Posição"
 
-#: static/js/player.js:2182
+#: static/js/player.js:2184
 msgid "Close stats"
 msgstr "Fechar estatísticas"
 
 #. Translators: stats overlay, Engine row: the browser plays HLS by itself.
-#: static/js/player.js:2207
+#: static/js/player.js:2209
 msgid "HLS · native"
 msgstr "HLS · nativo"
 
 #. Translators: stats overlay, Engine row: the original file, downloaded
 #. progressively.
-#: static/js/player.js:2210
+#: static/js/player.js:2212
 msgid "Progressive"
 msgstr "Progressivo"
 
 #. Translators: stats overlay, Resolution row for sound-only media.
-#: static/js/player.js:2216
+#: static/js/player.js:2218
 msgid "audio only"
 msgstr "somente áudio"
 
 #. Translators: stats overlay, Level row; %(level)s is e.g. "720p · 2.93
 #. Mbps", chosen automatically.
-#: static/js/player.js:2224
+#: static/js/player.js:2226
 msgid "%(level)s (auto)"
 msgstr "%(level)s (automático)"
 
 #. Translators: stats overlay, Level row; %(level)s is e.g. "720p · 2.93
 #. Mbps", chosen by the viewer.
-#: static/js/player.js:2226
+#: static/js/player.js:2228
 msgid "%(level)s (manual)"
 msgstr "%(level)s (manual)"
 
 #. Translators: stats overlay, Buffer row; %(seconds)s is a number like
 #. "10.8".
-#: static/js/player.js:2235
+#: static/js/player.js:2237
 msgid "%(seconds)s s ahead"
 msgstr "%(seconds)s s à frente"
 
 #. Translators: stats overlay, Frames row: dropped frames out of the total
 #. decoded so far.
-#: static/js/player.js:2242
+#: static/js/player.js:2244
 msgid "%(dropped)s dropped / %(total)s"
 msgid_plural "%(dropped)s dropped / %(total)s"
 msgstr[0] "%(dropped)s perdido / %(total)s"
 msgstr[1] "%(dropped)s perdidos / %(total)s"
 
 #. Translators: stats overlay, Volume row when the sound is off.
-#: static/js/player.js:2248
+#: static/js/player.js:2250
 msgid "muted"
 msgstr "sem som"
 
 #. Translators: stats overlay, Position row of a live stream; %(seconds)s is
 #. the delay behind the encoder, e.g. "6.2".
-#: static/js/player.js:2255
+#: static/js/player.js:2257
 msgid "%(seconds)s s latency"
 msgstr "%(seconds)s s de atraso"
 
 #. Translators: leaves theater mode and returns to the normal page layout.
-#: static/js/player.js:2283
+#: static/js/player.js:2285
 msgid "Default view"
 msgstr "Visualização padrão"
 
-#: static/js/player.js:2325
+#: static/js/player.js:2327
 msgid "Exit full screen"
 msgstr "Sair da tela cheia"
 
 #. Translators: plays the next playlist item without waiting for the
 #. countdown.
-#: static/js/player.js:2373
+#: static/js/player.js:2375
 msgid "Play now"
 msgstr "Reproduzir agora"
 
 #. Translators: overlay at the end of a playlist item, before the next one
 #. starts.
-#: static/js/player.js:2385
+#: static/js/player.js:2387
 msgid "Up next"
 msgstr "A seguir"
 
 #. Translators: shown in the "Up next" overlay when the next item has no
 #. title.
-#: static/js/player.js:2391
+#: static/js/player.js:2393
 msgid "Next item"
 msgstr "Próximo item"
 
 #. Translators: button that jumps back to where the viewer stopped; %(time)s
 #. is like "4:12".
-#: static/js/player.js:2446
+#: static/js/player.js:2448
 msgid "Resume %(time)s"
 msgstr "Continuar em %(time)s"
 
-#: static/js/player.js:2448
+#: static/js/player.js:2450
 msgid "Dismiss"
 msgstr "Dispensar"
 
-#: static/js/player.js:2460
+#: static/js/player.js:2462
 msgid "Continue where you left off?"
 msgstr "Continuar de onde você parou?"
 
-#: static/js/player.js:2515
+#: static/js/player.js:2517
 msgid "Playback was aborted."
 msgstr "A reprodução foi interrompida."
 
-#: static/js/player.js:2516
+#: static/js/player.js:2518
 msgid "A network error interrupted the download."
 msgstr "Um erro de rede interrompeu o download."
 
-#: static/js/player.js:2517
+#: static/js/player.js:2519
 msgid "The file could not be decoded."
 msgstr "Não foi possível decodificar o arquivo."
 
-#: static/js/player.js:2518
+#: static/js/player.js:2520
 msgid "The file is missing or its format is not supported by this browser."
 msgstr ""
 "O arquivo está ausente ou o formato não é suportado por este navegador."
 
-#: static/js/player.js:2520
+#: static/js/player.js:2522
 msgid "This media could not be played."
 msgstr "Não foi possível reproduzir esta mídia."
 
-#: static/js/player.js:2529
+#: static/js/player.js:2531
 msgid "Playback failed"
 msgstr "Falha na reprodução"
 
@@ -795,3 +933,6 @@ msgid ""
 msgstr ""
 "Aperte “Enviar e publicar” de novo para continuar da última parte "
 "confirmada."
+
+#~ msgid "Host"
+#~ msgstr "Apresentador"

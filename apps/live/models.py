@@ -29,6 +29,18 @@ from django.utils.translation import gettext_lazy as _
 from apps.media.models import Category, Media, new_uid
 
 
+def parse_groups(value) -> list[str]:
+    """'Turma A, turma-b' or ['Turma A'] -> ['turma a', 'turma-b']: classes compare
+    without case and surrounding spaces."""
+    items = value if isinstance(value, (list, tuple)) else str(value or "").split(",")
+    seen = []
+    for item in items:
+        name = str(item).strip().lower()[:60]
+        if name and name not in seen:
+            seen.append(name)
+    return seen[:50]
+
+
 def new_playback_id() -> str:
     return new_uid(20)
 
@@ -84,6 +96,15 @@ class Live(models.Model):
     scheduled_for = models.DateTimeField(_("starts at"), null=True, blank=True)
     record = models.BooleanField(_("publish the recording"), default=True)
     chat_enabled = models.BooleanField(_("chat"), default=True)
+    #: Seconds a person waits between two messages (0: only the usual pause).
+    slow_mode_seconds = models.PositiveSmallIntegerField(default=0, verbose_name=_("slow mode"))
+    pinned_message = models.ForeignKey(
+        "ChatMessage", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+        verbose_name=_("pinned message"),
+    )
+    #: Classes of a school site (apps.integrations) that may watch this live
+    #: when it is private, separated by commas. Empty: all of the site's people.
+    groups = models.CharField(max_length=500, blank=True, verbose_name=_("school classes"))
 
     status = models.CharField(
         max_length=16, choices=Status.choices, default=Status.SCHEDULED,
@@ -98,9 +119,11 @@ class Live(models.Model):
     interrupted_at = models.DateTimeField(null=True, blank=True, verbose_name=_("interrupted at"))
     ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("ended at"))
     peak_viewers = models.PositiveIntegerField(default=0, verbose_name=_("peak viewers"))
-    #: Goes up by one with every reaction added or taken back in the chat.
-    #: A page that has seen this number has every reaction up to date.
-    reactions_rev = models.PositiveIntegerField(default=0, editable=False, verbose_name=_("reaction revision"))
+    #: Goes up by one with every change to the chat: a message, a reaction,
+    #: a hidden or pinned message, an answered question, its settings. A page
+    #: that has seen this number has the chat up to date, and the chat as of
+    #: a number is computed once and shared by every page (apps.live.chat).
+    chat_version = models.PositiveIntegerField(default=0, editable=False, verbose_name=_("chat version"))
 
     recording = models.OneToOneField(
         Media, null=True, blank=True, on_delete=models.SET_NULL, related_name="live_source",
@@ -133,6 +156,10 @@ class Live(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("live:watch", args=[self.uid])
+
+    @property
+    def group_list(self) -> list[str]:
+        return parse_groups(self.groups)
 
     @property
     def is_on_air(self) -> bool:
@@ -198,6 +225,9 @@ class ChatMessage(models.Model):
     created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
     is_hidden = models.BooleanField(default=False, verbose_name=_("hidden"))
     hidden_at = models.DateTimeField(null=True, blank=True, verbose_name=_("hidden at"))
+    #: Sent as a question for the host: listed apart, voted up, answered.
+    is_question = models.BooleanField(default=False, verbose_name=_("question"))
+    answered_at = models.DateTimeField(null=True, blank=True, verbose_name=_("answered at"))
 
     class Meta:
         verbose_name = _("chat message")
@@ -216,6 +246,8 @@ class ChatReaction(models.Model):
     class Kind(models.TextChoices):
         # The labels are what a screen reader says; the pictures are emoji,
         # drawn by the viewer's own system.
+        #: A vote for a question, not one of the pictures.
+        UP = "up", _("Vote")
         LIKE = "like", _("Like")
         LOVE = "love", _("Love")
         HAHA = "haha", _("Funny")
@@ -256,3 +288,49 @@ class ChatReaction(models.Model):
 
     def __str__(self) -> str:
         return f"{self.EMOJI.get(self.kind, self.kind)} {self.message_id}"
+
+
+class ChatMute(models.Model):
+    """A person who may not write in a live's chat until a moment."""
+
+    live = models.ForeignKey(Live, on_delete=models.CASCADE, related_name="mutes", verbose_name=_("live"))
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="live_mutes",
+        verbose_name=_("user"),
+    )
+    until = models.DateTimeField(verbose_name=_("until"))
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+        verbose_name=_("by"),
+    )
+    created_at = models.DateTimeField(default=timezone.now, verbose_name=_("created at"))
+
+    class Meta:
+        verbose_name = _("muted person")
+        verbose_name_plural = _("muted people")
+        constraints = [models.UniqueConstraint(fields=["live", "user"], name="one_mute_per_person_per_live")]
+
+    def __str__(self) -> str:
+        return f"{self.user} ({self.live})"
+
+
+class LiveAttendance(models.Model):
+    """How long a signed-in person watched a live while it was on air."""
+
+    live = models.ForeignKey(Live, on_delete=models.CASCADE, related_name="attendance", verbose_name=_("live"))
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="live_attendance",
+        verbose_name=_("user"),
+    )
+    first_seen = models.DateTimeField(default=timezone.now, verbose_name=_("joined at"))
+    last_seen = models.DateTimeField(default=timezone.now, verbose_name=_("last seen at"))
+    seconds = models.PositiveIntegerField(default=0, verbose_name=_("seconds watched"))
+
+    class Meta:
+        verbose_name = _("attendance")
+        verbose_name_plural = _("attendance")
+        constraints = [models.UniqueConstraint(fields=["live", "user"], name="one_attendance_per_person_per_live")]
+        ordering = ["-seconds"]
+
+    def __str__(self) -> str:
+        return f"{self.user} ({self.live}): {self.seconds}s"

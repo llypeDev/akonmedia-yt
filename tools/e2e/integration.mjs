@@ -22,7 +22,10 @@
 // Optional: E2E_LIVE_HOOK_SECRET=<the portal's LIVE_HOOK_SECRET> puts the live
 // on air with the ingest server's callback (no encoder needed), which also
 // checks the attendance; E2E_SCHOOL_PORT (8765) for the school's server;
-// E2E_SHOTS=<dir> for screenshots.
+// E2E_SHOTS=<dir> for screenshots; E2E_INSECURE_TLS=1 against a local HTTPS
+// stack whose certificate the browser does not trust (Caddy's own, for
+// PORTAL_DOMAIN=localhost), with NODE_TLS_REJECT_UNAUTHORIZED=0 for the API
+// calls.
 import { createHmac } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:http";
@@ -39,6 +42,7 @@ const HOOK = process.env.E2E_LIVE_HOOK_SECRET || "";
 const PORT = Number(process.env.E2E_SCHOOL_PORT || 8765);
 const SCHOOL = `http://127.0.0.1:${PORT}`;
 const SHOTS = process.env.E2E_SHOTS || "";
+const INSECURE = process.env.E2E_INSECURE_TLS === "1";
 const stamp = Date.now().toString(36);
 const WAIT = 30000; // a poll of a scheduled live comes every 10 s
 
@@ -171,7 +175,7 @@ async function confirmIn(page) {
 
 /* A person of the school on a lesson page, and the QQplay frame in it. */
 async function lesson(browser, errors, who, path = "aula") {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 860 }, ignoreHTTPSErrors: INSECURE });
   const page = await context.newPage();
   watchErrors(page, errors);
   await page.goto(`${SCHOOL}/${path}?who=${who}`);
@@ -210,7 +214,7 @@ async function main() {
   let onAir = false;
   try {
     // ------------------------------------------------ the creator's studio
-    studio = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    studio = await browser.newPage({ viewport: { width: 1280, height: 900 }, ignoreHTTPSErrors: INSECURE });
     watchErrors(studio, errors);
     await signIn(studio, HOST);
     await studio.goto(`${BASE}/studio/integrations/`);

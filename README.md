@@ -867,6 +867,11 @@ BASE_URL=http://127.0.0.1:8000 E2E_HOST_EMAIL=studio@example.com \
 E2E_PASSWORD=demo-pass-123 E2E_LIVE_HOOK_SECRET=… node tools/e2e/integration.mjs
 ```
 
+Contra a stack de produção rodando na própria máquina (`PORTAL_DOMAIN=localhost`,
+com o certificado local do Caddy), acrescente `BASE_URL=https://localhost
+E2E_INSECURE_TLS=1 NODE_TLS_REJECT_UNAUTHORIZED=0`: assim o teste passa também
+pelo Caddy, pelo serviço `events` e pelo PostgreSQL.
+
 </details>
 
 ### Idiomas
